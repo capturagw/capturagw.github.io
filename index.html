@@ -251,6 +251,9 @@
   .kpi-trend.up { color: #2faa86; }
   .kpi-trend.down { color: #d9534f; }
   .kpi-trend.flat { color: var(--text3); }
+  .sinal-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; margin:2px 4px 2px 0; white-space:nowrap; }
+  .sinal-sst { background:#ffe6df; color:#c2400f; border:1px solid #f4a98f; }
+  .sinal-risco { background:#fff3d6; color:#9a6a00; border:1px solid #f0cd86; }
 
   /* ─── TOOLBAR ─────────────────────────────────────── */
   .toolbar {
@@ -6068,6 +6071,10 @@ function calcScore(l) {
   // Urgência setorial NR-1 (obrigatória desde 26/05/2026)
   const urgMap = { 'Indústria': 15, 'Logística': 15, 'Saúde': 13, 'Construção': 11, 'Varejo': 10, 'TI': 7 };
   s += (urgMap[l.setor] || 5);
+  // SINAL DE INTENÇÃO (captação assertiva) — maior peso: indica orçamento/dor agora
+  const sig = (l.sinais || '');
+  if (sig.includes('contratando-sst')) s += 22; // empresa com vaga aberta de SST/RH = compra quente
+  if (sig.includes('setor-risco')) s += 12;      // setor de alto risco psicossocial
   // Prioridade gerada pela automação
   if (l.prioridade === 'Alta') s += 8;
   else if (l.prioridade === 'Média') s += 4;
@@ -6078,6 +6085,14 @@ function calcScore(l) {
   // Bônus: tem LinkedIn para abordar quando não há email
   if (l.linkedin_empresa && !l.email) s += 8;
   return Math.min(100, Math.max(0, Math.round(s)));
+}
+
+// Selos de intenção (captação assertiva) — vêm do campo `sinais` preenchido pelo robô
+function sinalBadges(l) {
+  const sig = (l.sinais || ''); let out = '';
+  if (sig.includes('contratando-sst')) out += `<span class="sinal-badge sinal-sst" title="Empresa com vaga aberta de SST/RH — orçamento e dor agora">🔥 Contratando SST</span>`;
+  if (sig.includes('setor-risco')) out += `<span class="sinal-badge sinal-risco" title="Setor de alto risco psicossocial">⚠ Setor de risco</span>`;
+  return out;
 }
 
 function scoreColor(s) {
@@ -6243,6 +6258,7 @@ function renderPlanodeHoje() {
       </div>
       <div class="plano-empresa">${l.empresa}</div>
       <div class="plano-contato">${l.nome_contato || '—'}</div>
+      ${sinalBadges(l) ? `<div style="margin-top:4px">${sinalBadges(l)}</div>` : ''}
       <div class="plano-foot">
         <span class="plano-channel">${canal}</span>
         <button class="btn-script" onclick="event.stopPropagation();openDetail('${l.id}');showModalTab('script')">Ver Script →</button>
@@ -6834,7 +6850,7 @@ function renderTable(data) {
     <tr onclick="openDetail('${l.id}')">
       <td><span class="score-pill ${sc.cls}">${l._score}</span></td>
       <td><div class="td-empresa">${l.empresa}</div>
-          <div class="td-contato">${l.cidade || ''}</div></td>
+          <div class="td-contato">${l.cidade || ''}</div>${sinalBadges(l)}</td>
       <td>${l.nome_contato || '—'}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.cargo || '—'}</td>
       <td>${l.email ? `<a class="td-email" href="mailto:${l.email}" onclick="event.stopPropagation()">${l.email}</a>` : '<span style="color:var(--text3);font-size:11px">Sem email</span>'}</td>
@@ -8478,6 +8494,7 @@ function paraCloud(l) {
   o.data_adicao = l.data_adicao ? l.data_adicao : null;
   if (l.vidas != null && l.vidas !== '') o.vidas = parseInt(l.vidas) || null; // RPS: nº de vidas (só envia se houver)
   if (l.documentos && l.documentos.length) o.documentos = l.documentos; // só envia se já houver documento salvo (coluna jsonb)
+  if (l.sinais) o.sinais = l.sinais; // sinal de intenção (só envia se existir; requer coluna sinais)
   // dono: preserva null (lead no POOL) e o dono existente; só preenche com o usuário atual quando o campo nunca foi definido
   o.dono = (l.dono === undefined ? (window.CAPTURA.user && window.CAPTURA.user.id) || null : l.dono);
   return o;
