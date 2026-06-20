@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlexON — Conformidade NR-1 (Riscos Psicossociais)</title>
+<meta name="description" content="A NR-1 é obrigatória para toda empresa com empregados CLT. Faça seu diagnóstico de riscos psicossociais com a FlexON.">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --primary:#e8675b; --ink:#2a2320; --muted:#7a716b; --bg:#fbeceb; --card:#fff; --green:#1f9d6b; --line:#f0d9d5; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+  header{padding:22px 0}
+  .logo{font-weight:800;font-size:22px;letter-spacing:.5px;background:linear-gradient(90deg,#e8675b,#f0a35a);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .logo small{font-weight:600;color:var(--muted);-webkit-text-fill-color:var(--muted);font-size:12px;letter-spacing:1px;display:block;margin-top:-2px}
+  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:start;padding:24px 0 56px}
+  @media(max-width:840px){.hero{grid-template-columns:1fr;gap:24px}}
+  .tag{display:inline-block;background:#fff;border:1px solid var(--line);color:var(--primary);font-weight:700;font-size:12px;padding:6px 12px;border-radius:30px;margin-bottom:16px}
+  h1{font-size:38px;line-height:1.12;margin:0 0 14px;font-weight:800}
+  @media(max-width:840px){h1{font-size:29px}}
+  h1 b{color:var(--primary)}
+  .sub{font-size:17px;color:var(--muted);margin-bottom:22px}
+  ul.bull{list-style:none;padding:0;margin:0 0 8px}
+  ul.bull li{padding:9px 0 9px 30px;position:relative;font-size:15px}
+  ul.bull li::before{content:"✓";position:absolute;left:0;top:8px;color:var(--green);font-weight:800;background:#e7f7ef;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 12px 40px rgba(200,120,100,.10)}
+  .card h2{margin:0 0 4px;font-size:20px}
+  .card p.small{margin:0 0 18px;color:var(--muted);font-size:13px}
+  label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.04em}
+  input,select{width:100%;padding:12px 13px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;background:#fffaf9;color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(232,103,91,.12)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  button{width:100%;margin-top:20px;background:var(--primary);color:#fff;border:none;padding:14px;border-radius:11px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(232,103,91,.3)}
+  button:disabled{opacity:.6;cursor:default}
+  .hp{position:absolute;left:-9999px;opacity:0}
+  .ok{text-align:center;padding:20px 6px}
+  .ok .ico{width:62px;height:62px;border-radius:50%;background:#e7f7ef;color:var(--green);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 14px}
+  .legal{font-size:11px;color:var(--muted);margin-top:14px;text-align:center}
+  footer{padding:30px 0 40px;color:var(--muted);font-size:13px;text-align:center;border-top:1px solid var(--line);margin-top:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="logo">FlexON<small>CONFORMIDADE NR-1 · BEM-ESTAR CORPORATIVO</small></div></header>
+
+  <section class="hero">
+    <div>
+      <span class="tag">Obrigatória desde 26/05/2026 · TODA empresa com CLT</span>
+      <h1>Sua empresa está em conformidade com a <b>NR-1</b> de riscos psicossociais?</h1>
+      <p class="sub">A nova NR-1 exige que toda empresa com empregados CLT avalie e gerencie os riscos psicossociais — independentemente do porte. A FlexON faz esse diagnóstico de ponta a ponta, 100% digital.</p>
+      <ul class="bull">
+        <li>Diagnóstico psicossocial (questionário validado HSE-IT) e plano de ação</li>
+        <li>Enxoval documental NR-1 pronto para fiscalização</li>
+        <li>Canal de denúncias e política de prevenção ao assédio (Lei 14.457/2022)</li>
+        <li>Implantação em até 15 dias úteis — sem instalar nada</li>
+      </ul>
+      <p class="sub" style="font-size:14px;margin-top:14px">Preencha ao lado e nosso time entra em contato com um diagnóstico inicial gratuito.</p>
+    </div>
+
+    <div class="card" id="card">
+      <div id="form">
+        <h2>Quero meu diagnóstico NR-1</h2>
+        <p class="small">Resposta em até 1 dia útil. Sem compromisso.</p>
+        <input class="hp" type="text" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <label>Empresa</label>
+        <input id="empresa" placeholder="Razão social ou nome fantasia">
+        <label>Seu nome</label>
+        <input id="nome" placeholder="Nome do responsável">
+        <div class="row">
+          <div><label>E-mail</label><input id="email" type="email" placeholder="voce@empresa.com"></div>
+          <div><label>WhatsApp</label><input id="telefone" placeholder="(62) 9...."></div>
+        </div>
+        <div class="row">
+          <div><label>Nº de colaboradores</label>
+            <select id="vidas">
+              <option value="">Selecione</option>
+              <option value="20">Até 25</option>
+              <option value="40">26 a 50</option>
+              <option value="125">51 a 200</option>
+              <option value="350">201 a 500</option>
+              <option value="700">Mais de 500</option>
+            </select>
+          </div>
+          <div><label>Cidade / UF</label><input id="cidade" placeholder="Goiânia - GO"></div>
+        </div>
+        <button id="btn" onclick="enviar()">Quero o diagnóstico gratuito</button>
+        <div id="erro" style="color:#c0392b;font-size:13px;margin-top:10px;display:none"></div>
+        <p class="legal">Ao enviar, você concorda em ser contatado pela FlexON sobre conformidade NR-1. Seus dados são tratados conforme a LGPD.</p>
+      </div>
+      <div id="sucesso" class="ok" style="display:none">
+        <div class="ico">✓</div>
+        <h2>Recebemos seu pedido!</h2>
+        <p class="small">Nosso time comercial vai entrar em contato em até 1 dia útil com seu diagnóstico inicial. Obrigado pelo interesse na conformidade da sua empresa.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>FlexON LTDA · CNPJ 56.067.342/0001-83 · Goiânia/GO · NR-1 vale para TODA empresa com empregados CLT, independentemente do número de funcionários.</footer>
+</div>
+
+<script>
+  const SB_URL = 'https://gqvlejghwrxdhszziwld.supabase.co';
+  const SB_KEY = 'sb_publishable_yuUKE2zXw5SaY50HXI7xaQ_MdztKrA0';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+  const $ = id => document.getElementById(id);
+  async function enviar(){
+    const erro = $('erro'); erro.style.display='none';
+    if ($('website').value) return; // honeypot: bot preencheu campo oculto
+    const empresa = $('empresa').value.trim();
+    const nome = $('nome').value.trim();
+    const email = $('email').value.trim();
+    const tel = $('telefone').value.trim();
+    if(!empresa || !nome || (!email && !tel)){ erro.textContent='Preencha empresa, nome e ao menos um contato (e-mail ou WhatsApp).'; erro.style.display='block'; return; }
+    const btn=$('btn'); btn.disabled=true; btn.textContent='Enviando...';
+    const hoje=new Date().toISOString().slice(0,10);
+    const lead={
+      empresa, nome_contato:nome, email, telefone:tel,
+      cidade:$('cidade').value.trim(), vidas: $('vidas').value? parseInt($('vidas').value): null,
+      canal:'Inbound', fonte:'Site', status:'Novo Lead', sinais:'inbound',
+      dono:null, prioridade:'Alta', valor_estimado:1800,
+      notas:'✅ Lead inbound — pediu diagnóstico pelo site', data_adicao:hoje
+    };
+    try{
+      const { error } = await sb.from('leads').insert(lead);
+      if(error) throw error;
+      $('form').style.display='none'; $('sucesso').style.display='block';
+    }catch(e){
+      btn.disabled=false; btn.textContent='Quero o diagnóstico gratuito';
+      erro.textContent='Não foi possível enviar agora. Tente novamente em instantes.'; erro.style.display='block';
+      console.warn(e);
+    }
+  }
+</script>
+</body>
+</html>

@@ -254,6 +254,7 @@
   .sinal-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; margin:2px 4px 2px 0; white-space:nowrap; }
   .sinal-sst { background:#ffe6df; color:#c2400f; border:1px solid #f4a98f; }
   .sinal-risco { background:#fff3d6; color:#9a6a00; border:1px solid #f0cd86; }
+  .sinal-inbound { background:#e2f7ec; color:#1f7a52; border:1px solid #9bd8ba; }
 
   /* ─── TOOLBAR ─────────────────────────────────────── */
   .toolbar {
@@ -6073,7 +6074,8 @@ function calcScore(l) {
   s += (urgMap[l.setor] || 5);
   // SINAL DE INTENÇÃO (captação assertiva) — maior peso: indica orçamento/dor agora
   const sig = (l.sinais || '');
-  if (sig.includes('contratando-sst')) s += 22; // empresa com vaga aberta de SST/RH = compra quente
+  if (sig.includes('inbound')) s += 30;          // pediu contato pelo site = intenção máxima
+  if (sig.includes('contratando-sst')) s += 22;  // empresa com vaga aberta de SST/RH = compra quente
   if (sig.includes('setor-risco')) s += 12;      // setor de alto risco psicossocial
   // Prioridade gerada pela automação
   if (l.prioridade === 'Alta') s += 8;
@@ -6090,6 +6092,7 @@ function calcScore(l) {
 // Selos de intenção (captação assertiva) — vêm do campo `sinais` preenchido pelo robô
 function sinalBadges(l) {
   const sig = (l.sinais || ''); let out = '';
+  if (sig.includes('inbound')) out += `<span class="sinal-badge sinal-inbound" title="Pediu contato pelo site — lead inbound, intenção máxima">✅ Inbound</span>`;
   if (sig.includes('contratando-sst')) out += `<span class="sinal-badge sinal-sst" title="Empresa com vaga aberta de SST/RH — orçamento e dor agora">🔥 Contratando SST</span>`;
   if (sig.includes('setor-risco')) out += `<span class="sinal-badge sinal-risco" title="Setor de alto risco psicossocial">⚠ Setor de risco</span>`;
   return out;
