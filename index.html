@@ -5234,7 +5234,6 @@ window.PARCEIROS_DATA = {
 <nav class="app-nav">
   <button class="app-tab active" id="apptab-pipeline" onclick="switchAppView('pipeline')"><svg class="ic"><use href="#i-grid"/></svg> Pipeline Geral</button>
   <button class="app-tab" id="apptab-equipe" onclick="switchAppView('equipe')" style="display:none"><svg class="ic"><use href="#i-users"/></svg> Equipe</button>
-  <button class="app-tab" id="apptab-funil" onclick="switchAppView('funil')"><svg class="ic"><use href="#i-chart"/></svg> Funil</button>
   <button class="app-tab" id="apptab-hoje" onclick="switchAppView('hoje')"><svg class="ic"><use href="#i-cal"/></svg> Suas ações <span class="kanban-count" id="hojeCount">0</span></button>
   <button class="app-tab" id="apptab-quentes" onclick="switchAppView('quentes')"><svg class="ic"><use href="#i-flame"/></svg> Radar <span class="kanban-count" id="quentesCount">0</span></button>
   <button class="app-tab" id="apptab-residenciais" onclick="switchAppView('residenciais')"><svg class="ic"><use href="#i-building"/></svg> Residenciais <span class="kanban-count" id="resCount">0</span></button>
@@ -5281,6 +5280,13 @@ window.PARCEIROS_DATA = {
       <span><i class="cd-fech" style="background:#1f9d6b"></i>Fechados</span>
     </div>
   </div>
+</div>
+
+<div class="cover-card" id="funilCard" style="margin:0 0 16px">
+  <div class="cover-hd"><span class="t"><svg class="ic" style="width:15px;height:15px"><use href="#i-chart"/></svg> Funil de conversão</span></div>
+  <div class="funil-stages" id="funilStages" style="margin-top:6px"></div>
+  <div class="funil-metrics" id="funilMetrics" style="margin-top:14px"></div>
+  <div class="funil-extra" id="funilExtra"></div>
 </div>
 
 <div class="toolbar">
@@ -5372,16 +5378,6 @@ window.PARCEIROS_DATA = {
 </div>
 
 <!-- ═══ VIEW: FUNIL ═══ -->
-<div class="app-view" id="appview-funil">
-  <div class="parceiros-wrap">
-    <div class="section-title"><svg class="ic"><use href="#i-chart"/></svg> Funil de conversão & metas</div>
-    <div class="section-sub">De onde vem e para onde vai a receita. Atualiza sozinho conforme você move os leads.</div>
-    <div class="funil-metrics" id="funilMetrics"></div>
-    <div class="funil-stages" id="funilStages"></div>
-    <div class="funil-extra" id="funilExtra"></div>
-  </div>
-</div>
-
 <!-- ═══ VIEW: LEADS QUENTES (Glassdoor + LinkedIn) ═══ -->
 <div class="app-view" id="appview-quentes">
   <div class="parceiros-wrap">
@@ -6560,7 +6556,6 @@ function renderFunil() {
   const fmt = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
 
   document.getElementById('funilMetrics').innerHTML = `
-    <div class="funil-metric blue"><div class="n">${fmt(valorAberto)}</div><div class="l">Pipeline ponderado (mensal)</div></div>
     <div class="funil-metric purple"><div class="n">${fmt(potencialBruto)}</div><div class="l">Potencial bruto (teto)</div></div>
     <div class="funil-metric green"><div class="n">${fmt(valorFechado)}</div><div class="l">Fechado</div></div>
     <div class="funil-metric amber"><div class="n">${taxaFech}%</div><div class="l">Taxa de fechamento</div></div>`;
@@ -7550,13 +7545,12 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 
 // ══ NAVEGAÇÃO ENTRE VIEWS ════════════════════════════════════════════════════
 function switchAppView(view) {
-  ['pipeline','hoje','funil','quentes','residenciais','parceiros','ativos','desq','b2g','equipe'].forEach(v => {
+  ['pipeline','hoje','quentes','residenciais','parceiros','ativos','desq','b2g','equipe'].forEach(v => {
     const av = document.getElementById('appview-' + v); if (av) av.classList.toggle('active', v === view);
     const at = document.getElementById('apptab-' + v); if (at) at.classList.toggle('active', v === view);
   });
   if (view === 'quentes') renderQuentes();
   if (view === 'hoje') renderHoje();
-  if (view === 'funil') renderFunil();
   if (view === 'desq') renderDesq();
   if (view === 'b2g') { carregarLicitacoes().then(renderB2G); renderB2G(); }
   if (view === 'equipe') renderEquipe();
