@@ -773,6 +773,43 @@
   }
   .stale-banner button:hover { background: #b45309; }
 
+  /* ─── HERO DE BOAS-VINDAS ────────────────────────── */
+  .welcome-hero {
+    position: relative; overflow: hidden;
+    margin: 18px 28px 6px; border-radius: 22px;
+    background: linear-gradient(120deg, #fff4f0 0%, #fde7e1 48%, #fdeede 100%);
+    border: 1px solid #f6d9d1; box-shadow: 0 14px 44px rgba(220,120,100,0.13);
+  }
+  .wh-orb { position: absolute; border-radius: 50%; pointer-events: none; }
+  .wh-orb.a { width: 280px; height: 280px; top: -130px; right: 4%; background: radial-gradient(circle, rgba(240,140,90,0.30), transparent 70%); }
+  .wh-orb.b { width: 210px; height: 210px; bottom: -120px; left: 16%; background: radial-gradient(circle, rgba(232,103,91,0.20), transparent 70%); }
+  .wh-content { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 26px 30px; flex-wrap: wrap; }
+  .wh-left { min-width: 250px; }
+  .wh-greet { font-family: 'Outfit', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); line-height: 1.05; }
+  .wh-date { font-size: 13px; color: var(--text3); font-weight: 600; margin-top: 4px; text-transform: capitalize; }
+  .wh-msg { font-size: 15px; color: var(--text2); margin-top: 12px; max-width: 540px; line-height: 1.5; }
+  .wh-msg b { color: var(--primary); }
+  .wh-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .wh-cta { display: inline-flex; align-items: center; gap: 8px; background: var(--grad); color: #fff; border: none; padding: 11px 18px; border-radius: 12px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; box-shadow: 0 6px 18px rgba(232,103,91,0.32); transition: transform .15s, box-shadow .15s; }
+  .wh-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(232,103,91,0.4); }
+  .wh-cta.ghost { background: #fff; color: var(--text2); border: 1px solid var(--border); box-shadow: none; }
+  .wh-cta.ghost:hover { border-color: var(--primary); color: var(--primary); }
+  .wh-chip { background: rgba(255,255,255,0.28); border-radius: 20px; padding: 1px 9px; font-size: 12.5px; font-weight: 800; }
+  .wh-cta.ghost .wh-chip { background: var(--surface2); color: var(--text2); }
+  .wh-goal { display: flex; align-items: center; gap: 14px; }
+  .wh-ring { width: 96px; height: 96px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .wh-ring-hole { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1px #f3ddd6; }
+  .wh-ring-hole b { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); line-height: 1; }
+  .wh-ring-hole span { font-size: 9px; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+  .wh-goal-info .g1 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: var(--green); }
+  .wh-goal-info .g2 { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  @media (max-width: 768px) {
+    .welcome-hero { margin: 14px 14px 2px; border-radius: 18px; }
+    .wh-content { padding: 20px 18px; }
+    .wh-greet { font-size: 24px; }
+    .wh-goal { width: 100%; justify-content: flex-start; margin-top: 4px; }
+  }
+
   /* ─── PLANO DE HOJE ──────────────────────────────── */
   .plano-section {
     background: radial-gradient(ellipse 120% 160% at 92% -30%, #fde0db 0%, #fdeae6 45%, #fdf4f0 100%);
@@ -5277,9 +5314,24 @@ window.PARCEIROS_DATA = {
 <!-- ═══ VIEW: PIPELINE ═══ -->
 <div class="app-view active" id="appview-pipeline">
 
+<section class="welcome-hero" id="welcomeHero">
+  <div class="wh-orb a"></div><div class="wh-orb b"></div>
+  <div class="wh-content">
+    <div class="wh-left">
+      <div class="wh-greet" id="whGreet">Olá</div>
+      <div class="wh-date" id="whDate"></div>
+      <div class="wh-msg" id="whMsg"></div>
+      <div class="wh-actions">
+        <button class="wh-cta" onclick="switchAppView('hoje')"><svg class="ic" style="stroke:#fff"><use href="#i-bolt"/></svg> Minhas ações de hoje<span class="wh-chip" id="whAcoes">0</span></button>
+        <button class="wh-cta ghost" onclick="switchAppView('quentes')"><svg class="ic"><use href="#i-flame"/></svg> Radar quente<span class="wh-chip" id="whRadar">0</span></button>
+      </div>
+    </div>
+    <div class="wh-goal" id="whGoal"></div>
+  </div>
+</section>
+
 <div class="kpi-bar">
   <div class="kpi-card"><div class="kpi-num" id="kpiTotal">0</div><div class="kpi-label">Total no Pipeline</div><div class="kpi-trend" id="trendTotal"></div></div>
-  <div class="kpi-card yellow"><div class="kpi-num" id="kpiNovo">0</div><div class="kpi-label">Novos Leads</div><div class="kpi-trend" id="trendNovo"></div></div>
   <div class="kpi-card"><div class="kpi-num" id="kpiContatado">0</div><div class="kpi-label">Contatados</div></div>
   <div class="kpi-card orange"><div class="kpi-num" id="kpiProposta">0</div><div class="kpi-label">Propostas Enviadas</div></div>
   <div class="kpi-card green"><div class="kpi-num" id="kpiFechado">0</div><div class="kpi-label">Fechados</div><div class="kpi-trend" id="trendFechado"></div></div>
@@ -6735,7 +6787,6 @@ function updateKPIs() {
   const pipe = leads.filter(l => !isQuente(l) && l.status !== 'Desqualificado'); // KPIs refletem a pipeline ativa
   const st = s => pipe.filter(l => l.status === s).length;
   document.getElementById('kpiTotal').textContent = pipe.length;
-  document.getElementById('kpiNovo').textContent = st('Novo Lead');
   document.getElementById('kpiContatado').textContent = st('Contatado');
   document.getElementById('kpiProposta').textContent = st('Proposta Enviada');
   document.getElementById('kpiFechado').textContent = st('Fechado');
@@ -6810,6 +6861,7 @@ function renderLeads() {
   renderResidenciais();
   renderAtivos();
   renderFunil();
+  renderHero();
   renderMetas();
   renderCalendario();
   renderPlanoDate();
@@ -8030,6 +8082,40 @@ function propostasNoMes(){
   let n = leads.reduce((s,l)=> s + (l.historico||[]).filter(h => h.tipo === 'Proposta Enviada' && eventoNoMes(h.quando)).length, 0);
   if (n === 0) n = leads.filter(l => ['Proposta Enviada','Negociação','Fechado'].includes(l.status)).length;
   return n;
+}
+
+function renderHero() {
+  const g = document.getElementById('whGreet'); if (!g) return;
+  const u = window.CAPTURA.user;
+  let nome = u ? (u.nome || u.email || '') : '';
+  nome = nome.split('@')[0].split(/[ .]/)[0];
+  nome = nome ? nome.charAt(0).toUpperCase() + nome.slice(1) : '';
+  const d = new Date(); const h = d.getHours();
+  const saud = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+  g.textContent = `${saud}${nome ? ', ' + nome : ''} 👋`;
+  const dias = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  document.getElementById('whDate').textContent = `${dias[d.getDay()]}, ${d.getDate()} de ${MESES_BR[d.getMonth()]}`;
+  const hoje0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const nAcoes = leads.filter(l => {
+    if (['Fechado','Perdido','Desqualificado'].includes(l.status) || isQuente(l)) return false;
+    const t = (typeof proximoToque === 'function') ? proximoToque(l) : null;
+    return t && (t.atrasado || (t.vencimento && new Date(t.vencimento + 'T00:00:00') <= hoje0));
+  }).length;
+  const nRadar = leads.filter(isQuente).length;
+  document.getElementById('whAcoes').textContent = nAcoes;
+  document.getElementById('whRadar').textContent = nRadar;
+  let msg;
+  if (nAcoes > 0) msg = `Você tem <b>${nAcoes} ${nAcoes===1?'ação':'ações'}</b> esperando hoje. Comece de cima para baixo — cada toque te aproxima do próximo contrato. 💪`;
+  else if (nRadar > 0) msg = `Nenhuma ação atrasada — mandou bem! Bora atacar os <b>${nRadar} leads quentes</b> do radar?`;
+  else msg = `Pipeline em dia. Assuma novos leads do pool e mantenha o ritmo. 🚀`;
+  document.getElementById('whMsg').innerHTML = msg;
+  const metas = getMetas();
+  const fech = leads.filter(fechadoNoMes).reduce((s,l)=> s + (parseInt(l.valor_estimado)||0), 0);
+  const pct = Math.min(100, Math.round(fech / (metas.fechamento||1) * 100));
+  const fmt = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+  document.getElementById('whGoal').innerHTML = `
+    <div class="wh-ring" style="background:conic-gradient(var(--primary) 0 ${pct}%, rgba(232,103,91,0.14) ${pct}% 100%)"><div class="wh-ring-hole"><b>${pct}%</b><span>da meta</span></div></div>
+    <div class="wh-goal-info"><div class="g1">${fmt(fech)}</div><div class="g2">de ${fmt(metas.fechamento)} · ${MESES_BR[d.getMonth()]}</div></div>`;
 }
 
 function renderMetas() {
