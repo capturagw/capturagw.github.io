@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Captura — Central Comercial FlexON</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23e8675b'/><stop offset='1' stop-color='%23f0a35a'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><circle cx='16' cy='16' r='8' fill='none' stroke='white' stroke-width='2.6'/><circle cx='16' cy='16' r='2.6' fill='white'/></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
@@ -255,6 +256,16 @@
   .sinal-sst { background:#ffe6df; color:#c2400f; border:1px solid #f4a98f; }
   .sinal-risco { background:#fff3d6; color:#9a6a00; border:1px solid #f0cd86; }
   .sinal-inbound { background:#e2f7ec; color:#1f7a52; border:1px solid #9bd8ba; }
+  .result-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:18px; padding-top:18px; border-top:1px solid var(--border); }
+  .result-box { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:13px 14px; }
+  .result-box.recorrente { background:linear-gradient(135deg,#e7f7ef,#f3fbf7); border-color:#bfe6d2; }
+  .result-box.anterior { background:#faf7f5; }
+  .result-box .rl { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.03em; display:flex; align-items:center; gap:5px; margin-bottom:6px; }
+  .result-box .rl .ic { width:13px; height:13px; }
+  .result-box .rn { font-size:21px; font-weight:800; color:var(--text); line-height:1.05; }
+  .result-box .rn span { font-size:12px; font-weight:600; color:var(--text3); margin-left:2px; }
+  .result-box .rs { font-size:11.5px; color:var(--text3); margin-top:5px; }
+  @media (max-width:720px){ .result-strip { grid-template-columns:1fr; } }
 
   /* ─── TOOLBAR ─────────────────────────────────────── */
   .toolbar {
@@ -711,10 +722,29 @@
   @keyframes slideIn { from { transform: translateX(16px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
   @media (max-width: 768px) {
-    header { padding: 0 16px; }
-    .kpi-bar, main, .toolbar { padding-left: 16px; padding-right: 16px; }
+    html, body { overflow-x: hidden; max-width: 100%; }
+    header { padding: 0 14px; height: 54px; }
+    .logo-sub, .last-update { display: none; }
+    .logo-text { font-size: 20px; }
+    .user-chip .who { display: none; }            /* no celular fica só o avatar */
+    .app-nav { padding: 8px 12px; gap: 5px; top: 54px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .app-nav::-webkit-scrollbar { display: none; }
+    .app-tab { padding: 8px 13px; font-size: 12.5px; white-space: nowrap; flex: 0 0 auto; }
+    .kpi-bar { padding: 12px 14px; gap: 8px; }
+    .kpi-card { min-width: 124px; padding: 12px 15px; }
+    .kpi-num { font-size: 24px; }
+    .cover-grid { padding: 0 14px 4px; }
+    .plano-section { padding: 16px 14px 18px; }
+    .toolbar { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+    .toolbar .search-wrap { flex: 1 1 100%; min-width: 0; }
+    .toolbar .filter { flex: 1 1 calc(50% - 4px); min-width: 0; }
+    .toolbar .btn-primary { margin-left: 0 !important; flex: 1 1 100%; }
+    main { padding-left: 14px; padding-right: 14px; }
+    .table-wrap { overflow-x: auto; }
+    .modal { width: 94vw; }
     .modal-grid { grid-template-columns: 1fr; }
-    .kpi-card { min-width: 110px; }
+    .result-strip { grid-template-columns: 1fr; }
+    .plano-card { flex: 0 0 80vw; }
   }
 
   /* ─── RELOAD BUTTON ─────────────────────────────── */
@@ -5282,13 +5312,6 @@ window.PARCEIROS_DATA = {
   </div>
 </div>
 
-<div class="cover-card" id="funilCard" style="margin:0 0 16px">
-  <div class="cover-hd"><span class="t"><svg class="ic" style="width:15px;height:15px"><use href="#i-chart"/></svg> Funil de conversão</span></div>
-  <div class="funil-stages" id="funilStages" style="margin-top:6px"></div>
-  <div class="funil-metrics" id="funilMetrics" style="margin-top:14px"></div>
-  <div class="funil-extra" id="funilExtra"></div>
-</div>
-
 <div class="toolbar">
   <div class="search-wrap">
     <span class="search-icon"><svg class="ic"><use href="#i-search"/></svg></span>
@@ -6541,6 +6564,7 @@ function renderReunioes() {
 }
 
 function renderFunil() {
+  if (!document.getElementById('funilStages')) return; // funil removido da UI — no-op seguro
   const base = leads.filter(l => !isQuente(l) && l.status !== 'Desqualificado'); // mesma base do KPI "Total no Pipeline"
   const stages = ['Novo Lead', 'Contatado', 'Proposta Enviada', 'Negociação', 'Fechado'];
   const cont = s => base.filter(l => l.status === s).length;
@@ -7976,6 +8000,15 @@ function renderMetas() {
   const pp = Math.min(100, Math.round(propAtingido / metas.propostas * 100));
   const fmt = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
   const el = document.getElementById('metasView'); if (!el) return;
+  // RESULTADOS que NÃO zeram no fim do mês: receita recorrente ativa + comparativo mês anterior
+  const clientesAtivos = leads.filter(l => l.status === 'Fechado');
+  const mrr = clientesAtivos.reduce((s,l)=> s + (parseFloat(l.valor_fechado)||parseFloat(l.valor_estimado)||0), 0);
+  const nFechMes = leads.filter(fechadoNoMes).length;
+  const dAnt = new Date(); dAnt.setDate(1); dAnt.setMonth(dAnt.getMonth()-1);
+  const ymAnt = dAnt.toISOString().slice(0,7);
+  const fechadosAnt = leads.filter(l => { const ev=(l.historico||[]).filter(h=>h.tipo==='Fechado').slice(-1)[0]; return ev && ev.quando && ev.quando.slice(0,7)===ymAnt; });
+  const valAnt = fechadosAnt.reduce((s,l)=> s + (parseFloat(l.valor_fechado)||parseFloat(l.valor_estimado)||0), 0);
+  const nomeMesAnt = (typeof MESES_BR!=='undefined') ? MESES_BR[dAnt.getMonth()] : 'mês anterior';
   const donut = (p) => {
     const cor = p>=100 ? 'var(--green)' : 'var(--accent)';
     return `<div class="meta-donut"><div class="disc" style="background:conic-gradient(${cor} 0 ${p}%, var(--surface2) ${p}% 100%)"></div><div class="pc">${p}%</div></div>`;
@@ -7996,6 +8029,23 @@ function renderMetas() {
         <div class="meta-pct">${pp}% da meta</div>
       </div>
       ${donut(pp)}
+    </div>
+    <div class="result-strip">
+      <div class="result-box recorrente">
+        <div class="rl"><svg class="ic"><use href="#i-money"/></svg> Receita recorrente ativa</div>
+        <div class="rn">${fmt(mrr)}<span>/mês</span></div>
+        <div class="rs">${clientesAtivos.length} cliente(s) ativo(s) — não zera no fim do mês</div>
+      </div>
+      <div class="result-box">
+        <div class="rl">Fechado em ${MESES_BR ? MESES_BR[new Date().getMonth()] : 'este mês'}</div>
+        <div class="rn">${fmt(fechAtingido)}</div>
+        <div class="rs">${nFechMes} negócio(s) no mês atual</div>
+      </div>
+      <div class="result-box anterior">
+        <div class="rl">Mês anterior (${nomeMesAnt})</div>
+        <div class="rn">${fmt(valAnt)}</div>
+        <div class="rs">${fechadosAnt.length} fechado(s) — resultado guardado</div>
+      </div>
     </div>`;
 }
 function toggleMetasEdit() {
