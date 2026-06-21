@@ -1084,8 +1084,9 @@
   .parc-meet-in { flex: 1; min-width: 0; padding: 7px 9px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 12px; font-family: inherit; background: var(--surface2); color: var(--text); }
   .parc-meet-in:focus { outline: none; border-color: var(--primary); background: var(--white); }
   .parc-ult-empty { color: var(--text3); font-style: italic; opacity: 0.8; }
-  .parc-foot { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
-  .parc-status { flex: 1; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 11.5px; font-family: inherit; background: var(--surface2); color: var(--text); cursor: pointer; }
+  .parc-foot { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+  .parc-status { flex: 1 1 100%; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 11.5px; font-family: inherit; background: var(--surface2); color: var(--text); cursor: pointer; }
+  .parc-foot .btn-pitch { flex: 1 1 auto; justify-content: center; }
   .btn-pitch {
     background: var(--primary-l); color: var(--primary); border: 1px solid #f3ccae;
     padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600;
@@ -5439,6 +5440,7 @@ window.PARCEIROS_DATA = {
         <button class="btn-primary" style="margin-top:10px" onclick="openAddParceiro()">+ Novo parceiro</button>
       </div>
       <div class="filters-row">
+        <input class="filter" id="parcBusca" type="text" placeholder="Buscar parceiro..." oninput="renderParceiros()" style="min-width:160px">
         <select class="filter" id="parcFiltroTipo" onchange="renderParceiros()">
           <option value="">Todos os tipos</option>
           <option value="clinica_sst">Clínica SST</option>
@@ -5500,6 +5502,7 @@ window.PARCEIROS_DATA = {
         <div class="section-sub">Condomínios, administradoras e síndicos — gestão de academia em condomínio (treinadores + sistema).</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddResidencial()">+ Novo residencial</button>
       </div>
+      <input class="filter" id="resBusca" type="text" placeholder="Buscar residencial..." oninput="renderResidenciais()" style="min-width:180px">
     </div>
     <div class="hoje-stats" id="resStats" style="margin-top:14px"></div>
     <div class="table-wrap" style="margin-top:8px">
@@ -5529,7 +5532,10 @@ window.PARCEIROS_DATA = {
         <div class="section-sub">Editais e contratações sobre NR-1, riscos psicossociais, saúde mental e bem-estar. A máquina busca 2×/dia nos portais públicos.</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddLicitacao()">+ Nova licitação</button>
       </div>
-      <button class="btn-primary" onclick="toggleCredVault()"><svg class="ic" style="stroke:#fff"><use href="#i-id"/></svg> Credenciais Flex ON</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input class="filter" id="b2gBusca" type="text" placeholder="Buscar licitação..." oninput="renderB2G()" style="min-width:170px">
+        <button class="btn-primary" onclick="toggleCredVault()"><svg class="ic" style="stroke:#fff"><use href="#i-id"/></svg> Credenciais Flex ON</button>
+      </div>
     </div>
 
     <div class="cover-card" id="credVault" style="display:none;margin-top:14px">
@@ -5708,6 +5714,16 @@ window.PARCEIROS_DATA = {
     <!-- TAB: EDITAR -->
     <div id="tabEdit" style="display:none">
       <div class="modal-grid">
+        <div class="form-group"><label class="form-label">Empresa</label><input class="form-input" id="editEmpresa"></div>
+        <div class="form-group"><label class="form-label">Contato (nome)</label><input class="form-input" id="editNome"></div>
+        <div class="form-group"><label class="form-label">Cargo</label><input class="form-input" id="editCargo"></div>
+        <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="editEmail" type="email" placeholder="contato@empresa.com"></div>
+        <div class="form-group"><label class="form-label">Telefone / WhatsApp</label><input class="form-input" id="editTelefone" placeholder="(62) 9...."></div>
+        <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" id="editCidade"></div>
+        <div class="form-group"><label class="form-label">Site</label><input class="form-input" id="editSite" placeholder="empresa.com.br"></div>
+        <div class="form-group"><label class="form-label">Vidas (RPS — nº colaboradores)</label><input class="form-input" id="editVidas" type="number"></div>
+        <div class="form-group"><label class="form-label">LinkedIn da pessoa</label><input class="form-input" id="editLinkedinContato" placeholder="https://linkedin.com/in/..."></div>
+        <div class="form-group"><label class="form-label">LinkedIn da empresa</label><input class="form-input" id="editLinkedinEmpresa" placeholder="https://linkedin.com/company/..."></div>
         <div class="form-group">
           <label class="form-label">Status</label>
           <select class="form-select" id="editStatus">
@@ -7056,6 +7072,16 @@ function openDetail(id) {
   document.getElementById('scriptChannelTip').textContent = canal;
 
   // Aba Editar
+  document.getElementById('editEmpresa').value = l.empresa||'';
+  document.getElementById('editNome').value = l.nome_contato||'';
+  document.getElementById('editCargo').value = l.cargo||'';
+  document.getElementById('editEmail').value = l.email||'';
+  document.getElementById('editTelefone').value = l.telefone||'';
+  document.getElementById('editCidade').value = l.cidade||'';
+  document.getElementById('editSite').value = l.site||'';
+  document.getElementById('editVidas').value = l.vidas||'';
+  document.getElementById('editLinkedinContato').value = l.linkedin_contato||'';
+  document.getElementById('editLinkedinEmpresa').value = l.linkedin_empresa||'';
   document.getElementById('editStatus').value = l.status||'Novo Lead';
   document.getElementById('editValor').value = l.valor_estimado||'';
   document.getElementById('editUltimaInteracao').value = l.ultima_interacao||'';
@@ -7109,6 +7135,16 @@ function saveLead() {
   if (!l) return;
   const statusAntigo = l.status;
   const novoStatus = document.getElementById('editStatus').value;
+  l.empresa = document.getElementById('editEmpresa').value.trim() || l.empresa;
+  l.nome_contato = document.getElementById('editNome').value.trim();
+  l.cargo = document.getElementById('editCargo').value.trim();
+  l.email = document.getElementById('editEmail').value.trim();
+  l.telefone = document.getElementById('editTelefone').value.trim();
+  l.cidade = document.getElementById('editCidade').value.trim();
+  l.site = document.getElementById('editSite').value.trim();
+  const _v = document.getElementById('editVidas').value; l.vidas = _v ? parseInt(_v) : null;
+  l.linkedin_contato = document.getElementById('editLinkedinContato').value.trim();
+  l.linkedin_empresa = document.getElementById('editLinkedinEmpresa').value.trim();
   l.status = novoStatus;
   l.valor_estimado = document.getElementById('editValor').value;
   l.ultima_interacao = document.getElementById('editUltimaInteracao').value;
@@ -7700,7 +7736,9 @@ function CONTRATO_HTML(d) {
 }
 
 function renderResidenciais() {
-  const res = leads.filter(l => l.canal === 'Residencial' && l.status !== 'Desqualificado');
+  const bq = (document.getElementById('resBusca')?.value || '').trim().toLowerCase();
+  const res = leads.filter(l => l.canal === 'Residencial' && l.status !== 'Desqualificado'
+    && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq) || (l.cidade||'').toLowerCase().includes(bq)));
   const cnt = document.getElementById('resCount'); if (cnt) cnt.textContent = res.length;
   const st = document.getElementById('resStats');
   if (st) {
@@ -7751,7 +7789,7 @@ function renderAtivos() {
     </tr>`).join('')}</tbody></table></div>` : '<div style="color:var(--text3);font-size:13px;padding:16px">Nenhum cliente fechado ainda.</div>';
   const tabParc = parc.length ? `<div class="table-wrap" style="margin-top:16px"><table>
     <thead><tr><th>Parceiro ativo</th><th>Tipo</th><th>Cidade</th><th>Contato</th></tr></thead>
-    <tbody>${parc.map(p => `<tr>
+    <tbody>${parc.map(p => `<tr onclick="abrirParceiroEdit('${p.id}')" style="cursor:pointer">
       <td><div class="td-empresa">${p.nome}</div></td>
       <td>${TIPO_LABELS[p.tipo]||p.tipo}</td><td>${p.cidade||'—'}</td>
       <td>${p.telefone||p.email||'—'}</td>
@@ -7929,11 +7967,13 @@ function renderB2G() {
   }
 
   const body = document.getElementById('b2gBody');
-  if (!lics.length) {
-    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma licitação ainda. A máquina busca 2×/dia (6h30 e 17h) nos portais públicos — aparecem aqui automaticamente.</td></tr>';
+  const bq = (document.getElementById('b2gBusca')?.value || '').trim().toLowerCase();
+  const licsTab = bq ? lics.filter(x => ((x.orgao||'')+' '+(x.objeto||'')+' '+(x.uf||'')+' '+(x.numero_edital||'')).toLowerCase().includes(bq)) : lics;
+  if (!licsTab.length) {
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">${bq ? 'Nenhuma licitação encontrada para “'+bq+'”.' : 'Nenhuma licitação ainda. A máquina busca 2×/dia (6h30 e 17h) nos portais públicos — aparecem aqui automaticamente.'}</td></tr>`;
     return;
   }
-  body.innerHTML = lics.map(x => {
+  body.innerHTML = licsTab.map(x => {
     const st = x.status || 'nova';
     const opts = Object.entries(B2G_STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${st === k ? 'selected' : ''}>${v}</option>`).join('');
     const esc = s => (s||'').replace(/"/g,'&quot;');
@@ -8034,7 +8074,6 @@ function renderMetas() {
       <div class="result-box recorrente">
         <div class="rl"><svg class="ic"><use href="#i-money"/></svg> Receita recorrente ativa</div>
         <div class="rn">${fmt(mrr)}<span>/mês</span></div>
-        <div class="rs">${clientesAtivos.length} cliente(s) ativo(s) — não zera no fim do mês</div>
       </div>
       <div class="result-box">
         <div class="rl">Fechado em ${MESES_BR ? MESES_BR[new Date().getMonth()] : 'este mês'}</div>
@@ -8283,9 +8322,11 @@ function registrarContato(nome) {
 function renderParceiros() {
   const ft = document.getElementById('parcFiltroTipo').value;
   const fs = document.getElementById('parcFiltroStatus').value;
+  const bq = (document.getElementById('parcBusca')?.value || '').trim().toLowerCase();
   const todos = getParceiros();
   const parceiros = todos.filter(p =>
-    (!ft || p.tipo === ft) && (!fs || p.status === fs));
+    (!ft || p.tipo === ft) && (!fs || p.status === fs) &&
+    (!bq || (p.nome||'').toLowerCase().includes(bq) || (p.cidade||'').toLowerCase().includes(bq)));
 
   // Contabilização real: quantos já receberam contato (qualquer estágio além de novo/draft)
   const contatados = todos.filter(p => ['contatado','reuniao_feita','proposta_enviada','negociando','parceiro_ativo'].includes(p.status)).length;
