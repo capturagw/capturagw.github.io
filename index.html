@@ -188,23 +188,23 @@
 
   /* ─── KPI BAR ─────────────────────────────────────── */
   .kpi-bar {
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 28px;
+    background: transparent;
+    padding: 14px 28px 8px;
     display: flex;
-    gap: 12px;
+    gap: 14px;
     overflow-x: auto;
   }
 
   .kpi-card {
-    flex: 0 0 auto;
+    flex: 1 1 0;
     background: var(--white);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 16px 22px;
-    min-width: 138px;
+    min-width: 150px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 6px 20px -10px rgba(180,110,95,0.28);
     transition: all 0.18s;
     box-shadow: var(--shadow-sm);
   }
@@ -5309,7 +5309,7 @@ window.PARCEIROS_DATA = {
       <button class="btn-secondary" onclick="openInbox()"><svg class="ic"><use href="#i-inbox"/></svg> Novos Leads</button>
       <div class="inbox-badge" id="inboxBadge" style="display:none">0</div>
     </div>
-    <button class="btn-secondary" onclick="dedupeLeads(false)" title="Remover leads duplicados (local e nuvem)"><svg class="ic"><use href="#i-trash"/></svg> Limpar duplicados</button>
+    <button class="btn-secondary" id="btnDedupe" onclick="dedupeLeads(false)" title="Remover leads duplicados (local e nuvem)" style="display:none"><svg class="ic"><use href="#i-trash"/></svg> Limpar duplicados</button>
     <div class="user-chip">
       <div class="ava">GW</div>
       <div class="who"><b>Giovanna Willwohl</b><span>Coord. Operacional</span></div>
@@ -5796,6 +5796,9 @@ window.PARCEIROS_DATA = {
         <div class="form-group"><label class="form-label">Vidas (RPS — nº colaboradores)</label><input class="form-input" id="editVidas" type="number"></div>
         <div class="form-group"><label class="form-label">LinkedIn da pessoa</label><input class="form-input" id="editLinkedinContato" placeholder="https://linkedin.com/in/..."></div>
         <div class="form-group"><label class="form-label">LinkedIn da empresa</label><input class="form-input" id="editLinkedinEmpresa" placeholder="https://linkedin.com/company/..."></div>
+        <div class="form-group full"><label class="form-label">Indicado por parceiro?</label>
+          <select class="form-select" id="editParceiroInd"><option value="">Não foi indicado</option></select>
+        </div>
         <div class="form-group">
           <label class="form-label">Status</label>
           <select class="form-select" id="editStatus">
@@ -6322,6 +6325,13 @@ Se objeção "já temos SST/PGR":
 }
 
 // ── PLANO DE HOJE ─────────────────────────────────────────────────────────────
+// ── PERMISSÕES / PROPRIEDADE (multiusuário) ───────────────────────────────────
+function meuId(){ return window.CAPTURA.user ? window.CAPTURA.user.id : null; }
+function meuEmail(){ return ((window.CAPTURA.user && window.CAPTURA.user.email) || '').toLowerCase(); }
+function souDono(l){ return !!(l && l.dono && meuId() && l.dono === meuId()); } // lead que EU assumi
+function podeB2G(){ return ['giovanna@flexon.fit','comercial@flexon.fit'].includes(meuEmail()); }
+function souGiovanna(){ return meuEmail() === 'giovanna@flexon.fit'; }
+
 function renderPlanodeHoje() {
   // Calcular dias desde NR-1 obrigatória (26/05/2026)
   const nr1Date = new Date('2026-05-26');
@@ -6335,6 +6345,7 @@ function renderPlanodeHoje() {
   const diaSeed = parseInt(hojeStr.replace(/-/g, ''), 10); // muda diariamente
   const hashId = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
   const actionable = leads
+    .filter(souDono) // só os leads que EU assumi
     .filter(l => l.status !== 'Fechado' && l.status !== 'Perdido' && l.status !== 'Desqualificado' && !isQuente(l))
     .filter(l => l.ultima_interacao !== hojeStr) // já trabalhado hoje → sai do plano
     .map(l => {
@@ -6518,6 +6529,7 @@ function renderHoje() {
   const hoje = hojeStr();
   const itens = [];
   leads.forEach(l => {
+    if (!souDono(l)) return; // só ações dos leads que EU assumi
     if (l.status === 'Fechado' || l.status === 'Perdido') return;
     const prox = proximoToque(l);
     if (prox && prox.vencimento <= hoje) {
@@ -6590,10 +6602,10 @@ function renderAgendaSemana() {
     if (date >= hojeIni && date < fim) futuros.push(Object.assign({ date }, o));
     else if (date < hojeIni && o.k === 'cad') atrasados.push(Object.assign({ date }, o)); // só cadência atrasada é acionável
   };
-  leads.forEach(l => { if (l.reuniao_data) { const d = new Date(l.reuniao_data); add(d, { k:'reun', titulo:'Reunião · '+l.empresa, sub:fmtDataHora(l.reuniao_data), onclick:`openDetail('${l.id}')`, link:l.reuniao_link||'' }); } });
+  leads.forEach(l => { if (souDono(l) && l.reuniao_data) { const d = new Date(l.reuniao_data); add(d, { k:'reun', titulo:'Reunião · '+l.empresa, sub:fmtDataHora(l.reuniao_data), onclick:`openDetail('${l.id}')`, link:l.reuniao_link||'' }); } });
   (PARCEIROS_CLOUD || []).forEach(p => { if (p.reuniao_data) { const d = new Date(p.reuniao_data); add(d, { k:'reun', titulo:'Reunião · '+p.nome+' (parceiro)', sub:fmtDataHora(p.reuniao_data), onclick:`switchAppView('parceiros')`, link:p.reuniao_link||'' }); } });
-  (LICITACOES || []).forEach(x => { const mm = (x.prazo||'').match(/^(\d{1,2})\/(\d{1,2})/); if (mm) { const d = new Date(ano, parseInt(mm[2])-1, parseInt(mm[1])); add(d, { k:'lic', titulo:'Licitação · '+(x.orgao||''), sub:'prazo '+x.prazo, onclick:`switchAppView('b2g')`, link:x.link||'' }); } });
-  leads.forEach(l => { const p = proximoToque(l); if (p) { const d = new Date(p.vencimento + 'T00:00:00'); add(d, { k:'cad', titulo:p.tipo+' · '+l.empresa, sub:p.atrasado?'atrasado':'previsto', onclick:`openDetail('${l.id}');showModalTab('cadencia')` }); } });
+  if (podeB2G()) (LICITACOES || []).forEach(x => { const mm = (x.prazo||'').match(/^(\d{1,2})\/(\d{1,2})/); if (mm) { const d = new Date(ano, parseInt(mm[2])-1, parseInt(mm[1])); add(d, { k:'lic', titulo:'Licitação · '+(x.orgao||''), sub:'prazo '+x.prazo, onclick:`switchAppView('b2g')`, link:x.link||'' }); } });
+  leads.forEach(l => { if (!souDono(l)) return; const p = proximoToque(l); if (p) { const d = new Date(p.vencimento + 'T00:00:00'); add(d, { k:'cad', titulo:p.tipo+' · '+l.empresa, sub:p.atrasado?'atrasado':'previsto', onclick:`openDetail('${l.id}');showModalTab('cadencia')` }); } });
 
   futuros.sort((a,b) => a.date - b.date);
   atrasados.sort((a,b) => a.date - b.date);
@@ -7154,6 +7166,8 @@ function openDetail(id) {
   document.getElementById('editVidas').value = l.vidas||'';
   document.getElementById('editLinkedinContato').value = l.linkedin_contato||'';
   document.getElementById('editLinkedinEmpresa').value = l.linkedin_empresa||'';
+  const _selPI = document.getElementById('editParceiroInd');
+  _selPI.innerHTML = '<option value="">Não foi indicado</option>' + (PARCEIROS_CLOUD||[]).slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(p => `<option value="${(p.nome||'').replace(/"/g,'&quot;')}" ${l.parceiro_indicador===p.nome?'selected':''}>${p.nome}</option>`).join('');
   document.getElementById('editStatus').value = l.status||'Novo Lead';
   document.getElementById('editValor').value = l.valor_estimado||'';
   document.getElementById('editUltimaInteracao').value = l.ultima_interacao||'';
@@ -7217,6 +7231,12 @@ function saveLead() {
   const _v = document.getElementById('editVidas').value; l.vidas = _v ? parseInt(_v) : null;
   l.linkedin_contato = document.getElementById('editLinkedinContato').value.trim();
   l.linkedin_empresa = document.getElementById('editLinkedinEmpresa').value.trim();
+  const _pi = document.getElementById('editParceiroInd').value;
+  l.parceiro_indicador = _pi || null;
+  if (_pi) { // vincula também o cliente na ficha do parceiro
+    const par = (PARCEIROS_CLOUD||[]).find(p => p.nome === _pi);
+    if (par && sb) { par.clientes_indicados = par.clientes_indicados || []; if (!par.clientes_indicados.some(c => c.id === l.id)) { par.clientes_indicados.push({ id: l.id, nome: l.empresa || '(sem nome)' }); sb.from('parceiros').update({ clientes_indicados: par.clientes_indicados }).eq('id', par.id).then(()=>{}, ()=>{}); } }
+  }
   l.status = novoStatus;
   l.valor_estimado = document.getElementById('editValor').value;
   l.ultima_interacao = document.getElementById('editUltimaInteracao').value;
@@ -8117,6 +8137,7 @@ function renderHero() {
   document.getElementById('whDate').textContent = `${dias[d.getDay()]}, ${d.getDate()} de ${MESES_BR[d.getMonth()]}`;
   const hoje0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const nAcoes = leads.filter(l => {
+    if (!souDono(l)) return false; // só os leads que EU assumi
     if (['Fechado','Perdido','Desqualificado'].includes(l.status) || isQuente(l)) return false;
     const t = (typeof proximoToque === 'function') ? proximoToque(l) : null;
     return t && (t.atrasado || (t.vencimento && new Date(t.vencimento + 'T00:00:00') <= hoje0));
@@ -8124,11 +8145,39 @@ function renderHero() {
   const nRadar = leads.filter(isQuente).length;
   document.getElementById('whAcoes').textContent = nAcoes;
   document.getElementById('whRadar').textContent = nRadar;
+  const di = parseInt(d.toISOString().slice(0,10).replace(/-/g,''), 10); // índice que muda por dia
+  const pick = arr => arr[di % arr.length];
   let msg;
-  if (nAcoes > 0) msg = `Você tem <b>${nAcoes} ${nAcoes===1?'ação':'ações'}</b> esperando hoje. Comece de cima para baixo — cada toque te aproxima do próximo contrato. 💪`;
-  else if (nRadar > 0) msg = `Nenhuma ação atrasada — mandou bem! Bora atacar os <b>${nRadar} leads quentes</b> do radar?`;
-  else msg = `Pipeline em dia. Assuma novos leads do pool e mantenha o ritmo. 🚀`;
-  document.getElementById('whMsg').innerHTML = msg;
+  if (nAcoes > 0) {
+    msg = pick([
+      `Você tem <b>${nAcoes} ${nAcoes===1?'ação':'ações'}</b> esperando hoje. Comece de cima para baixo — cada toque te aproxima do fechamento. 💪`,
+      `<b>${nAcoes} ${nAcoes===1?'oportunidade':'oportunidades'}</b> na sua mão hoje. Quem faz o follow-up certo, fecha. Bora? 🔥`,
+      `Foco total: <b>${nAcoes} ${nAcoes===1?'ação':'ações'}</b> pra hoje. Disciplina diária é o que separa quem bate meta de quem não bate. 🎯`,
+      `Hoje são <b>${nAcoes}</b> ${nAcoes===1?'contato':'contatos'} pra avançar. A venda acontece entre o 5º e o 8º toque — siga firme. 🚀`,
+      `Bom trabalho te espera: <b>${nAcoes} ${nAcoes===1?'ação':'ações'}</b>. Cada conversa é uma empresa mais perto da conformidade NR-1. ✨`
+    ]);
+  } else if (nRadar > 0) {
+    msg = pick([
+      `Nenhuma ação atrasada — mandou bem! Que tal atacar os <b>${nRadar} leads quentes</b> do radar? 🔥`,
+      `Tudo em dia por aqui. Hora de garimpar: <b>${nRadar} leads quentes</b> te esperando no radar. 👀`,
+      `Pipeline limpo! Assuma um dos <b>${nRadar} quentes</b> do radar e comece uma nova conversa. 🌟`
+    ]);
+  } else {
+    msg = pick([
+      `Pipeline em dia. Assuma novos leads do pool e mantenha o ritmo. 🚀`,
+      `Tudo em ordem! Bom momento pra prospectar e encher o funil. 🌱`,
+      `Zero pendências — aproveite pra assumir leads do pool e plantar os próximos fechamentos. 💼`
+    ]);
+  }
+  const frase = pick([
+    'Vendas é transferência de confiança. Mostre que você entende a dor antes de falar do produto.',
+    'O melhor momento pra fazer follow-up foi ontem. O segundo melhor é agora.',
+    '“Não” muitas vezes só quer dizer “ainda não”. Cadência vence.',
+    'Quem controla o pipeline, controla o resultado do mês.',
+    'Cada lead no pool é um contrato esperando alguém com coragem de assumir.',
+    'Foque na próxima ação, não no número da meta. A meta é consequência.'
+  ]);
+  document.getElementById('whMsg').innerHTML = `${msg}<div style="margin-top:10px;font-size:13px;color:var(--text3);font-style:italic">💡 ${frase}</div>`;
   const metas = getMetas();
   const fech = leads.filter(fechadoNoMes).reduce((s,l)=> s + (parseInt(l.valor_estimado)||0), 0);
   const pct = Math.min(100, Math.round(fech / (metas.fechamento||1) * 100));
@@ -8237,7 +8286,7 @@ function renderCalendario() {
   };
 
   // 1) Histórico passado: contatos, propostas, fechamentos (no dia em que ocorreram)
-  leads.forEach(l => (l.historico||[]).forEach(h => {
+  leads.forEach(l => { if (!souDono(l)) return; (l.historico||[]).forEach(h => {
     if (!h.quando) return;
     const d = new Date(h.quando);
     if (!noMes(d)) return;
@@ -8246,22 +8295,22 @@ function renderCalendario() {
     if (t === 'Contatado') addItem(d.getDate(), 'cont', { k:'cont', titulo:'Contato · '+l.empresa, sub:hora, onclick:`openDetail('${l.id}')` });
     else if (t === 'Proposta Enviada') addItem(d.getDate(), 'prop', { k:'prop', titulo:'Proposta enviada · '+l.empresa, sub:l.pacote||'', onclick:`openDetail('${l.id}')` });
     else if (t === 'Fechado') addItem(d.getDate(), 'fech', { k:'fech', titulo:'Fechado · '+l.empresa, sub:l.pacote||'', onclick:`openDetail('${l.id}')` });
-  }));
+  }); });
 
   // 2) Reuniões (leads) na DATA agendada
-  leads.forEach(l => { if (l.reuniao_data) { const d = new Date(l.reuniao_data); if (noMes(d)) addItem(d.getDate(), 'reun', { k:'reun', titulo:'Reunião · '+l.empresa, sub:fmtDataHora(l.reuniao_data), onclick:`openDetail('${l.id}')`, link:l.reuniao_link||'' }); } });
+  leads.forEach(l => { if (souDono(l) && l.reuniao_data) { const d = new Date(l.reuniao_data); if (noMes(d)) addItem(d.getDate(), 'reun', { k:'reun', titulo:'Reunião · '+l.empresa, sub:fmtDataHora(l.reuniao_data), onclick:`openDetail('${l.id}')`, link:l.reuniao_link||'' }); } });
 
   // 3) Reuniões de parceiros na data agendada
   (PARCEIROS_CLOUD || []).forEach(p => { if (p.reuniao_data) { const d = new Date(p.reuniao_data); if (noMes(d)) addItem(d.getDate(), 'reun', { k:'reun', titulo:'Reunião · '+p.nome+' (parceiro)', sub:fmtDataHora(p.reuniao_data), onclick:`switchAppView('parceiros')`, link:p.reuniao_link||'' }); } });
 
-  // 4) Licitações B2G pelo prazo (DD/MM)
-  (LICITACOES || []).forEach(x => {
+  // 4) Licitações B2G pelo prazo (DD/MM) — só p/ quem tem acesso a B2G
+  if (podeB2G()) (LICITACOES || []).forEach(x => {
     const mm = (x.prazo||'').match(/^(\d{1,2})\/(\d{1,2})/);
     if (mm && parseInt(mm[2]) - 1 === mes) addItem(parseInt(mm[1]), 'lic', { k:'lic', titulo:'Licitação · '+(x.orgao||''), sub:(x.objeto||'').slice(0,70), onclick:`switchAppView('b2g')`, link:x.link||'' });
   });
 
-  // 5) Cadência: próximo toque pendente de cada lead, no dia previsto
-  leads.forEach(l => { const p = proximoToque(l); if (p) { const d = new Date(p.vencimento + 'T00:00:00'); if (noMes(d)) addItem(d.getDate(), 'cad', { k:'cad', titulo:p.tipo+' · '+l.empresa, sub:p.atrasado?'atrasado':'previsto', onclick:`openDetail('${l.id}');showModalTab('cadencia')` }); } });
+  // 5) Cadência: próximo toque pendente de cada lead, no dia previsto (só os meus)
+  leads.forEach(l => { if (!souDono(l)) return; const p = proximoToque(l); if (p) { const d = new Date(p.vencimento + 'T00:00:00'); if (noMes(d)) addItem(d.getDate(), 'cad', { k:'cad', titulo:p.tipo+' · '+l.empresa, sub:p.atrasado?'atrasado':'previsto', onclick:`openDetail('${l.id}');showModalTab('cadencia')` }); } });
 
   const dow = ['D','S','T','Q','Q','S','S'];
   const primeiro = new Date(ano, mes, 1).getDay();
@@ -8689,6 +8738,7 @@ function paraCloud(l) {
   if (l.vidas != null && l.vidas !== '') o.vidas = parseInt(l.vidas) || null; // RPS: nº de vidas (só envia se houver)
   if (l.documentos && l.documentos.length) o.documentos = l.documentos; // só envia se já houver documento salvo (coluna jsonb)
   if (l.sinais) o.sinais = l.sinais; // sinal de intenção (só envia se existir; requer coluna sinais)
+  if (l.parceiro_indicador) o.parceiro_indicador = l.parceiro_indicador; // parceiro que indicou (requer coluna)
   // dono: preserva null (lead no POOL) e o dono existente; só preenche com o usuário atual quando o campo nunca foi definido
   o.dono = (l.dono === undefined ? (window.CAPTURA.user && window.CAPTURA.user.id) || null : l.dono);
   return o;
@@ -8718,6 +8768,12 @@ function atualizarHeaderUser() {
   }
   const tabEq = document.getElementById('apptab-equipe');
   if (tabEq) tabEq.style.display = (u.papel === 'master') ? '' : 'none';
+  // B2G (licitações): só Giovanna e André (comercial)
+  const tabB2G = document.getElementById('apptab-b2g');
+  if (tabB2G) tabB2G.style.display = podeB2G() ? '' : 'none';
+  // Limpar duplicados: só Giovanna
+  const bDed = document.getElementById('btnDedupe');
+  if (bDed) bDed.style.display = souGiovanna() ? '' : 'none';
   const hr = document.querySelector('.header-right');
   if (hr && !document.getElementById('btnSair')) {
     const b = document.createElement('button'); b.id = 'btnSair'; b.className = 'btn-sair'; b.textContent = 'Sair';
