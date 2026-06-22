@@ -256,6 +256,15 @@
   .sinal-sst { background:#ffe6df; color:#c2400f; border:1px solid #f4a98f; }
   .sinal-risco { background:#fff3d6; color:#9a6a00; border:1px solid #f0cd86; }
   .sinal-inbound { background:#e2f7ec; color:#1f7a52; border:1px solid #9bd8ba; }
+  .filter-search {
+    padding-left: 34px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%23b08a76' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.3-4.3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: 12px center;
+    border: 1.5px solid var(--border); border-radius: 10px; background-color: var(--white);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .filter-search:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(232,103,91,0.12); background-color: #fff; }
+  .filter-search::placeholder { color: var(--text3); }
   .result-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:18px; padding-top:18px; border-top:1px solid var(--border); }
   .result-box { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:13px 14px; }
   .result-box.recorrente { background:linear-gradient(135deg,#e7f7ef,#f3fbf7); border-color:#bfe6d2; }
@@ -5512,7 +5521,7 @@ window.PARCEIROS_DATA = {
         <button class="btn-primary" style="margin-top:10px" onclick="openAddParceiro()">+ Novo parceiro</button>
       </div>
       <div class="filters-row">
-        <input class="filter" id="parcBusca" type="text" placeholder="Buscar parceiro..." oninput="renderParceiros()" style="min-width:160px">
+        <input class="filter filter-search" id="parcBusca" type="text" placeholder="Buscar parceiro..." oninput="renderParceiros()" style="min-width:160px">
         <select class="filter" id="parcFiltroTipo" onchange="renderParceiros()">
           <option value="">Todos os tipos</option>
           <option value="clinica_sst">Clínica SST</option>
@@ -5574,7 +5583,7 @@ window.PARCEIROS_DATA = {
         <div class="section-sub">Condomínios, administradoras e síndicos — gestão de academia em condomínio (treinadores + sistema).</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddResidencial()">+ Novo residencial</button>
       </div>
-      <input class="filter" id="resBusca" type="text" placeholder="Buscar residencial..." oninput="renderResidenciais()" style="min-width:180px">
+      <input class="filter filter-search" id="resBusca" type="text" placeholder="Buscar residencial..." oninput="renderResidenciais()" style="min-width:180px">
     </div>
     <div class="hoje-stats" id="resStats" style="margin-top:14px"></div>
     <div class="table-wrap" style="margin-top:8px">
@@ -5605,7 +5614,7 @@ window.PARCEIROS_DATA = {
         <button class="btn-primary" style="margin-top:10px" onclick="openAddLicitacao()">+ Nova licitação</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input class="filter" id="b2gBusca" type="text" placeholder="Buscar licitação..." oninput="renderB2G()" style="min-width:170px">
+        <input class="filter filter-search" id="b2gBusca" type="text" placeholder="Buscar licitação..." oninput="renderB2G()" style="min-width:170px">
         <button class="btn-primary" onclick="toggleCredVault()"><svg class="ic" style="stroke:#fff"><use href="#i-id"/></svg> Credenciais Flex ON</button>
       </div>
     </div>
@@ -7167,7 +7176,10 @@ function openDetail(id) {
   document.getElementById('editLinkedinContato').value = l.linkedin_contato||'';
   document.getElementById('editLinkedinEmpresa').value = l.linkedin_empresa||'';
   const _selPI = document.getElementById('editParceiroInd');
-  _selPI.innerHTML = '<option value="">Não foi indicado</option>' + (PARCEIROS_CLOUD||[]).slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(p => `<option value="${(p.nome||'').replace(/"/g,'&quot;')}" ${l.parceiro_indicador===p.nome?'selected':''}>${p.nome}</option>`).join('');
+  const _parcAtivos = (PARCEIROS_CLOUD||[]).filter(p => p.status === 'parceiro_ativo').sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  // garante que o parceiro já vinculado apareça mesmo que não esteja mais ativo
+  if (l.parceiro_indicador && !_parcAtivos.some(p=>p.nome===l.parceiro_indicador)) _parcAtivos.push({ nome: l.parceiro_indicador });
+  _selPI.innerHTML = '<option value="">Não foi indicado</option>' + _parcAtivos.map(p => `<option value="${(p.nome||'').replace(/"/g,'&quot;')}" ${l.parceiro_indicador===p.nome?'selected':''}>${p.nome}</option>`).join('');
   document.getElementById('editStatus').value = l.status||'Novo Lead';
   document.getElementById('editValor').value = l.valor_estimado||'';
   document.getElementById('editUltimaInteracao').value = l.ultima_interacao||'';
