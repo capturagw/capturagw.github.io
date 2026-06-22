@@ -5566,9 +5566,15 @@ window.PARCEIROS_DATA = {
 <!-- ═══ VIEW: EQUIPE (painel master) ═══ -->
 <div class="app-view" id="appview-equipe">
   <div class="parceiros-wrap">
-    <div class="section-title"><svg class="ic"><use href="#i-users"/></svg> Painel da equipe</div>
-    <div class="section-sub">Visão consolidada de todos os vendedores. Atualiza ao abrir.</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="section-title"><svg class="ic"><use href="#i-users"/></svg> Painel da equipe</div>
+        <div class="section-sub">Visão consolidada de todos os vendedores. Atualiza ao abrir.</div>
+      </div>
+      <button class="btn-primary" onclick="distribuirPool()"><svg class="ic" style="stroke:#fff"><use href="#i-users"/></svg> Distribuir pool entre vendedores</button>
+    </div>
     <div class="hoje-stats" id="equipeStats" style="margin-top:14px"></div>
+    <div id="equipeConv" style="margin-top:14px"></div>
     <div id="equipeBody" style="margin-top:8px"></div>
   </div>
 </div>
@@ -7931,6 +7937,21 @@ async function renderEquipe() {
     <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:20px">${tot.fechado}</div><div class="l">Fechados</div></div>
     <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmt(tot.valorFech)}</div><div class="l">Receita fechada</div></div>
     <div class="hoje-stat"><div class="n" style="color:var(--accent)">${fmt(tot.valorPipe)}</div><div class="l">Em pipeline (ponderado)</div></div>`;
+  // Funil de conversão da equipe (onde os leads avançam e onde travam)
+  const stg = ['Novo Lead','Contatado','Proposta Enviada','Negociação','Fechado'];
+  const ordem = { 'Novo Lead':0,'Contatado':1,'Proposta Enviada':2,'Negociação':3,'Fechado':4 };
+  const r = stg.map((s,i) => todos.filter(l => ordem[l.status] !== undefined && ordem[l.status] >= i).length);
+  const convHTML = stg.map((s,i) => {
+    const c = r[i]; const conv = (i>0 && r[i-1]) ? Math.round(c/r[i-1]*100) : null;
+    const cor = conv===null ? '' : conv>=40?'var(--green)':conv>=20?'var(--accent)':'var(--red)';
+    return `<div style="flex:1;min-width:88px;text-align:center">
+      <div style="font-family:'Outfit',sans-serif;font-size:23px;font-weight:800;color:${STAGE_COR[s]||'var(--text)'}">${c}</div>
+      <div style="font-size:11px;color:var(--text3);font-weight:600;margin-top:2px">${s}</div>
+      ${conv!==null?`<div style="font-size:11px;color:${cor};font-weight:700;margin-top:3px">↓ ${conv}%</div>`:'<div style="height:17px"></div>'}
+    </div>`;
+  }).join('');
+  document.getElementById('equipeConv').innerHTML = `<div class="cover-card" style="padding:14px 18px"><div class="cover-hd" style="margin-bottom:10px"><span class="t">Funil de conversão da equipe — onde avança e onde trava</span></div><div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">${convHTML}</div></div>`;
+
   const linhas = perfis.map(p => ({ p, m: map[p.id] || { total:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 } }))
     .sort((a, b) => b.m.valorFech - a.m.valorFech);
   body.innerHTML = `<div class="table-wrap" style="margin-top:6px"><table>
@@ -7943,6 +7964,25 @@ async function renderEquipe() {
       <td style="font-weight:700;color:var(--green)">${fmt(m.valorFech)}</td>
       <td style="color:var(--accent)">${fmt(m.valorPipe)}</td>
     </tr>`).join('')}</tbody></table></div>`;
+}
+
+async function distribuirPool() {
+  if ((window.CAPTURA.user?.papel) !== 'master') { showToast('Apenas o master pode distribuir o pool'); return; }
+  if (!sb) return;
+  let perfis = [];
+  try { const r = await sb.from('perfis').select('id,nome,email'); perfis = r.data || []; } catch (e) {}
+  if (!perfis.length) { showToast('Nenhum vendedor encontrado'); return; }
+  const pool = leads.filter(l => !l.dono && !['Fechado','Perdido','Desqualificado'].includes(l.status));
+  if (!pool.length) { showToast('Nenhum lead no pool para distribuir'); return; }
+  if (!confirm(`Distribuir ${pool.length} leads do pool entre ${perfis.length} vendedores (rodízio)?\n\nCada vendedor recebe ~${Math.ceil(pool.length/perfis.length)} leads no nome dele.`)) return;
+  // embaralha o pool pra distribuir variado, depois rodízio
+  const shuffled = pool.slice().sort(() => Math.random() - 0.5);
+  shuffled.forEach((l, i) => { l.dono = perfis[i % perfis.length].id; });
+  showToast('Distribuindo...');
+  await pushLeads(shuffled);
+  save();
+  renderEquipe(); renderLeads(); updateKPIs(); renderHero();
+  showToast(`✓ ${pool.length} leads distribuídos entre ${perfis.length} vendedores`);
 }
 
 // ══ B2G — credenciais + licitações ════════════════════════════════════════════
