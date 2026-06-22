@@ -8883,7 +8883,10 @@ async function pushLeads(arr) {
   if (error) console.warn('Captura: erro ao salvar na nuvem —', error.message);
 }
 let _pushT;
-function cloudSyncLeads() { if (!sb || !window.CAPTURA.user) return; clearTimeout(_pushT); _pushT = setTimeout(() => pushLeads(leads), 1200); }
+// MULTIUSUÁRIO: cada sessão só grava os leads QUE SÃO DELA — nunca sobrescreve pool/outros vendedores.
+function cloudSyncLeads() { if (!sb || !window.CAPTURA.user) return; clearTimeout(_pushT); _pushT = setTimeout(() => pushLeads(leads.filter(l => l.dono && l.dono === meuId())), 1200); }
+// Grava UM lead específico na nuvem (targeted), independente de dono — usado em ações pontuais.
+async function pushLead(l) { if (!sb || !window.CAPTURA.user || !l) return; try { const { error } = await sb.from('leads').upsert([paraCloud(l)], { onConflict: 'id' }); if (error) console.warn('pushLead:', error.message); } catch (e) { console.warn(e); } }
 
 function atualizarHeaderUser() {
   const u = window.CAPTURA.user; if (!u) return;
@@ -9018,7 +9021,7 @@ async function bootCaptura() {
   if (typeof supabase === 'undefined') { console.warn('Captura: Supabase indisponível, modo local.'); init(); return; }
   sb = supabase.createClient(window.CAPTURA.url, window.CAPTURA.key);
   // hook de salvamento → empurra pra nuvem (debounce)
-  const _save = save; save = function () { _save(); cloudSyncLeads(); };
+  const _save = save; save = function () { _save(); cloudSyncLeads(); if (typeof currentLeadId !== 'undefined' && currentLeadId) { const _l = leads.find(x => x.id === currentLeadId); if (_l) pushLead(_l); } };
   document.getElementById('loginBtn').addEventListener('click', fazerLogin);
   document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
   const { data: { session } } = await sb.auth.getSession();
