@@ -7063,7 +7063,13 @@ async function assumirLead(id) {
   const l = leads.find(x => x.id === id); if (!l || !window.CAPTURA.user) return;
   l.dono = window.CAPTURA.user.id;
   save();
-  if (sb) { try { await sb.from('leads').update({ dono: l.dono }).eq('id', id); } catch (e) { console.warn(e); } }
+  if (sb) {
+    try {
+      const { data, error } = await sb.from('leads').update({ dono: l.dono }).eq('id', id).select('id,dono');
+      if (error) { showToast('⚠ Erro ao gravar: ' + error.message); console.warn('assumir erro', error); return; }
+      if (!data || !data.length) { showToast('⚠ Gravou 0 linhas (sem permissão/RLS). Avise a Giovanna.'); console.warn('assumir 0 linhas — RLS?'); return; }
+    } catch (e) { showToast('⚠ Falha: ' + (e.message||e)); console.warn(e); return; }
+  }
   if (document.getElementById('detailModal').classList.contains('open')) openDetail(id);
   renderLeads(); updateKPIs(); showToast('✓ Lead assumido — agora está no seu nome');
 }
