@@ -8452,6 +8452,27 @@ const TIPO_LABELS = {
 
 // ── EDIÇÃO DE PARCEIRO + clientes indicados + contrato de parceria ──────────────
 let _parcEditId = null;
+// ── DONO DO PARCEIRO (pool / assumir / liberar) ───────────────────────────────
+function ownerParcHTML(p){
+  const me = meuId();
+  if (!p.dono) return `<span class="score-detail-pill" style="background:#fff3e0;border-color:#f0a35a55;color:#c2540f"><svg class="ic"><use href="#i-users"/></svg> Disponível (pool)</span><button class="btn-pitch" onclick="assumirParceiro('${p.id}')"><svg class="ic"><use href="#i-users"/></svg> Assumir parceiro</button>`;
+  if (p.dono === me) return `<span class="score-detail-pill" style="background:#e7f7ef;border-color:#2faa8655;color:#1f9d6b"><svg class="ic"><use href="#i-users"/></svg> Seu parceiro</span><button class="btn-pitch" onclick="liberarParceiro('${p.id}')">Liberar</button>`;
+  return `<span class="score-detail-pill"><svg class="ic"><use href="#i-users"/></svg> De ${nomeDono(p.dono)}</span><button class="btn-pitch" onclick="assumirParceiro('${p.id}')">Assumir p/ mim</button>`;
+}
+async function assumirParceiro(id){
+  const p = (PARCEIROS_CLOUD||[]).find(x => String(x.id) === String(id)); if (!p || !window.CAPTURA.user) return;
+  p.dono = window.CAPTURA.user.id; renderParceiros();
+  if (sb) { try { await sb.from('parceiros').update({ dono: p.dono }).eq('id', id); } catch(e){ console.warn(e); } }
+  showToast('✓ Parceiro assumido — agora está no seu nome');
+}
+async function liberarParceiro(id){
+  const p = (PARCEIROS_CLOUD||[]).find(x => String(x.id) === String(id)); if (!p) return;
+  if (!confirm('Liberar este parceiro para o pool? Qualquer vendedor poderá assumir.')) return;
+  p.dono = null; renderParceiros();
+  if (sb) { try { await sb.from('parceiros').update({ dono: null }).eq('id', id); } catch(e){ console.warn(e); } }
+  showToast('Parceiro devolvido ao pool');
+}
+
 // ── CADÊNCIA DE PROSPECÇÃO DO PARCEIRO ────────────────────────────────────────
 const PARC_CADENCIA_TEMPLATE = [
   { tipo: 'Apresentação (WhatsApp/e-mail)', dia: 0, icon: '<svg class="ic"><use href="#i-chat"/></svg>' },
@@ -8665,6 +8686,7 @@ function renderParceiros() {
         <span class="parc-tipo tipo-${p.tipo}">${TIPO_LABELS[p.tipo] || p.tipo}</span>
       </div>
       <div class="parc-nota">${p.nota || ''} · <em>${p.cidade || ''}</em></div>
+      <div style="margin:8px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap">${ownerParcHTML(p)}</div>
       ${p.site ? `<a class="parc-site" href="https://${p.site}" target="_blank"><svg class="ic"><use href="#i-link"/></svg> ${p.site}</a>` : '<span style="font-size:11px;color:var(--text3)">sem site</span>'}
       ${contatos}
       ${acoes.length ? `<div class="parc-acoes">${acoes.join('')}</div>` : ''}
