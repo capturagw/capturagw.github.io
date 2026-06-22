@@ -7951,7 +7951,7 @@ async function renderEquipe() {
       ${conv!==null?`<div style="font-size:11px;color:${cor};font-weight:700;margin-top:3px">↓ ${conv}%</div>`:'<div style="height:17px"></div>'}
     </div>`;
   }).join('');
-  document.getElementById('equipeConv').innerHTML = `<div class="cover-card" style="padding:14px 18px"><div class="cover-hd" style="margin-bottom:10px"><span class="t">Funil de conversão da equipe — onde avança e onde trava</span></div><div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">${convHTML}</div></div>`;
+  document.getElementById('equipeConv').innerHTML = `<div class="cover-card" style="padding:14px 18px"><div class="cover-hd" style="margin-bottom:10px"><span class="t">Funil de conversão da equipe</span></div><div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">${convHTML}</div></div>`;
 
   const linhas = perfis.map(p => ({ p, m: map[p.id] || { total:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 } }))
     .sort((a, b) => b.m.valorFech - a.m.valorFech);
