@@ -5951,6 +5951,7 @@ window.PARCEIROS_DATA = {
         </div>
         <div id="peIndicLista" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
       </div>
+      <div class="form-group full"><label class="form-label">Cadência de prospecção</label><div id="peCadencia"></div></div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="gerarContratoParceria()"><svg class="ic"><use href="#i-copy"/></svg> Gerar contrato de parceria</button>
@@ -8451,6 +8452,64 @@ const TIPO_LABELS = {
 
 // ── EDIÇÃO DE PARCEIRO + clientes indicados + contrato de parceria ──────────────
 let _parcEditId = null;
+// ── CADÊNCIA DE PROSPECÇÃO DO PARCEIRO ────────────────────────────────────────
+const PARC_CADENCIA_TEMPLATE = [
+  { tipo: 'Apresentação (WhatsApp/e-mail)', dia: 0, icon: '<svg class="ic"><use href="#i-chat"/></svg>' },
+  { tipo: 'Conexão no LinkedIn', dia: 1, icon: '<svg class="ic"><use href="#i-briefcase"/></svg>' },
+  { tipo: 'Follow-up no WhatsApp', dia: 3, icon: '<svg class="ic"><use href="#i-chat"/></svg>' },
+  { tipo: 'Envio da proposta de parceria', dia: 6, icon: '<svg class="ic"><use href="#i-mail"/></svg>' },
+  { tipo: 'Ligação de alinhamento', dia: 10, icon: '<svg class="ic"><use href="#i-phone"/></svg>' },
+  { tipo: 'Mensagem de encerramento (break-up)', dia: 15, icon: '<svg class="ic"><use href="#i-chat"/></svg>' }
+];
+function _parcAtual(){ return (PARCEIROS_CLOUD||[]).find(x => String(x.id) === String(_parcEditId)); }
+function proximoToqueParc(p){
+  if (!p || !p.cadencia) return null;
+  for (let i=0;i<PARC_CADENCIA_TEMPLATE.length;i++){
+    if (!(p.cadencia.passos[i] && p.cadencia.passos[i].feito)){
+      const venc = addDias(p.cadencia.inicio, PARC_CADENCIA_TEMPLATE[i].dia);
+      return { idx:i, ...PARC_CADENCIA_TEMPLATE[i], vencimento:venc, atrasado:venc<hojeStr(), hoje:venc===hojeStr() };
+    }
+  }
+  return null;
+}
+async function persistParcCadencia(p){
+  renderParceiros();
+  if (sb) { try { await sb.from('parceiros').update({ cadencia: p.cadencia }).eq('id', p.id); } catch(e){ console.warn(e); } }
+}
+async function iniciarCadenciaParc(){
+  const p = _parcAtual(); if (!p) return;
+  p.cadencia = { inicio: hojeStr(), passos: PARC_CADENCIA_TEMPLATE.map(()=>({ feito:false, quando:'' })) };
+  if (p.status === 'novo') setParcStatus(p.nome, 'contatado');
+  await persistParcCadencia(p); renderParcCadencia(); showToast('Cadência de prospecção iniciada');
+}
+async function marcarToqueParc(idx){
+  const p = _parcAtual(); if (!p || !p.cadencia) return;
+  const passo = p.cadencia.passos[idx]; passo.feito = !passo.feito; passo.quando = passo.feito ? hojeStr() : '';
+  await persistParcCadencia(p); renderParcCadencia();
+}
+function renderParcCadencia(){
+  const p = _parcAtual(); const box = document.getElementById('peCadencia'); if (!box) return;
+  if (!p.cadencia){
+    box.innerHTML = `<div style="font-size:12.5px;color:var(--text3);margin-bottom:8px">Sequência de 6 toques para converter o parceiro. A maioria fecha entre o 3º e o 6º contato.</div>
+      <button class="btn-save" type="button" onclick="iniciarCadenciaParc()"><svg class="ic"><use href="#i-repeat"/></svg> Iniciar cadência de prospecção</button>`;
+    return;
+  }
+  const prox = proximoToqueParc(p);
+  box.innerHTML = `
+    <div class="cad-intro" style="margin-bottom:8px">Início ${formatBR(p.cadencia.inicio)} · ${prox ? 'Próximo: <strong>'+prox.tipo+'</strong> ('+(prox.atrasado?'atrasado':prox.hoje?'hoje':formatBR(prox.vencimento))+')' : '<strong>Sequência concluída</strong>'}</div>
+    ${PARC_CADENCIA_TEMPLATE.map((t,i)=>{
+      const passo = p.cadencia.passos[i] || { feito:false, quando:'' };
+      const venc = addDias(p.cadencia.inicio, t.dia);
+      const isNext = prox && prox.idx === i;
+      const cls = passo.feito ? 'done' : (isNext && venc<=hojeStr() ? 'due' : (isNext ? '' : 'future'));
+      return `<div class="cad-step ${cls}">
+        <div class="cad-num">${passo.feito ? '✓' : i+1}</div>
+        <div class="cad-info"><div class="cad-tipo">${t.icon} ${t.tipo}</div><div class="cad-quando">${passo.feito ? 'Feito em '+formatBR(passo.quando) : 'Previsto: '+formatBR(venc)}</div></div>
+        <button class="btn-cad ${passo.feito?'undo':'do'}" type="button" onclick="marcarToqueParc(${i})">${passo.feito?'Desfazer':'Marcar feito'}</button>
+      </div>`;
+    }).join('')}`;
+}
+
 function abrirParceiroEdit(id) {
   const p = (PARCEIROS_CLOUD || []).find(x => String(x.id) === String(id)); if (!p) return;
   _parcEditId = id;
@@ -8464,6 +8523,7 @@ function abrirParceiroEdit(id) {
     leads.slice().sort((a,b)=>(a.empresa||'').localeCompare(b.empresa||''))
       .map(l => `<option value="${l.id}">${(l.empresa||'(sem nome)')}${l.status==='Fechado'?' ✓':''}</option>`).join('');
   renderIndicados(p);
+  renderParcCadencia();
   document.getElementById('parcEditModal').classList.add('open');
 }
 function renderIndicados(p) {
