@@ -5973,6 +5973,19 @@ window.PARCEIROS_DATA = {
   </div>
 </div>
 
+<div class="modal-overlay" id="pipelineVendedorModal">
+  <div class="modal" style="max-width:860px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title"><svg class="ic"><use href="#i-id"/></svg> <span id="pvNome">Vendedor(a)</span></div>
+        <div class="modal-subtitle" id="pvEmail">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('pipelineVendedorModal')">✕</button>
+    </div>
+    <div id="pipelineVendedorBody"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pacoteModal">
   <div class="modal" style="max-width:460px">
     <div class="modal-header">
@@ -8052,19 +8065,26 @@ function renderOnboardingModal() {
     </div>`;
 }
 
+let _equipeCache = { perfis: [], leadsAll: [], parceirosAll: [] };
+const fmtReais = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+
 async function renderEquipe() {
   const body = document.getElementById('equipeBody'); if (!body || !sb) return;
   body.innerHTML = '<div style="color:var(--text3);padding:18px">Carregando equipe...</div>';
   let perfis = [], todos = [], parceirosTodos = [];
   try {
     const r1 = await sb.from('perfis').select('id,nome,email,papel'); perfis = r1.data || [];
-    const r2 = await sb.from('leads').select('dono,status,valor_estimado,valor_fechado'); todos = r2.data || [];
-    const r3 = await sb.from('parceiros').select('dono,status'); parceirosTodos = r3.data || [];
+    const r2 = await sb.from('leads').select('id,empresa,nome_contato,canal,status,valor_estimado,valor_fechado,dono'); todos = r2.data || [];
+    const r3 = await sb.from('parceiros').select('id,nome,tipo,status,dono'); parceirosTodos = r3.data || [];
   } catch (e) { body.innerHTML = '<div style="color:var(--red);padding:18px">Erro ao carregar a equipe.</div>'; return; }
+  _equipeCache = { perfis, leadsAll: todos, parceirosAll: parceirosTodos };
   const map = {};
   todos.forEach(l => {
-    const d = l.dono || 'sem'; const m = map[d] = map[d] || { total:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 };
+    const d = l.dono || 'sem'; const m = map[d] = map[d] || { total:0, cf:0, parceiro:0, residencial:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 };
     m.total++;
+    if (l.canal === 'Parceiro') m.parceiro++;
+    else if (l.canal === 'Residencial') m.residencial++;
+    else m.cf++; // Cliente Final: B2B Privado, B2G Licitação, Inbound
     if (l.status === 'Contatado') m.contatado++;
     if (l.status === 'Proposta Enviada') m.proposta++;
     if (l.status === 'Fechado') { m.fechado++; m.valorFech += (parseFloat(l.valor_fechado) || parseFloat(l.valor_estimado) || 0); }
@@ -8077,8 +8097,7 @@ async function renderEquipe() {
     m.total++;
     if (p.status === 'parceiro_ativo') m.ativo++;
   });
-  const nomeDe = id => { const p = perfis.find(x => x.id === id); return p ? (p.nome || p.email) : '—'; };
-  const fmt = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+  const fmt = fmtReais;
   const tot = { total:0, fechado:0, valorFech:0, valorPipe:0 };
   Object.values(map).forEach(m => { tot.total += m.total; tot.fechado += m.fechado; tot.valorFech += m.valorFech; tot.valorPipe += m.valorPipe; });
   const poolN = (map['sem'] && map['sem'].total) || 0;
@@ -8106,20 +8125,76 @@ async function renderEquipe() {
 
   const linhas = perfis.map(p => ({
     p,
-    m: map[p.id] || { total:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 },
+    m: map[p.id] || { total:0, cf:0, parceiro:0, residencial:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 },
     mp: mapParc[p.id] || { total:0, ativo:0 }
   })).sort((a, b) => b.m.valorFech - a.m.valorFech);
   body.innerHTML = `<div class="table-wrap" style="margin-top:6px"><table>
-    <thead><tr><th>Vendedor(a)</th><th>Papel</th><th>Leads</th><th>Contatados</th><th>Propostas</th><th>Fechados</th><th>Receita fechada</th><th>Em pipeline</th><th>Parceiros</th></tr></thead>
-    <tbody>${linhas.map(({p, m, mp}) => `<tr>
+    <thead><tr><th>Vendedor(a)</th><th>Papel</th><th>Leads C.F</th><th>Leads Parceiros</th><th>Leads Residenciais</th><th>Receita Ativa</th><th>Em Pipeline</th></tr></thead>
+    <tbody>${linhas.map(({p, m, mp}) => `<tr style="cursor:pointer" onclick="abrirPipelineVendedor('${p.id}')">
       <td><div class="td-empresa">${p.nome || p.email}</div><div class="td-contato">${p.email}</div></td>
       <td><span class="badge badge-${p.papel === 'master' ? 'fechado' : 'novo'}">${p.papel === 'master' ? 'Master' : 'Vendedor'}</span></td>
-      <td>${m.total}</td><td>${m.contatado}</td><td>${m.proposta}</td>
-      <td style="font-weight:700">${m.fechado}</td>
+      <td>${m.cf}</td>
+      <td>${m.parceiro}${mp.total ? ` <span style="color:var(--text3);font-size:11px">(+${mp.total} na tabela)</span>` : ''}</td>
+      <td>${m.residencial}</td>
       <td style="font-weight:700;color:var(--green)">${fmt(m.valorFech)}</td>
       <td style="color:var(--accent)">${fmt(m.valorPipe)}</td>
-      <td>${mp.total}${mp.ativo ? ` <span style="color:var(--green);font-weight:700">(${mp.ativo} ativo${mp.ativo>1?'s':''})</span>` : ''}</td>
-    </tr>`).join('')}</tbody></table></div>`;
+    </tr>
+    <tr style="background:transparent"><td colspan="7" style="text-align:center;padding:6px 0 14px;border-top:none">
+      <button class="btn-secondary" style="padding:6px 14px;font-size:11.5px" onclick="event.stopPropagation();abrirPipelineVendedor('${p.id}')">Ver pipeline do vendedor</button>
+    </td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function abrirPipelineVendedor(id) {
+  const p = _equipeCache.perfis.find(x => x.id === id); if (!p) return;
+  const meusLeads = _equipeCache.leadsAll.filter(l => l.dono === id);
+  const meusParc = _equipeCache.parceirosAll.filter(x => x.dono === id);
+  const cf = meusLeads.filter(l => l.canal !== 'Parceiro' && l.canal !== 'Residencial');
+  const parc = meusLeads.filter(l => l.canal === 'Parceiro');
+  const res = meusLeads.filter(l => l.canal === 'Residencial');
+  const contatados = meusLeads.filter(l => l.status === 'Contatado').length;
+  const propostas = meusLeads.filter(l => l.status === 'Proposta Enviada').length;
+  const fechados = meusLeads.filter(l => l.status === 'Fechado').length;
+  const valorFech = meusLeads.filter(l => l.status === 'Fechado').reduce((s,l) => s + (parseFloat(l.valor_fechado) || parseFloat(l.valor_estimado) || 0), 0);
+  const valorPipe = meusLeads.filter(l => !['Fechado','Perdido','Desqualificado'].includes(l.status)).reduce((s,l) => s + ((parseFloat(l.valor_estimado) || 0) * (STAGE_PROB[l.status] || 0)), 0);
+  document.getElementById('pvNome').textContent = p.nome || p.email;
+  document.getElementById('pvEmail').textContent = p.email + (p.papel === 'master' ? ' · Master' : ' · Vendedor');
+  const lista = (arr, vazio) => arr.length ? arr.map(l => `<div class="hoje-item" style="cursor:pointer" onclick="closeModal('pipelineVendedorModal');openDetail('${l.id}')">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <span style="font-weight:600">${l.empresa || l.nome_contato || '(sem nome)'}</span>
+        <span class="badge badge-${(l.status||'').toLowerCase().includes('fechado')?'fechado':'novo'}" style="font-size:10px">${l.status || '—'}</span>
+      </div>
+    </div>`).join('') : `<div style="color:var(--text3);font-size:12.5px;padding:6px 0">${vazio}</div>`;
+  const listaParc = arr => arr.length ? arr.map(x => `<div class="hoje-item" style="cursor:pointer" onclick="closeModal('pipelineVendedorModal');abrirParceiroEdit('${x.id}')">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+        <span style="font-weight:600">${x.nome}</span>
+        <span class="badge badge-${x.status === 'parceiro_ativo' ? 'fechado' : 'novo'}" style="font-size:10px">${x.status || '—'}</span>
+      </div>
+    </div>`).join('') : `<div style="color:var(--text3);font-size:12.5px;padding:6px 0">Nenhum parceiro assumido na tabela de parceiros.</div>`;
+  document.getElementById('pipelineVendedorBody').innerHTML = `
+    <div class="hoje-stats">
+      <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:18px">${contatados}</div><div class="l">Contatados</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--accent);font-size:18px">${propostas}</div><div class="l">Propostas</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:18px">${fechados}</div><div class="l">Fechados</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmtReais(valorFech)}</div><div class="l">Receita fechada</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--accent)">${fmtReais(valorPipe)}</div><div class="l">Em pipeline</div></div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Cliente Final (${cf.length})</span></div>
+      ${lista(cf, 'Nenhum lead cliente final.')}
+    </div>
+    <div style="margin-top:16px">
+      <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Parceiros (${parc.length})</span></div>
+      ${lista(parc, 'Nenhum lead via parceiro.')}
+    </div>
+    <div style="margin-top:16px">
+      <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Residenciais (${res.length})</span></div>
+      ${lista(res, 'Nenhum lead residencial.')}
+    </div>
+    <div style="margin-top:16px">
+      <div class="cover-hd" style="margin-bottom:6px"><span class="t">Parceiros assumidos (${meusParc.length})</span></div>
+      ${listaParc(meusParc)}
+    </div>`;
+  document.getElementById('pipelineVendedorModal').classList.add('open');
 }
 
 async function distribuirPool() {
