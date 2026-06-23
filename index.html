@@ -163,6 +163,27 @@
   }
   .btn-vip:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(212,160,23,0.5); }
 
+  .vendor-card {
+    border-radius: 14px; padding: 18px 20px; margin-bottom: 22px;
+    cursor: pointer; transition: all 0.15s; border: 1px solid rgba(0,0,0,.06);
+  }
+  .vendor-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .vendor-card-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .vendor-avatar {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  .vendor-card-stats {
+    display: flex; gap: 22px; flex-wrap: wrap; margin: 16px 0 14px;
+    padding: 14px 0; border-top: 1px solid rgba(0,0,0,.07); border-bottom: 1px solid rgba(0,0,0,.07);
+  }
+  .vendor-stat { min-width: 90px; }
+  .vendor-stat .n { font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 800; color: var(--text); }
+  .vendor-stat .l { font-size: 11px; color: var(--text3); font-weight: 600; margin-top: 2px; }
+  .vendor-card-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
   .apptab-vip {
     background: linear-gradient(135deg, #f0c14b, #d4a017) !important;
     color: #2a1f00 !important;
@@ -1130,6 +1151,12 @@
     transition: all 0.15s;
   }
   .parc-card:hover { box-shadow: var(--shadow); }
+  .parc-card-ativo { background: linear-gradient(135deg, #fde3cc, #fbd0a3); border-color: #d97706; }
+  .parc-badge-ativo {
+    display: inline-block; background: #c2540f; color: #fff;
+    font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px;
+    vertical-align: middle; margin-left: 4px;
+  }
   .parc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
   .parc-nome { font-weight: 700; font-size: 14px; }
   .parc-tipo { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 12px; white-space: nowrap; }
@@ -5880,6 +5907,7 @@ window.PARCEIROS_DATA = {
         <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="editEmail" type="email" placeholder="contato@empresa.com"></div>
         <div class="form-group"><label class="form-label">Telefone / WhatsApp</label><input class="form-input" id="editTelefone" placeholder="(62) 9...."></div>
         <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" id="editCidade"></div>
+        <div class="form-group"><label class="form-label">Setor</label><input class="form-input" id="editSetor" placeholder="Ex: Indústria, Varejo, Saúde..."></div>
         <div class="form-group"><label class="form-label">Site</label><input class="form-input" id="editSite" placeholder="empresa.com.br"></div>
         <div class="form-group"><label class="form-label">Vidas (RPS — nº colaboradores)</label><input class="form-input" id="editVidas" type="number"></div>
         <div class="form-group"><label class="form-label">LinkedIn da pessoa</label><input class="form-input" id="editLinkedinContato" placeholder="https://linkedin.com/in/..."></div>
@@ -6025,6 +6053,7 @@ window.PARCEIROS_DATA = {
         <div id="peIndicLista" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
       </div>
       <div class="form-group full"><label class="form-label">Cadência de prospecção</label><div id="peCadencia"></div></div>
+      <div class="form-group full"><label class="form-label">Documentos</label><div id="peDocs"></div></div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="gerarContratoParceria()"><svg class="ic"><use href="#i-copy"/></svg> Gerar contrato de parceria</button>
@@ -7333,6 +7362,7 @@ function openDetail(id) {
   document.getElementById('editEmail').value = l.email||'';
   document.getElementById('editTelefone').value = l.telefone||'';
   document.getElementById('editCidade').value = l.cidade||'';
+  document.getElementById('editSetor').value = l.setor||'';
   document.getElementById('editSite').value = l.site||'';
   document.getElementById('editVidas').value = l.vidas||'';
   document.getElementById('editLinkedinContato').value = l.linkedin_contato||'';
@@ -7403,6 +7433,16 @@ function openDetail(id) {
         <div><div class="form-label" style="margin:0">Onboarding</div><div class="form-value">${onb ? `<span class="badge badge-${onb.pct>=100?'fechado':'novo'}">${onb.label} · ${onb.pct}%</span>` : `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="closeModal('detailModal');abrirOnboarding('${l.id}')">Iniciar onboarding</button>`}</div></div>
       </div>
       ${onb ? `<button class="btn-secondary" style="margin-top:10px;padding:6px 12px;font-size:11.5px" onclick="closeModal('detailModal');abrirOnboarding('${l.id}')">Ver onboarding</button>` : ''}
+      <div class="modal-grid" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <div class="form-group"><div class="form-label">Contato</div><div class="form-value">${l.nome_contato || '—'}${l.cargo ? ' · '+l.cargo : ''}</div></div>
+        <div class="form-group"><div class="form-label">Telefone</div><div class="form-value">${l.telefone || '—'}</div></div>
+        <div class="form-group"><div class="form-label">E-mail</div><div class="form-value">${l.email || '—'}</div></div>
+        <div class="form-group"><div class="form-label">Site</div><div class="form-value">${l.site || '—'}</div></div>
+        <div class="form-group"><div class="form-label">Cidade</div><div class="form-value">${l.cidade || '—'}</div></div>
+        <div class="form-group"><div class="form-label">Setor</div><div class="form-value">${l.setor || '—'}</div></div>
+        <div class="form-group"><div class="form-label">Vidas (RPS)</div><div class="form-value">${l.vidas || '—'}</div></div>
+        <div class="form-group"><div class="form-label">LinkedIn</div><div class="form-value">${(l.linkedin_contato||l.linkedin_empresa) ? `<a class="link-btn" href="${l.linkedin_contato||l.linkedin_empresa}" target="_blank">Ver perfil</a>` : '—'}</div></div>
+      </div>
     </div>`;
   } else { caBox.style.display = 'none'; }
 
@@ -7429,6 +7469,7 @@ function saveLead() {
   l.email = document.getElementById('editEmail').value.trim();
   l.telefone = document.getElementById('editTelefone').value.trim();
   l.cidade = document.getElementById('editCidade').value.trim();
+  l.setor = document.getElementById('editSetor').value.trim();
   l.site = document.getElementById('editSite').value.trim();
   const _v = document.getElementById('editVidas').value; l.vidas = _v ? parseInt(_v) : null;
   l.linkedin_contato = document.getElementById('editLinkedinContato').value.trim();
@@ -7981,8 +8022,10 @@ function onboardingStatusAtual(l) {
   }
   return { label: 'Concluído', pct: 100 };
 }
+let _cxrMes = null; // YYYY-MM em exibição na tela de Contas a Receber
 function abrirContasReceber() {
   if (!podeB2G()) { showToast('Acesso restrito'); return; }
+  if (!_cxrMes) _cxrMes = hojeStr().slice(0,7);
   const clientes = leads.filter(l => l.status === 'Fechado' && l.faturas && l.faturas.length);
   const fmt = v => 'R$ ' + Math.round(parseFloat(v)||0).toLocaleString('pt-BR');
   const todasFaturas = [];
@@ -7992,27 +8035,60 @@ function abrirContasReceber() {
   const atrasadas = pendentes.filter(x => x.f.vencimento < hoje);
   const totalPendente = pendentes.reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
   const totalAtrasado = atrasadas.reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
-  const recebidoMes = todasFaturas.filter(x => x.f.status==='pago' && (x.f.pago_em||'').slice(0,7) === hoje.slice(0,7)).reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
+  const recebidoMesAtual = todasFaturas.filter(x => x.f.status==='pago' && (x.f.pago_em||'').slice(0,7) === hoje.slice(0,7)).reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
   const receitaMensalAtiva = clientes.reduce((s, l) => s + (parseFloat(l.valor_fechado) || parseFloat(l.valor_estimado) || 0), 0);
   document.getElementById('contasReceberStats').innerHTML = `
     <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmt(receitaMensalAtiva)}</div><div class="l">Receita mensal ativa</div></div>
-    <div class="hoje-stat"><div class="n" style="color:var(--accent)">${fmt(totalPendente)}</div><div class="l">A receber (pendente)</div></div>
+    <div class="hoje-stat"><div class="n" style="color:var(--accent)">${fmt(totalPendente)}</div><div class="l">A receber (todas as faturas)</div></div>
     <div class="hoje-stat"><div class="n" style="color:var(--red)">${fmt(totalAtrasado)}</div><div class="l">Em atraso</div></div>
-    <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmt(recebidoMes)}</div><div class="l">Recebido este mês</div></div>`;
-  const linhas = todasFaturas.slice().sort((a,b) => a.f.vencimento.localeCompare(b.f.vencimento));
-  document.getElementById('contasReceberBody').innerHTML = linhas.length ? `<div class="table-wrap"><table>
+    <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmt(recebidoMesAtual)}</div><div class="l">Recebido no mês atual</div></div>`;
+
+  // Faturas do mês em exibição (_cxrMes) — competência por vencimento
+  const doMes = todasFaturas.filter(x => x.f.vencimento.slice(0,7) === _cxrMes).sort((a,b) => a.f.vencimento.localeCompare(b.f.vencimento));
+  const previstoMes = doMes.reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
+  const recebidoMes = doMes.filter(x=>x.f.status==='pago').reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
+  const pendenteMes = previstoMes - recebidoMes;
+  const [ay, am] = _cxrMes.split('-').map(Number);
+  const nomeMes = MESES_BR[am-1] + ' de ' + ay;
+  const mesAnt = () => { const d = new Date(ay, am-2, 1); _cxrMes = d.toISOString().slice(0,7); abrirContasReceber(); };
+  const mesProx = () => { const d = new Date(ay, am, 1); _cxrMes = d.toISOString().slice(0,7); abrirContasReceber(); };
+  window._cxrMesAnt = mesAnt; window._cxrMesProx = mesProx;
+
+  document.getElementById('contasReceberBody').innerHTML = `
+    <div class="cover-card" style="padding:14px 16px;margin-top:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn-secondary" style="padding:6px 12px" onclick="_cxrMesAnt()">‹</button>
+          <div style="font-weight:800;font-size:15px;min-width:160px;text-align:center">${nomeMes}</div>
+          <button class="btn-secondary" style="padding:6px 12px" onclick="_cxrMesProx()">›</button>
+        </div>
+        <button class="btn-secondary" style="padding:6px 12px;font-size:11.5px" onclick="_cxrMes=hojeStr().slice(0,7);abrirContasReceber()">Voltar ao mês atual</button>
+      </div>
+      <div class="hoje-stats">
+        <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:18px">${fmt(previstoMes)}</div><div class="l">Previsto no mês</div></div>
+        <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:18px">${fmt(recebidoMes)}</div><div class="l">Recebido no mês</div></div>
+        <div class="hoje-stat"><div class="n" style="color:var(--accent);font-size:18px">${fmt(pendenteMes)}</div><div class="l">Pendente no mês</div></div>
+      </div>
+    </div>
+    ${doMes.length ? `<div class="table-wrap" style="margin-top:12px"><table>
     <thead><tr><th>Cliente</th><th>Fatura</th><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Status</th><th></th></tr></thead>
-    <tbody>${linhas.map(({l,f,idx}) => { const atrasada = f.status !== 'pago' && f.vencimento < hoje; return `<tr>
+    <tbody>${doMes.map(({l,f,idx}) => { const atrasada = f.status !== 'pago' && f.vencimento < hoje; return `<tr>
       <td><div class="td-empresa" style="cursor:pointer" onclick="openDetail('${l.id}');setTimeout(()=>showModalTab('financeiro'),150)">${l.empresa}</div></td>
       <td>#${f.num}/12</td>
-      <td style="${atrasada?'color:var(--red);font-weight:700':''}">${fmtDataBR(f.vencimento)}</td>
+      <td><input class="form-input" style="padding:5px 8px;font-size:12px;width:130px;${atrasada?'color:var(--red);font-weight:700':''}" type="date" value="${f.vencimento}" onchange="alterarFaturaGlobal('${l.id}',${idx},'vencimento',this.value)"></td>
       <td style="font-weight:700">${fmt(f.valor)}</td>
       <td>${f.forma||'—'}</td>
       <td><span class="badge badge-${f.status==='pago'?'fechado':(atrasada?'perdido':'novo')}">${f.status==='pago'?'Pago':(atrasada?'Atrasada':'Pendente')}</span></td>
       <td>${f.status==='pago'
         ? `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="liquidarFaturaGlobal('${l.id}',${idx},false)">Desfazer</button>`
         : `<button class="btn-save" style="padding:5px 10px;font-size:11px" onclick="liquidarFaturaGlobal('${l.id}',${idx},true)">Liquidar</button>`}</td>
-    </tr>`; }).join('')}</tbody></table></div>` : '<div style="color:var(--text3);font-size:13px;padding:18px">Nenhuma fatura gerada ainda — faturas são criadas automaticamente quando um cliente fecha contrato.</div>';
+    </tr>`; }).join('')}</tbody></table></div>` : `<div style="color:var(--text3);font-size:13px;padding:18px">Nenhuma fatura com vencimento em ${nomeMes}.</div>`}`;
+}
+async function alterarFaturaGlobal(leadId, idx, campo, valor) {
+  const l = leads.find(x => x.id === leadId); if (!l || !l.faturas) return;
+  l.faturas[idx][campo] = valor;
+  await persistFaturas(l);
+  abrirContasReceber();
 }
 async function liquidarFaturaGlobal(leadId, idx, pago) {
   const l = leads.find(x => x.id === leadId); if (!l || !l.faturas) return;
@@ -8034,7 +8110,7 @@ function renderFinanceiroModal() {
     <thead><tr><th>#</th><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Status</th><th></th></tr></thead>
     <tbody>${l.faturas.map((f,i) => `<tr>
       <td>${f.num}</td>
-      <td>${fmtDataBR(f.vencimento)}</td>
+      <td><input class="form-input" style="padding:5px 8px;font-size:12px;width:130px" type="date" value="${f.vencimento}" onchange="alterarFatura(${i},'vencimento',this.value)"></td>
       <td><input class="form-input" style="padding:5px 8px;font-size:12px;width:100px" type="number" value="${f.valor}" onchange="alterarFatura(${i},'valor',this.value)"></td>
       <td><select class="form-input" style="padding:5px 8px;font-size:12px" onchange="alterarFatura(${i},'forma',this.value)">
         ${['Pix','Boleto','Cartão','Transferência'].map(fp => `<option ${f.forma===fp?'selected':''}>${fp}</option>`).join('')}
@@ -8386,23 +8462,33 @@ async function renderEquipe() {
     mp: mapParc[p.id] || { total:0, ativo:0 }
   })).sort((a, b) => b.m.valorFech - a.m.valorFech);
   const VENDOR_CORES = ['#f4ebe1','#e8f0ec','#eee6f4','#fdeee6','#e6f0f4','#f4f0e2','#ece6f4','#e8f4ec'];
-  body.innerHTML = `<div class="table-wrap" style="margin-top:6px"><table>
-    <thead><tr><th>Vendedor(a)</th><th>Papel</th><th>Leads C.F</th><th>Leads Parceiros</th><th>Leads Residenciais</th><th>Receita Ativa</th><th>Em Pipeline</th></tr></thead>
-    <tbody>${linhas.map(({p, m, mp}, idx) => { const cor = VENDOR_CORES[idx % VENDOR_CORES.length]; return `<tr style="cursor:pointer;background:${cor}" onclick="abrirPipelineVendedor('${p.id}')">
-      <td><div class="td-empresa">${p.nome || p.email}</div><div class="td-contato">${p.email}</div></td>
-      <td><span class="badge badge-${p.papel === 'master' ? 'fechado' : 'novo'}">${p.papel === 'master' ? 'Master' : 'Vendedor'}</span></td>
-      <td>${m.cf}</td>
-      <td>${mp.total}</td>
-      <td>${m.residencial}</td>
-      <td style="font-weight:700;color:var(--green)">${fmt(m.valorFech)}</td>
-      <td style="color:var(--accent)">${fmt(m.valorPipe)}</td>
-    </tr>
-    <tr style="background:${cor}"><td colspan="7" style="text-align:center;padding:10px 0 18px;border-top:1px solid rgba(0,0,0,.07)">
-      <div style="display:inline-flex;gap:14px;align-items:center">
+  const VENDOR_AVATAR = ['#c2540f','#1f9d6b','#7a5cff','#d97706','#5b8fd0','#9b6cff','#19B6E8','#e8675b'];
+  body.innerHTML = linhas.map(({p, m, mp}, idx) => {
+    const cor = VENDOR_CORES[idx % VENDOR_CORES.length];
+    const avCor = VENDOR_AVATAR[idx % VENDOR_AVATAR.length];
+    const inicial = (p.nome || p.email || '?').trim().charAt(0).toUpperCase();
+    return `<div class="vendor-card" style="background:${cor}" onclick="abrirPipelineVendedor('${p.id}')">
+      <div class="vendor-card-top">
+        <div class="vendor-avatar" style="background:${avCor}">${inicial}</div>
+        <div style="flex:1;min-width:160px">
+          <div class="td-empresa" style="font-size:15px">${p.nome || p.email}</div>
+          <div class="td-contato">${p.email}</div>
+        </div>
+        <span class="badge badge-${p.papel === 'master' ? 'fechado' : 'novo'}">${p.papel === 'master' ? 'Master' : 'Vendedor'}</span>
+      </div>
+      <div class="vendor-card-stats">
+        <div class="vendor-stat"><div class="n">${m.cf}</div><div class="l">Leads C.F</div></div>
+        <div class="vendor-stat"><div class="n">${mp.total}</div><div class="l">Leads Parceiros</div></div>
+        <div class="vendor-stat"><div class="n">${m.residencial}</div><div class="l">Leads Residenciais</div></div>
+        <div class="vendor-stat"><div class="n" style="color:var(--green)">${fmt(m.valorFech)}</div><div class="l">Receita Ativa</div></div>
+        <div class="vendor-stat"><div class="n" style="color:var(--accent)">${fmt(m.valorPipe)}</div><div class="l">Em Pipeline</div></div>
+      </div>
+      <div class="vendor-card-actions">
         <button class="btn-primary" style="padding:9px 18px;font-size:12px" onclick="event.stopPropagation();abrirPipelineVendedor('${p.id}')"><svg class="ic" style="stroke:#fff;width:14px;height:14px"><use href="#i-chart"/></svg> Ver pipeline do vendedor</button>
         <button class="btn-secondary" style="padding:9px 18px;font-size:12px" onclick="event.stopPropagation();abrirMetaVendedor('${p.id}')"><svg class="ic" style="width:14px;height:14px"><use href="#i-flag"/></svg> Atribuir meta</button>
       </div>
-    </td></tr>`; }).join('')}</tbody></table></div>`;
+    </div>`;
+  }).join('');
 }
 
 function ultimaAcaoLead(l) {
@@ -8413,8 +8499,26 @@ function ultimaAcaoLead(l) {
   if (l.cadencia) return 'Cadência iniciada, sem toques registrados ainda';
   return 'Assumiu o lead — ainda não iniciou a cadência';
 }
+let _pvVendorId = null;
+let _pvPag = {};
+function paginarBloco(arr, key, pageSize, itemHtml, vazioMsg) {
+  if (!_pvPag[key]) _pvPag[key] = 1;
+  const totalPag = Math.max(1, Math.ceil(arr.length / pageSize));
+  if (_pvPag[key] > totalPag) _pvPag[key] = totalPag;
+  const ini = (_pvPag[key]-1)*pageSize;
+  const pagina = arr.slice(ini, ini+pageSize);
+  const itens = pagina.length ? pagina.map(itemHtml).join('') : `<div style="color:var(--text3);font-size:12.5px;padding:6px 0">${vazioMsg}</div>`;
+  const nav = totalPag > 1 ? `<div style="display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap">
+    <button class="btn-secondary" style="padding:5px 10px" ${_pvPag[key]<=1?'disabled':''} onclick="_pvPag['${key}']--;abrirPipelineVendedor(_pvVendorId)">‹</button>
+    ${Array.from({length: totalPag}, (_,i)=>i+1).map(n => `<button class="btn-secondary" style="padding:5px 10px;${n===_pvPag[key]?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="_pvPag['${key}']=${n};abrirPipelineVendedor(_pvVendorId)">${n}</button>`).join('')}
+    <button class="btn-secondary" style="padding:5px 10px" ${_pvPag[key]>=totalPag?'disabled':''} onclick="_pvPag['${key}']++;abrirPipelineVendedor(_pvVendorId)">›</button>
+  </div>` : '';
+  return itens + nav;
+}
 function abrirPipelineVendedor(id) {
   const p = _equipeCache.perfis.find(x => x.id === id); if (!p) return;
+  if (_pvVendorId !== id) _pvPag = {};
+  _pvVendorId = id;
   const meusLeads = _equipeCache.leadsAll.filter(l => l.dono === id);
   const meusParc = _equipeCache.parceirosAll.filter(x => x.dono === id);
   const cf = meusLeads.filter(l => l.canal !== 'Parceiro' && l.canal !== 'Residencial');
@@ -8427,20 +8531,20 @@ function abrirPipelineVendedor(id) {
   const valorPipe = meusLeads.filter(l => !['Fechado','Perdido','Desqualificado'].includes(l.status)).reduce((s,l) => s + ((parseFloat(l.valor_estimado) || 0) * (STAGE_PROB[l.status] || 0)), 0);
   document.getElementById('pvNome').textContent = p.nome || p.email;
   document.getElementById('pvEmail').textContent = p.email + (p.papel === 'master' ? ' · Master' : ' · Vendedor');
-  const lista = (arr, vazio) => arr.length ? arr.map(l => `<div class="hoje-item" style="cursor:pointer" onclick="closeModal('pipelineVendedorModal');openDetail('${l.id}')">
+  const itemLead = l => `<div class="hoje-item" style="cursor:pointer" onclick="closeModal('pipelineVendedorModal');openDetail('${l.id}')">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
         <span style="font-weight:600">${l.empresa || l.nome_contato || '(sem nome)'}</span>
         <span class="badge badge-${(l.status||'').toLowerCase().includes('fechado')?'fechado':'novo'}" style="font-size:10px">${l.status || '—'}</span>
       </div>
       <div style="font-size:11px;color:var(--text3);margin-top:3px">Última ação: ${ultimaAcaoLead(l)}</div>
-    </div>`).join('') : `<div style="color:var(--text3);font-size:12.5px;padding:6px 0">${vazio}</div>`;
-  const listaParc = arr => arr.length ? arr.map(x => `<div class="hoje-item" style="cursor:pointer" onclick="closeModal('pipelineVendedorModal');abrirParceiroEdit('${x.id}')">
+    </div>`;
+  const itemParc = x => `<div class="hoje-item" style="cursor:pointer" onclick="closeModal('pipelineVendedorModal');abrirParceiroEdit('${x.id}')">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
         <span style="font-weight:600">${x.nome}</span>
         <span class="badge badge-${x.status === 'parceiro_ativo' ? 'fechado' : 'novo'}" style="font-size:10px">${x.status || '—'}</span>
       </div>
       <div style="font-size:11px;color:var(--text3);margin-top:3px">Última ação: ${(x.historico && x.historico.length) ? x.historico[x.historico.length-1].tipo+' · '+fmtDataHora(x.historico[x.historico.length-1].quando) : (x.cadencia ? 'Cadência iniciada, sem toques ainda' : 'Assumiu o parceiro — ainda não iniciou a cadência')}</div>
-    </div>`).join('') : `<div style="color:var(--text3);font-size:12.5px;padding:6px 0">Nenhum parceiro assumido.</div>`;
+    </div>`;
   const metas = p.metas;
   const metaHTML = metas ? `
     <div style="margin-top:16px">
@@ -8473,15 +8577,15 @@ function abrirPipelineVendedor(id) {
     ${metaHTML}
     <div style="margin-top:16px">
       <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Cliente Final (${cf.length})</span></div>
-      ${lista(cf, 'Nenhum lead cliente final.')}
+      ${paginarBloco(cf, 'cf', 8, itemLead, 'Nenhum lead cliente final.')}
     </div>
     <div style="margin-top:16px">
       <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Residenciais (${res.length})</span></div>
-      ${lista(res, 'Nenhum lead residencial.')}
+      ${paginarBloco(res, 'res', 8, itemLead, 'Nenhum lead residencial.')}
     </div>
     <div style="margin-top:16px">
       <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Parceiros / Parceiros assumidos (${meusParc.length})</span></div>
-      ${listaParc(meusParc)}
+      ${paginarBloco(meusParc, 'parc', 8, itemParc, 'Nenhum parceiro assumido.')}
     </div>`;
   document.getElementById('pipelineVendedorModal').classList.add('open');
 }
@@ -8503,7 +8607,9 @@ async function salvarMetaVendedor() {
     reunioes: parseInt(document.getElementById('mvReunioes').value) || 0,
     fechamentos: parseInt(document.getElementById('mvFechamentos').value) || 0
   };
-  try { await sb.from('perfis').update({ metas }).eq('id', id); } catch (e) { console.warn(e); showToast('Erro ao salvar meta'); return; }
+  let erroSalvar = null;
+  try { const { error } = await sb.from('perfis').update({ metas }).eq('id', id); erroSalvar = error; } catch (e) { erroSalvar = e; }
+  if (erroSalvar) { console.warn(erroSalvar); showToast('Erro ao salvar meta — confirme se rodou o SQL (coluna metas em perfis)'); return; }
   const p = _equipeCache.perfis.find(x => x.id === id); if (p) p.metas = metas;
   closeModal('metaVendedorModal');
   showToast('✓ Meta atribuída');
@@ -9100,6 +9206,10 @@ function toggleParcCadScript(idx) {
 }
 function renderParcCadencia(){
   const p = _parcAtual(); const box = document.getElementById('peCadencia'); if (!box) return;
+  if (p.status === 'parceiro_ativo') {
+    box.innerHTML = `<div style="font-size:12.5px;color:var(--green);font-weight:600">✓ Parceiro ativo — cadência de prospecção concluída.</div>`;
+    return;
+  }
   if (!p.cadencia){
     box.innerHTML = `<div style="font-size:12.5px;color:var(--text3);margin-bottom:8px">Sequência de 6 toques para converter o parceiro. A maioria fecha entre o 3º e o 6º contato.</div>
       <button class="btn-save" type="button" onclick="iniciarCadenciaParc()"><svg class="ic"><use href="#i-repeat"/></svg> Iniciar cadência de prospecção</button>`;
@@ -9144,7 +9254,39 @@ function abrirParceiroEdit(id) {
       .map(l => `<option value="${l.id}">${(l.empresa||'(sem nome)')}${l.status==='Fechado'?' ✓':''}</option>`).join('');
   renderIndicados(p);
   renderParcCadencia();
+  renderParcDocs();
+  const titleEl = document.querySelector('#parcEditModal .modal-title');
+  if (titleEl) titleEl.innerHTML = p.status === 'parceiro_ativo'
+    ? `<svg class="ic"><use href="#i-id"/></svg> Parceiro ativo <span class="parc-badge-ativo">★ ATIVO</span>`
+    : `<svg class="ic"><use href="#i-edit"/></svg> Editar parceiro`;
   document.getElementById('parcEditModal').classList.add('open');
+}
+function renderParcDocs() {
+  const p = _parcAtual(); const box = document.getElementById('peDocs'); if (!p || !box) return;
+  const docs = (p.documentos || []).slice().reverse();
+  box.innerHTML = docs.length ? docs.map(doc => `
+    <div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div><div style="font-weight:600">${doc.titulo || doc.tipo}</div>
+        <div style="color:var(--text3);font-size:12px">${doc.tipo} · gerado em ${fmtDataHora(doc.criado_em)}</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="stage-btn" onclick="reabrirDocParc('${doc.id}')">Abrir / PDF</button>
+        <button class="stage-btn lose" onclick="excluirDocParc('${doc.id}')">Excluir</button>
+      </div>
+    </div>`).join('')
+    : '<div style="color:var(--text3);font-size:12.5px;padding:10px 0">Nenhum documento salvo ainda. Clique em "Gerar contrato de parceria".</div>';
+}
+function reabrirDocParc(docId) {
+  const p = _parcAtual(); if (!p) return;
+  const doc = (p.documentos || []).find(d => d.id === docId); if (!doc) return;
+  const w = window.open('', '_blank'); if (!w) { alert('Permita pop-ups.'); return; }
+  w.document.write(doc.html); w.document.close();
+}
+async function excluirDocParc(docId) {
+  const p = _parcAtual(); if (!p) return;
+  if (!confirm('Excluir este documento do parceiro?')) return;
+  p.documentos = (p.documentos || []).filter(d => d.id !== docId);
+  renderParcDocs();
+  if (sb) { try { await sb.from('parceiros').update({ documentos: p.documentos }).eq('id', p.id); } catch (e) { console.warn(e); } }
 }
 function renderIndicados(p) {
   const box = document.getElementById('peIndicLista');
@@ -9176,11 +9318,10 @@ async function salvarParceiroEdit() {
   if (sb) { try { await sb.from('parceiros').update(patch).eq('id', p.id); } catch (e) { console.warn(e); } }
   closeModal('parcEditModal'); renderParceiros(); showToast('✓ Parceiro atualizado');
 }
-function gerarContratoParceria() {
+async function gerarContratoParceria() {
   const g = k => (document.getElementById(k).value || '').trim();
-  const w = window.open('', '_blank'); if (!w) { alert('Permita pop-ups.'); return; }
   const hoje = new Date().toLocaleDateString('pt-BR');
-  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Contrato de Parceria — ${g('peNome')}</title>
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Contrato de Parceria — ${g('peNome')}</title>
 <style>@media print{.noprint{display:none}}body{font-family:Arial,sans-serif;color:#1a1a1a;max-width:800px;margin:0 auto;padding:40px 48px;line-height:1.5;font-size:13px}h1{text-align:center;font-size:17px;margin:0 0 2px}.sub{text-align:center;font-weight:700;color:#34507a;font-size:12px;margin-bottom:22px}h2{font-size:13px;margin:18px 0 6px}p{margin:7px 0;text-align:justify}.sig div{margin-top:46px;border-top:1px solid #333;width:340px;padding-top:4px;font-weight:700}.btn{background:#e8675b;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700}</style></head><body>
 <div class="noprint" style="position:sticky;top:0;background:#fff;padding:8px 0 14px;border-bottom:1px solid #eee;margin-bottom:18px"><button class="btn" onclick="window.print()">Imprimir / Salvar PDF</button></div>
 <h1>CONTRATO DE PARCERIA COMERCIAL E INDICAÇÃO DE NEGÓCIOS</h1><div class="sub">FLEX ON × ${g('peNome').toUpperCase()}</div>
@@ -9193,9 +9334,17 @@ function gerarContratoParceria() {
 <p style="margin-top:24px">Goiânia/GO, ${hoje}.</p>
 <div class="sig"><div>FLEX ON LTDA. — André Velloso Macêdo</div></div>
 <div class="sig"><div>${g('peNome')} — Parceiro</div></div>
-</body></html>`);
-  w.document.close();
-  showToast('Contrato de parceria gerado — Imprimir → Salvar PDF');
+</body></html>`;
+  const w = window.open('', '_blank'); if (!w) { alert('Permita pop-ups.'); return; }
+  w.document.write(html); w.document.close();
+  const p = _parcAtual();
+  if (p) {
+    p.documentos = p.documentos || [];
+    p.documentos.push({ id: 'doc_' + Date.now(), tipo: 'Contrato', titulo: 'Contrato de Parceria', criado_em: agoraISO(), html });
+    renderParcDocs();
+    if (sb) { try { await sb.from('parceiros').update({ documentos: p.documentos }).eq('id', p.id); } catch (e) { console.warn(e); } }
+  }
+  showToast('Contrato de parceria gerado e salvo em Documentos do parceiro');
 }
 
 // Marca automaticamente como "contatado" quando a Giovanna clica em WhatsApp/Email/Ligar
@@ -9278,10 +9427,11 @@ function renderParceiros() {
     const liP = p.linkedin || p.linkedin_empresa || '';
     if (liP) acoes.push(`<a class="btn-acao" style="background:#0a66c2;color:#fff" href="${liP}" target="_blank" onclick="event.stopPropagation()"><svg class="ic" style="stroke:#fff"><use href="#i-briefcase"/></svg> LinkedIn</a>`);
 
+    const ehAtivo = p.status === 'parceiro_ativo';
     return `
-    <div class="parc-card">
+    <div class="parc-card${ehAtivo ? ' parc-card-ativo' : ''}">
       <div class="parc-head">
-        <div class="parc-nome">${p.nome}</div>
+        <div class="parc-nome">${p.nome}${ehAtivo ? ' <span class="parc-badge-ativo">★ ATIVO</span>' : ''}</div>
         <span class="parc-tipo tipo-${p.tipo}">${TIPO_LABELS[p.tipo] || p.tipo}</span>
       </div>
       <div class="parc-nota">${p.nota || ''} · <em>${p.cidade || ''}</em></div>
@@ -9289,37 +9439,23 @@ function renderParceiros() {
       ${p.site ? `<a class="parc-site" href="https://${p.site}" target="_blank"><svg class="ic"><use href="#i-link"/></svg> ${p.site}</a>` : '<span style="font-size:11px;color:var(--text3)">sem site</span>'}
       ${contatos}
       ${acoes.length ? `<div class="parc-acoes">${acoes.join('')}</div>` : ''}
-      <div class="parc-stage">
-        <span class="parc-stage-lbl">Registrar:</span>
-        <button class="pstage-btn" onclick="setParcStatus('${nomeEsc}','reuniao_feita')">Reunião feita</button>
-        <button class="pstage-btn" onclick="setParcStatus('${nomeEsc}','proposta_enviada')">Proposta enviada</button>
-        <button class="pstage-btn fechar" onclick="setParcStatus('${nomeEsc}','parceiro_ativo')">Fechar parceria</button>
-      </div>
       ${(p.historico && p.historico.length)
         ? `<div class="parc-ult"><svg class="ic"><use href="#i-cal"/></svg> Última: ${p.historico[p.historico.length-1].tipo} · ${fmtDataHora(p.historico[p.historico.length-1].quando)}</div>`
-        : `<div class="parc-ult parc-ult-empty"><svg class="ic"><use href="#i-cal"/></svg> Sem registros ainda — use os botões acima</div>`}
-      <div style="margin:8px 0">
+        : `<div class="parc-ult parc-ult-empty"><svg class="ic"><use href="#i-cal"/></svg> Sem registros ainda — inicie a cadência abaixo</div>`}
+      ${!ehAtivo ? `<div style="margin:8px 0">
         ${p.cadencia
           ? (() => { const prox = proximoToqueParc(p); const feitos = p.cadencia.passos.filter(x=>x.feito).length;
               return `<button class="btn-pitch" type="button" onclick="abrirParceiroEdit('${p.id}')"><svg class="ic"><use href="#i-repeat"/></svg> Cadência ${feitos}/${PARC_CADENCIA_TEMPLATE.length}${prox ? ' · próx: '+prox.tipo : ' · concluída'}</button>`; })()
           : `<button class="btn-pitch" type="button" onclick="iniciarCadenciaParcCard('${p.id}')"><svg class="ic"><use href="#i-repeat"/></svg> Iniciar cadência de prospecção</button>`}
-      </div>
+      </div>` : ''}
       <div class="parc-foot">
         <select class="parc-status" onchange="setParcStatus('${nomeEsc}', this.value)">
           ${Object.entries(PARC_STATUS_LABELS).map(([k, v]) =>
             `<option value="${k}" ${p.status === k ? 'selected' : ''}>${v}</option>`).join('')}
         </select>
-        <button class="btn-pitch" onclick="abrirParceiroEdit('${p.id}')"><svg class="ic"><use href="#i-edit"/></svg> Editar</button>
+        <button class="btn-pitch" onclick="abrirParceiroEdit('${p.id}')"><svg class="ic"><use href="#i-id"/></svg> Ver parceiro</button>
       </div>
       ${(p.clientes_indicados && p.clientes_indicados.length) ? `<div class="parc-ult"><svg class="ic"><use href="#i-users"/></svg> Indicou: ${p.clientes_indicados.map(c=>c.nome).join(', ')}</div>` : ''}
-      <div class="parc-meet-box">
-        <div class="parc-meet-row">
-          <input class="parc-meet-in" type="datetime-local" value="${(p.reuniao_data||'').slice(0,16)}" onchange="setParcMeet('${nomeEsc}','data',this.value)" onclick="event.stopPropagation()" title="Data e hora da reunião">
-          <a class="btn-acao parc-meet-full" href="https://meet.google.com/new" target="_blank" onclick="event.stopPropagation()"><svg class="ic" style="stroke:#fff"><use href="#i-chat"/></svg> Criar sala</a>
-        </div>
-        <input class="parc-meet-in" style="width:100%;margin-top:6px" type="url" placeholder="cole o link do Meet aqui" value="${(p.reuniao_link||'').replace(/"/g,'&quot;')}" onchange="setParcMeet('${nomeEsc}','link',this.value)" onclick="event.stopPropagation()">
-        ${p.reuniao_data?`<div class="parc-ult"><svg class="ic"><use href="#i-chat"/></svg> Reunião: ${fmtDataHora(p.reuniao_data)}${p.reuniao_link?` · <a href="${p.reuniao_link}" target="_blank" onclick="event.stopPropagation()">abrir Meet</a>`:''}</div>`:''}
-      </div>
     </div>`;
   }).join('') ||
     '<p style="color:var(--text3);font-size:13px;padding:20px">Nenhum parceiro com esses filtros.</p>';
