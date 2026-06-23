@@ -5960,6 +5960,19 @@ window.PARCEIROS_DATA = {
   </div>
 </div>
 
+<div class="modal-overlay" id="onboardingModal">
+  <div class="modal" style="max-width:780px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title"><svg class="ic"><use href="#i-repeat"/></svg> Onboarding NR-1</div>
+        <div class="modal-subtitle" id="onbEmpresa">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('onboardingModal')">✕</button>
+    </div>
+    <div id="onboardingBody"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pacoteModal">
   <div class="modal" style="max-width:460px">
     <div class="modal-header">
@@ -6262,8 +6275,8 @@ O FlexON entrega o programa completo — diagnóstico, plano de ação e documen
 Posso te enviar uma proposta personalizada para a ${empresa}?
 
 Att,
-Giovanna | FlexON
-giovanna@flexon.fit`,
+${meuNome()} | FlexON
+${meuEmail() || 'contato@flexon.fit'}`,
       linkedin: `Oi ${nome}! Vi que você está na ${empresa} — com a NR-1 obrigatória desde maio para empresas do setor de ${setor}, achei que faria sentido conversar. O FlexON entrega a adequação completa em 30 dias. Posso mandar mais detalhes?`
     },
     'Diferencial': {
@@ -6278,8 +6291,8 @@ Além disso, a NR-1 (obrigatória desde 26/05/2026) exige que toda empresa com e
 Faz sentido uma conversa de 20 minutos? Posso mostrar cases de empresas de ${setor} com ROI documentado.
 
 Att,
-Giovanna | FlexON
-giovanna@flexon.fit`,
+${meuNome()} | FlexON
+${meuEmail() || 'contato@flexon.fit'}`,
       linkedin: `Oi ${nome}! Trabalho com bem-estar corporativo estratégico para empresas de ${setor} — com a NR-1 obrigatória desde maio, vejo uma oportunidade de transformar conformidade em vantagem competitiva na ${empresa}. Podemos conversar 20 min?`
     },
     'Bem-estar Crítico': {
@@ -6294,8 +6307,8 @@ O FlexON traz programas de bem-estar desenhados especificamente para equipes de 
 Faz sentido uma conversa esta semana?
 
 Att,
-Giovanna | FlexON
-giovanna@flexon.fit`,
+${meuNome()} | FlexON
+${meuEmail() || 'contato@flexon.fit'}`,
       linkedin: `Oi ${nome}! A ${empresa} trabalha com saúde — exatamente o setor mais crítico em burnout no Brasil. Com a NR-1 obrigatória desde maio, o FlexON pode ajudar tanto na conformidade quanto no cuidado real com a equipe. Podemos conversar?`
     },
     'Parceria/Canal': {
@@ -6310,20 +6323,20 @@ O modelo é direto: você indica clientes que precisam de conformidade NR-1 ou p
 Posso te enviar os detalhes do Programa de Parceiros FlexON?
 
 Att,
-Giovanna | FlexON
-giovanna@flexon.fit`,
+${meuNome()} | FlexON
+${meuEmail() || 'contato@flexon.fit'}`,
       linkedin: `Oi ${nome}! Estou estruturando parcerias estratégicas em Goiânia para o FlexON — empresas de ${setor} como a ${empresa} se encaixam perfeitamente no nosso programa de canais. Modelo simples, comissão recorrente. Posso te mandar os detalhes?`
     }
   };
 
   const base = scripts[ab] || scripts['Risco Legal'];
 
-  base.whatsapp = `Olá ${nome}, tudo bem? Aqui é a Giovanna, da Flex ON. A NR-1 está obrigatória desde maio para empresas como a ${empresa}${setor!=='seu setor' ? ' ('+setor+')' : ''} e ajudamos na adequação completa em até 30 dias — diagnóstico, plano de ação e documentação para fiscalização. Posso te mandar um resumo de 1 página?`;
+  base.whatsapp = `Olá ${nome}, tudo bem? Aqui é a ${meuNome()}, da Flex ON. A NR-1 está obrigatória desde maio para empresas como a ${empresa}${setor!=='seu setor' ? ' ('+setor+')' : ''} e ajudamos na adequação completa em até 30 dias — diagnóstico, plano de ação e documentação para fiscalização. Posso te mandar um resumo de 1 página?`;
 
   base.ligacao = `ROTEIRO DE LIGAÇÃO — ${empresa}
 
 Abertura:
-"Oi ${nome}, aqui é a Giovanna, da Flex ON. Você tem 2 minutinhos? Prometo ser objetiva."
+"Oi ${nome}, aqui é a ${meuNome()}, da Flex ON. Você tem 2 minutinhos? Prometo ser objetiva."
 
 Gancho (NR-1):
 "Desde 26/05 a NR-1 virou obrigatória: toda empresa com empregados CLT precisa avaliar e documentar os riscos psicossociais, independentemente do porte. A ${empresa}, com ${func} colaboradores, está no escopo — e a fiscalização começou pelas de médio e grande porte."
@@ -6344,6 +6357,7 @@ Se objeção "já temos SST/PGR":
 // ── PERMISSÕES / PROPRIEDADE (multiusuário) ───────────────────────────────────
 function meuId(){ return window.CAPTURA.user ? window.CAPTURA.user.id : null; }
 function meuEmail(){ return ((window.CAPTURA.user && window.CAPTURA.user.email) || '').toLowerCase(); }
+function meuNome(){ return (window.CAPTURA.user && window.CAPTURA.user.nome) || 'Giovanna'; }
 function souDono(l){ return !!(l && l.dono && meuId() && l.dono === meuId()); } // lead que EU assumi
 function podeB2G(){ return ['giovanna@flexon.fit','comercial@flexon.fit'].includes(meuEmail()); }
 function souGiovanna(){ return meuEmail() === 'giovanna@flexon.fit'; }
@@ -6478,6 +6492,29 @@ function proximoToque(l) {
   return null; // cadência concluída
 }
 
+// Script sugerido para cada toque da cadência de leads (personalizado por vendedor logado)
+function scriptParaToqueLead(l, idx) {
+  const nome = (l.nome_contato || '').split(' ')[0] || 'Prezado(a)';
+  const empresa = l.empresa || 'sua empresa';
+  const base = generateScript(l);
+  const scripts = [
+    base.email,
+    base.linkedin,
+    base.whatsapp,
+    `Assunto: Ainda há tempo — adequação NR-1 da ${empresa}\n\nOlá novamente, ${nome}!\n\nSei que a rotina é puxada — só reforçando: empresas que já adequaram a NR-1 evitam multas e fortalecem a marca empregadora. Posso te mostrar em 15 min como ficaria na ${empresa}?\n\nAtt,\n${meuNome()} | FlexON\n${meuEmail() || 'contato@flexon.fit'}`,
+    base.ligacao,
+    `Oi ${nome}! Te enviei por e-mail um checklist rápido da NR-1 (riscos psicossociais) — só pra você confirmar o que a ${empresa} já tem e o que falta. Recebeu? Qualquer dúvida me chama por aqui mesmo.`,
+    `Oi ${nome}, tudo certo? Fechando a semana: topa um papo de 15 min pra eu te mostrar a proposta personalizada pra ${empresa}? Consigo encaixar hoje ou amanhã, no horário que for melhor pra você.`,
+    `ROTEIRO — Ligação final + e-mail de encerramento — ${empresa}\n\n"Oi ${nome}, aqui é ${meuNome()} de novo, da Flex ON. Essa é minha última tentativa por aqui — não quero ser repetitiva. Se a NR-1 não for prioridade agora, sem problema, só me confirma que eu já paro de te incomodar."\n\nSe não atender: enviar e-mail de encerramento educado, deixando a porta aberta ("Quando fizer sentido, é só me chamar — fico à disposição.").`
+  ];
+  return scripts[idx] || '';
+}
+
+function toggleCadScript(idx) {
+  const box = document.getElementById('cadScriptBox' + idx);
+  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
 function marcarToque(idx) {
   const l = leads.find(x => x.id === currentLeadId);
   if (!l || !l.cadencia) return;
@@ -6509,12 +6546,20 @@ function renderCadenciaModal() {
       const venc = addDias(l.cadencia.inicio, t.dia);
       const isNext = prox && prox.idx === i;
       const cls = passo.feito ? 'done' : (isNext && venc <= hojeStr() ? 'due' : (isNext ? '' : 'future'));
+      const scriptTxt = scriptParaToqueLead(l, i);
       return `
       <div class="cad-step ${cls}">
         <div class="cad-num">${passo.feito ? '✓' : i + 1}</div>
         <div class="cad-info">
           <div class="cad-tipo">${t.icon} ${t.tipo} <span class="cad-fase">${t.fase}</span></div>
           <div class="cad-quando">${passo.feito ? 'Feito em ' + formatBR(passo.quando) : 'Previsto: ' + formatBR(venc)}</div>
+          <div style="margin-top:8px">
+            <button type="button" class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="toggleCadScript(${i})">Ver script sugerido</button>
+            <div id="cadScriptBox${i}" style="display:none;margin-top:8px">
+              <pre id="cadScriptText${i}" style="white-space:pre-wrap;background:var(--bg2,#f7f5f2);border:1px solid var(--line,#eee);border-radius:8px;padding:10px;font-size:12px;font-family:inherit;max-height:220px;overflow:auto">${scriptTxt}</pre>
+              <button type="button" class="copy-btn" onclick="copyScript('cadScriptText${i}', this)">Copiar</button>
+            </div>
+          </div>
         </div>
         <button class="btn-cad ${passo.feito ? 'undo' : 'do'}" onclick="marcarToque(${i})">${passo.feito ? 'Desfazer' : 'Marcar feito'}</button>
       </div>`;
@@ -7897,12 +7942,13 @@ function renderAtivos() {
     <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmt(receita)}</div><div class="l">Receita mensal ativa</div></div>`;
   const body = document.getElementById('ativosBody'); if (!body) return;
   const tabCli = clientes.length ? `<div class="table-wrap" style="margin-top:6px"><table>
-    <thead><tr><th>Cliente</th><th>Contato</th><th>Pacote</th><th>Valor mensal</th><th></th></tr></thead>
+    <thead><tr><th>Cliente</th><th>Contato</th><th>Pacote</th><th>Valor mensal</th><th></th><th></th></tr></thead>
     <tbody>${clientes.map(l => `<tr onclick="openDetail('${l.id}')">
       <td><div class="td-empresa">${l.empresa}</div><div class="td-contato">${l.cidade||''}</div></td>
       <td>${l.nome_contato||'—'}</td><td>${l.pacote||'—'}</td>
       <td style="font-weight:700;color:var(--green)">${fmt(l.valor_fechado||l.valor_estimado)}</td>
       <td><button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();openDetail('${l.id}');setTimeout(abrirContrato,150)">Contrato</button></td>
+      <td><button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();abrirOnboarding('${l.id}')">${l.onboarding ? 'Ver onboarding' : 'Iniciar onboarding'}</button></td>
     </tr>`).join('')}</tbody></table></div>` : '<div style="color:var(--text3);font-size:13px;padding:16px">Nenhum cliente fechado ainda.</div>';
   const tabParc = parc.length ? `<div class="table-wrap" style="margin-top:16px"><table>
     <thead><tr><th>Parceiro ativo</th><th>Tipo</th><th>Cidade</th><th>Contato</th></tr></thead>
@@ -7915,13 +7961,105 @@ function renderAtivos() {
     <div class="section-sub" style="margin-top:18px;font-weight:700;color:var(--text2)">Parceiros ativos</div>${tabParc}`;
 }
 
+// ══ ONBOARDING DO CLIENTE (implantação NR-1, 120 dias) ════════════════════════
+// Fases e entregáveis baseados no fluxo oficial de implantação Flex ON.
+const ONBOARDING_TEMPLATE = [
+  { fase: 'Fase 0 — Onboarding', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
+    'Kickoff: apresentação do time, cronograma de 120 dias e responsáveis',
+    'DOC01 — identificação da empresa, GHEs e critérios de severidade/probabilidade',
+    'DOC15 — cronograma detalhado de implementação (120 dias)',
+    'Acesso à plataforma RPS-1 — conta e setores configurados',
+    'DOC09 — comunicado interno a todos os colaboradores (com recibo assinado)'
+  ]},
+  { fase: 'Fase 1 — Diagnóstico (RPS-1)', dias: 'Dias 6–30', responsavel: 'CS + Colaboradores', passos: [
+    'Envio dos links individuais da pesquisa (dias 6–7)',
+    'Monitoramento das respostas — meta de 95% de confiança estatística (crítico se <60% até o dia 15)',
+    'DOC02 — Inventário de Riscos (8 categorias FRPRT)',
+    'DOC07 — registro formal de participação dos colaboradores',
+    'Comunicação dos resultados (RH / CIPA / gestores)',
+    'Notificação ao PCMSO sobre setores de risco ALTO/CRÍTICO (dia 30)'
+  ]},
+  { fase: 'Fase 2 — Implementação', dias: 'Dias 31–120', responsavel: 'CS + Cliente', passos: [
+    'Investigação: análise do IRO e priorização dos GHEs críticos',
+    'Avaliação Ergonômica Preliminar (AEP) — NR-17',
+    'Entrevistas / grupos focais com colaboradores',
+    'Análise de indicadores organizacionais (afastamentos CID-F, turnover, horas extras, reclamações)',
+    'DOC03 — plano de ação (hierarquia Eliminar → Substituir → Eng. → Adm.)',
+    'Publicação das políticas (DOC04/DOC05 — saúde mental e anti-assédio, Lei 14.457/22)',
+    'Ativação do canal de denúncias (DOC06)',
+    'Treinamento de gestores (DOC11) e treinamento geral NR-1 (DOC12 + DOC16)',
+    'Reavaliação de risco pós-medidas e checklist de conformidade (DOC08/DOC10)'
+  ]},
+  { fase: 'Fase 3 — Monitoramento contínuo', dias: 'Dia 121 em diante', responsavel: 'Flex ON', passos: [
+    'Revisão trimestral de indicadores (DOC08)',
+    'Reaplicação anual do diagnóstico',
+    'Revisão anual do PGR (DOC02/DOC03)',
+    'Reaplicação anual do checklist de conformidade (DOC10)'
+  ]}
+];
+
+function abrirOnboarding(id) {
+  const l = leads.find(x => x.id === id); if (!l) return;
+  _onbLeadId = id;
+  if (!l.onboarding) {
+    l.onboarding = { inicio: hojeStr(), fases: ONBOARDING_TEMPLATE.map(f => ({ passos: f.passos.map(() => ({ feito:false, quando:'' })) })) };
+    save();
+    if (sb) { sb.from('leads').update({ onboarding: l.onboarding }).eq('id', id).then(()=>{}).catch(e=>console.warn(e)); }
+  }
+  document.getElementById('onbEmpresa').textContent = l.empresa || '—';
+  renderOnboardingModal();
+  document.getElementById('onboardingModal').classList.add('open');
+}
+
+async function marcarOnboardingPasso(fi, pi) {
+  const l = leads.find(x => x.id === _onbLeadId); if (!l || !l.onboarding) return;
+  const passo = l.onboarding.fases[fi].passos[pi];
+  passo.feito = !passo.feito; passo.quando = passo.feito ? hojeStr() : '';
+  save(); renderOnboardingModal();
+  if (sb) { try { await sb.from('leads').update({ onboarding: l.onboarding }).eq('id', l.id); } catch (e) { console.warn(e); } }
+}
+
+function renderOnboardingModal() {
+  const l = leads.find(x => x.id === _onbLeadId); const box = document.getElementById('onboardingBody'); if (!l || !box) return;
+  const fases = l.onboarding.fases;
+  const totalPassos = ONBOARDING_TEMPLATE.reduce((s,f)=>s+f.passos.length, 0);
+  const feitosPassos = fases.reduce((s,f)=>s+f.passos.filter(p=>p.feito).length, 0);
+  const pct = Math.round(feitosPassos / totalPassos * 100);
+  box.innerHTML = `
+    <div class="cad-intro" style="margin-bottom:14px">Início: ${formatBR(l.onboarding.inicio)} · Implantação NR-1 em <strong>120 dias</strong> · ${feitosPassos} de ${totalPassos} passos concluídos (${pct}%)</div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:18px">
+      ${ONBOARDING_TEMPLATE.map((f, fi) => {
+        const fasePassos = fases[fi].passos;
+        const faseFeitos = fasePassos.filter(p=>p.feito).length;
+        const faseCompleta = faseFeitos === f.passos.length;
+        return `
+        <div class="cover-card" style="padding:14px 16px;${faseCompleta ? 'border-color:#2faa8655' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+            <div style="font-weight:800;color:${faseCompleta ? 'var(--green)' : 'var(--text)'}">${faseCompleta ? '✓ ' : ''}${f.fase}</div>
+            <div style="font-size:11px;color:var(--text3)">${f.dias} · ${f.responsavel} · ${faseFeitos}/${f.passos.length}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+            ${f.passos.map((texto, pi) => {
+              const passo = fasePassos[pi] || { feito:false, quando:'' };
+              return `<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;${passo.feito ? 'color:var(--text3);text-decoration:line-through' : ''}">
+                <input type="checkbox" style="margin-top:2px" ${passo.feito ? 'checked' : ''} onchange="marcarOnboardingPasso(${fi},${pi})">
+                <span>${texto}${passo.feito && passo.quando ? ` <span style="text-decoration:none;color:var(--text3);font-size:11px">(${formatBR(passo.quando)})</span>` : ''}</span>
+              </label>`;
+            }).join('')}
+          </div>
+        </div>${fi < ONBOARDING_TEMPLATE.length-1 ? '<div style="text-align:center;color:var(--text3);font-size:16px;margin:-8px 0">↓</div>' : ''}`;
+      }).join('')}
+    </div>`;
+}
+
 async function renderEquipe() {
   const body = document.getElementById('equipeBody'); if (!body || !sb) return;
   body.innerHTML = '<div style="color:var(--text3);padding:18px">Carregando equipe...</div>';
-  let perfis = [], todos = [];
+  let perfis = [], todos = [], parceirosTodos = [];
   try {
     const r1 = await sb.from('perfis').select('id,nome,email,papel'); perfis = r1.data || [];
     const r2 = await sb.from('leads').select('dono,status,valor_estimado,valor_fechado'); todos = r2.data || [];
+    const r3 = await sb.from('parceiros').select('dono,status'); parceirosTodos = r3.data || [];
   } catch (e) { body.innerHTML = '<div style="color:var(--red);padding:18px">Erro ao carregar a equipe.</div>'; return; }
   const map = {};
   todos.forEach(l => {
@@ -7931,6 +8069,13 @@ async function renderEquipe() {
     if (l.status === 'Proposta Enviada') m.proposta++;
     if (l.status === 'Fechado') { m.fechado++; m.valorFech += (parseFloat(l.valor_fechado) || parseFloat(l.valor_estimado) || 0); }
     if (!['Fechado','Perdido','Desqualificado'].includes(l.status)) m.valorPipe += ((parseFloat(l.valor_estimado) || 0) * (STAGE_PROB[l.status] || 0)); // ponderado pela etapa (prudente)
+  });
+  // Parceiros são uma tabela separada de leads — contador próprio (não soma com "Leads")
+  const mapParc = {};
+  parceirosTodos.forEach(p => {
+    const d = p.dono || 'sem'; const m = mapParc[d] = mapParc[d] || { total:0, ativo:0 };
+    m.total++;
+    if (p.status === 'parceiro_ativo') m.ativo++;
   });
   const nomeDe = id => { const p = perfis.find(x => x.id === id); return p ? (p.nome || p.email) : '—'; };
   const fmt = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR');
@@ -7959,17 +8104,21 @@ async function renderEquipe() {
   }).join('');
   document.getElementById('equipeConv').innerHTML = `<div class="cover-card" style="padding:14px 18px"><div class="cover-hd" style="margin-bottom:10px"><span class="t">Funil de conversão da equipe</span></div><div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">${convHTML}</div></div>`;
 
-  const linhas = perfis.map(p => ({ p, m: map[p.id] || { total:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 } }))
-    .sort((a, b) => b.m.valorFech - a.m.valorFech);
+  const linhas = perfis.map(p => ({
+    p,
+    m: map[p.id] || { total:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 },
+    mp: mapParc[p.id] || { total:0, ativo:0 }
+  })).sort((a, b) => b.m.valorFech - a.m.valorFech);
   body.innerHTML = `<div class="table-wrap" style="margin-top:6px"><table>
-    <thead><tr><th>Vendedor(a)</th><th>Papel</th><th>Leads</th><th>Contatados</th><th>Propostas</th><th>Fechados</th><th>Receita fechada</th><th>Em pipeline</th></tr></thead>
-    <tbody>${linhas.map(({p, m}) => `<tr>
+    <thead><tr><th>Vendedor(a)</th><th>Papel</th><th>Leads</th><th>Contatados</th><th>Propostas</th><th>Fechados</th><th>Receita fechada</th><th>Em pipeline</th><th>Parceiros</th></tr></thead>
+    <tbody>${linhas.map(({p, m, mp}) => `<tr>
       <td><div class="td-empresa">${p.nome || p.email}</div><div class="td-contato">${p.email}</div></td>
       <td><span class="badge badge-${p.papel === 'master' ? 'fechado' : 'novo'}">${p.papel === 'master' ? 'Master' : 'Vendedor'}</span></td>
       <td>${m.total}</td><td>${m.contatado}</td><td>${m.proposta}</td>
       <td style="font-weight:700">${m.fechado}</td>
       <td style="font-weight:700;color:var(--green)">${fmt(m.valorFech)}</td>
       <td style="color:var(--accent)">${fmt(m.valorPipe)}</td>
+      <td>${mp.total}${mp.ativo ? ` <span style="color:var(--green);font-weight:700">(${mp.ativo} ativo${mp.ativo>1?'s':''})</span>` : ''}</td>
     </tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -8447,7 +8596,7 @@ async function setParcStatus(nome, status) {
 
 function copyPitch(tipo, nome) {
   const pitch = window.PARCEIROS_DATA?.pitch_por_tipo?.[tipo] || '';
-  const texto = `Olá! Aqui é a Giovanna, da Flex ON.\n\n${pitch}\n\nFaz sentido uma conversa rápida sobre como funcionaria entre Flex ON e ${nome}?`;
+  const texto = `Olá! Aqui é a ${meuNome()}, da Flex ON.\n\n${pitch}\n\nFaz sentido uma conversa rápida sobre como funcionaria entre Flex ON e ${nome}?`;
   navigator.clipboard.writeText(texto).then(() => showToast('✓ Pitch copiado — cole no email ou WhatsApp'));
 }
 
@@ -8458,6 +8607,7 @@ const TIPO_LABELS = {
 
 // ── EDIÇÃO DE PARCEIRO + clientes indicados + contrato de parceria ──────────────
 let _parcEditId = null;
+let _onbLeadId = null;
 // ── DONO DO PARCEIRO (pool / assumir / liberar) ───────────────────────────────
 function ownerParcHTML(p){
   const me = meuId();
@@ -8514,6 +8664,24 @@ async function marcarToqueParc(idx){
   const passo = p.cadencia.passos[idx]; passo.feito = !passo.feito; passo.quando = passo.feito ? hojeStr() : '';
   await persistParcCadencia(p); renderParcCadencia();
 }
+// Script sugerido para cada toque da cadência de parceiros (personalizado por vendedor logado)
+function scriptParaToqueParceiro(p, idx) {
+  const nome = p.nome || 'o parceiro';
+  const pitch = (window.PARCEIROS_DATA?.pitch_por_tipo?.[p.tipo] || 'Trabalhamos com conformidade NR-1 (riscos psicossociais) e bem-estar corporativo, e buscamos parceiros para indicação com comissão recorrente.');
+  const scripts = [
+    `Olá! Aqui é a ${meuNome()}, da Flex ON.\n\n${pitch}\n\nFaz sentido uma conversa rápida sobre como funcionaria entre Flex ON e ${nome}?`,
+    `Oi! Vi o trabalho da ${nome} e queria me conectar — estou estruturando parcerias estratégicas em Goiânia para a Flex ON (conformidade NR-1 + bem-estar corporativo). Pode ser uma boa parceria de indicação. Podemos conversar?`,
+    `Oi! Passando para saber se viu minha mensagem sobre a parceria Flex ON × ${nome}. Resumo rápido: você indica, a gente fecha, e você recebe comissão recorrente por contrato ativo. Topa uma conversa de 15 min?`,
+    `Assunto: Proposta de parceria Flex ON × ${nome}\n\nOlá!\n\nSegue a proposta de parceria: você indica empresas que precisam de conformidade NR-1 (obrigatória para toda empresa com CLT) ou bem-estar corporativo, a Flex ON cuida de todo o processo, e a ${nome} recebe comissão recorrente por cada contrato ativado.\n\nPosso te enviar o material completo e os percentuais de comissão?\n\nAtt,\n${meuNome()} | FlexON\n${meuEmail() || 'contato@flexon.fit'}`,
+    `ROTEIRO — Ligação de alinhamento com ${nome}\n\n"Oi, aqui é ${meuNome()}, da Flex ON. Recebeu a proposta de parceria? Queria entender se faz sentido pra vocês e alinhar os próximos passos — já temos casos funcionando bem com parceiros do mesmo segmento."`,
+    `Oi! Entendo que talvez não seja o momento — só queria deixar a porta aberta: se mudar de ideia sobre a parceria Flex ON × ${nome}, é só me chamar. Sucesso por aí!`
+  ];
+  return scripts[idx] || '';
+}
+function toggleParcCadScript(idx) {
+  const box = document.getElementById('parcCadScriptBox' + idx);
+  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
 function renderParcCadencia(){
   const p = _parcAtual(); const box = document.getElementById('peCadencia'); if (!box) return;
   if (!p.cadencia){
@@ -8529,9 +8697,18 @@ function renderParcCadencia(){
       const venc = addDias(p.cadencia.inicio, t.dia);
       const isNext = prox && prox.idx === i;
       const cls = passo.feito ? 'done' : (isNext && venc<=hojeStr() ? 'due' : (isNext ? '' : 'future'));
+      const scriptTxt = scriptParaToqueParceiro(p, i);
       return `<div class="cad-step ${cls}">
         <div class="cad-num">${passo.feito ? '✓' : i+1}</div>
-        <div class="cad-info"><div class="cad-tipo">${t.icon} ${t.tipo}</div><div class="cad-quando">${passo.feito ? 'Feito em '+formatBR(passo.quando) : 'Previsto: '+formatBR(venc)}</div></div>
+        <div class="cad-info"><div class="cad-tipo">${t.icon} ${t.tipo}</div><div class="cad-quando">${passo.feito ? 'Feito em '+formatBR(passo.quando) : 'Previsto: '+formatBR(venc)}</div>
+          <div style="margin-top:8px">
+            <button type="button" class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="toggleParcCadScript(${i})">Ver script sugerido</button>
+            <div id="parcCadScriptBox${i}" style="display:none;margin-top:8px">
+              <pre id="parcCadScriptText${i}" style="white-space:pre-wrap;background:var(--bg2,#f7f5f2);border:1px solid var(--line,#eee);border-radius:8px;padding:10px;font-size:12px;font-family:inherit;max-height:220px;overflow:auto">${scriptTxt}</pre>
+              <button type="button" class="copy-btn" onclick="copyScript('parcCadScriptText${i}', this)">Copiar</button>
+            </div>
+          </div>
+        </div>
         <button class="btn-cad ${passo.feito?'undo':'do'}" type="button" onclick="marcarToqueParc(${i})">${passo.feito?'Desfazer':'Marcar feito'}</button>
       </div>`;
     }).join('')}`;
@@ -8670,7 +8847,7 @@ function renderParceiros() {
 
     // Botões de ação com pitch pré-preenchido
     const pitchMsg = encodeURIComponent(
-      `Olá! Aqui é a Giovanna, da Flex ON.\n\n${(window.PARCEIROS_DATA?.pitch_por_tipo?.[p.tipo] || '')}\n\nFaz sentido uma conversa rápida sobre como funcionaria entre Flex ON e ${p.nome}?`);
+      `Olá! Aqui é a ${meuNome()}, da Flex ON.\n\n${(window.PARCEIROS_DATA?.pitch_por_tipo?.[p.tipo] || '')}\n\nFaz sentido uma conversa rápida sobre como funcionaria entre Flex ON e ${p.nome}?`);
     const mailSubject = encodeURIComponent(`Parceria Flex ON × ${p.nome} — NR-1`);
     const acoes = [];
     acoes.push(p.whatsapp
@@ -8879,6 +9056,7 @@ function paraCloud(l) {
   if (l.documentos && l.documentos.length) o.documentos = l.documentos; // só envia se já houver documento salvo (coluna jsonb)
   if (l.sinais) o.sinais = l.sinais; // sinal de intenção (só envia se existir; requer coluna sinais)
   if (l.parceiro_indicador) o.parceiro_indicador = l.parceiro_indicador; // parceiro que indicou (requer coluna)
+  if (l.onboarding) o.onboarding = l.onboarding; // checklist de implantação NR-1 (requer coluna)
   // dono: preserva null (lead no POOL) e o dono existente; só preenche com o usuário atual quando o campo nunca foi definido
   o.dono = (l.dono === undefined ? (window.CAPTURA.user && window.CAPTURA.user.id) || null : l.dono);
   return o;
