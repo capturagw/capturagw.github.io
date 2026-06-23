@@ -145,6 +145,24 @@
     transform: translateY(-1px);
   }
 
+  .btn-vip {
+    background: linear-gradient(135deg, #f0c14b, #d4a017);
+    color: #2a1f00;
+    border: none;
+    padding: 10px 18px;
+    border-radius: var(--r);
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    box-shadow: 0 3px 10px rgba(212,160,23,0.4);
+    transition: all 0.15s;
+  }
+  .btn-vip:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(212,160,23,0.5); }
+
   .btn-secondary {
     background: var(--white);
     color: var(--text2);
@@ -5611,8 +5629,22 @@ window.PARCEIROS_DATA = {
   <div class="parceiros-wrap">
     <div class="section-title"><svg class="ic"><use href="#i-flag"/></svg> Clientes & Parceiros ativos</div>
     <div class="section-sub">Contratos fechados e parcerias ativas. Sua carteira em produção.</div>
-    <div class="hoje-stats" id="ativosStats" style="margin-top:14px"></div>
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+      <div class="hoje-stats" id="ativosStats" style="margin-top:14px;flex:1"></div>
+      <div id="ativosCxrBtnBox" style="margin-top:14px"></div>
+    </div>
     <div id="ativosBody" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="contasReceberModal">
+  <div class="modal" style="max-width:920px">
+    <div class="modal-header">
+      <div class="modal-title"><svg class="ic"><use href="#i-money"/></svg> Contas a Receber</div>
+      <button class="modal-close" onclick="closeModal('contasReceberModal')">✕</button>
+    </div>
+    <div id="contasReceberStats" class="hoje-stats" style="margin-bottom:14px"></div>
+    <div id="contasReceberBody"></div>
   </div>
 </div>
 
@@ -5664,7 +5696,8 @@ window.PARCEIROS_DATA = {
       <button class="mtab" id="mtab-cadencia" onclick="showModalTab('cadencia')"><svg class="ic"><use href="#i-repeat"/></svg> Cadência</button>
       <button class="mtab" id="mtab-historico" onclick="showModalTab('historico')"><svg class="ic"><use href="#i-cal"/></svg> Histórico</button>
       <button class="mtab" id="mtab-docs" onclick="showModalTab('docs')"><svg class="ic"><use href="#i-id"/></svg> Documentos</button>
-      <button class="mtab" id="mtab-edit" onclick="showModalTab('edit')"><svg class="ic"><use href="#i-edit"/></svg> Editar</button>
+      <button class="mtab" id="mtab-financeiro" style="display:none" onclick="showModalTab('financeiro')"><svg class="ic"><use href="#i-money"/></svg> Financeiro</button>
+      <button class="mtab" id="mtab-edit" onclick="showModalTab('edit')"><svg class="ic"><use href="#i-edit"/></svg> <span id="mtabEditLabel">Editar</span></button>
     </div>
 
     <!-- TAB: DOCUMENTOS -->
@@ -5674,6 +5707,12 @@ window.PARCEIROS_DATA = {
         <button class="stage-btn fechar" onclick="abrirContrato()"><svg class="ic" style="stroke:#fff"><use href="#i-id"/></svg> Gerar contrato</button>
       </div>
       <div id="docsList"></div>
+    </div>
+
+    <!-- TAB: FINANCEIRO (só Giovanna/André, só cliente ativo) -->
+    <div id="tabFinanceiro" style="display:none">
+      <div class="form-label" style="margin:2px 0 8px">12 primeiras faturas do contrato</div>
+      <div id="financeiroList"></div>
     </div>
 
     <!-- TAB: HISTÓRICO -->
@@ -5733,7 +5772,7 @@ window.PARCEIROS_DATA = {
           <div class="form-value" id="modalProximoPassoDisplay">—</div>
         </div>
       </div>
-      <div class="stage-actions">
+      <div class="stage-actions" id="stageActionsBox">
         <span class="stage-actions-label">Avançar etapa:</span>
         <button class="stage-btn" onclick="avancarStatus('Contatado')">Contatado</button>
         <button class="stage-btn" onclick="avancarStatus('Proposta Enviada')">Proposta enviada</button>
@@ -5742,6 +5781,9 @@ window.PARCEIROS_DATA = {
         <button class="stage-btn lose" onclick="avancarStatus('Perdido')">Perdido</button>
       </div>
 
+      <div id="clienteAtivoBox" style="display:none;margin-bottom:14px"></div>
+
+      <div id="reuniaoBoxPerfil">
       <div class="form-label" style="margin:16px 0 6px">Reunião (Google Meet)</div>
       <div class="reuniao-box">
         <div class="reuniao-row">
@@ -5760,13 +5802,14 @@ window.PARCEIROS_DATA = {
           <button class="btn-save" style="font-size:12px;padding:8px 14px" onclick="salvarReuniao()"><svg class="ic"><use href="#i-chat"/></svg> Salvar reunião</button>
         </div>
       </div>
+      </div><!-- /reuniaoBoxPerfil -->
 
       <div class="modal-actions" style="padding-top:12px;border-top:1px solid var(--border);margin-top:14px">
-        <button class="btn-script" style="font-size:12px;padding:8px 14px" onclick="showModalTab('script')">✉️ Ver Script de Abordagem →</button>
+        <button class="btn-script" id="btnVerScript" style="font-size:12px;padding:8px 14px" onclick="showModalTab('script')">✉️ Ver Script de Abordagem →</button>
         <a class="btn-meet" id="btnPerfilMeet" style="display:none;font-size:12px;padding:8px 14px" href="#" target="_blank"><svg class="ic" style="stroke:#fff"><use href="#i-chat"/></svg> Abrir reunião Meet</a>
         <a class="btn-secondary" id="btnPerfilLinkedin" style="display:none;font-size:12px;padding:8px 14px" href="#" target="_blank"><svg class="ic"><use href="#i-briefcase"/></svg> LinkedIn</a>
-        <button class="btn-save" id="btnContrato" style="display:none;font-size:12px;padding:8px 14px" onclick="abrirContrato()"><svg class="ic"><use href="#i-copy"/></svg> Gerar contrato</button>
-        <button class="btn-primary" onclick="showModalTab('edit')"><svg class="ic"><use href="#i-edit"/></svg> Editar Lead</button>
+        <button class="btn-save" id="btnContrato" style="display:none;font-size:12px;padding:8px 14px" onclick="abrirContrato()"><svg class="ic"><use href="#i-copy"/></svg> <span id="btnContratoLabel">Gerar contrato</span></button>
+        <button class="btn-primary" onclick="showModalTab('edit')"><svg class="ic"><use href="#i-edit"/></svg> <span id="btnEditarLeadLabel">Editar Lead</span></button>
       </div>
     </div>
 
@@ -6455,12 +6498,13 @@ function renderPlanodeHoje() {
 
 // ── MODAL TABS ────────────────────────────────────────────────────────────────
 function showModalTab(tab) {
-  ['perfil','script','cadencia','historico','docs','edit'].forEach(t => {
+  ['perfil','script','cadencia','historico','docs','financeiro','edit'].forEach(t => {
     document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? 'block' : 'none';
     document.getElementById('mtab-' + t).classList.toggle('active', t === tab);
   });
   if (tab === 'cadencia') renderCadenciaModal();
   if (tab === 'docs') renderDocsModal();
+  if (tab === 'financeiro') renderFinanceiroModal();
 }
 
 // ── COPY SCRIPT ───────────────────────────────────────────────────────────────
@@ -7309,6 +7353,34 @@ function openDetail(id) {
     else { liBtn.style.display = 'none'; }
   }
 
+  // Cliente ativo (contrato fechado): adapta a UI do modal — sem cadência/script/avançar etapa, financeiro restrito
+  const ehAtivo = l.status === 'Fechado';
+  document.getElementById('mtab-script').style.display = ehAtivo ? 'none' : '';
+  document.getElementById('mtab-cadencia').style.display = ehAtivo ? 'none' : '';
+  document.getElementById('mtab-financeiro').style.display = (ehAtivo && podeB2G()) ? '' : 'none';
+  document.getElementById('mtab-perfil').innerHTML = `<svg class="ic"><use href="#i-id"/></svg> ${ehAtivo ? 'Dados do cliente' : 'Perfil'}`;
+  document.getElementById('stageActionsBox').style.display = ehAtivo ? 'none' : '';
+  document.getElementById('reuniaoBoxPerfil').style.display = ehAtivo ? 'none' : '';
+  document.getElementById('btnVerScript').style.display = ehAtivo ? 'none' : '';
+  document.getElementById('btnEditarLeadLabel').textContent = ehAtivo ? 'Editar Cliente' : 'Editar Lead';
+  const temContrato = (l.documentos||[]).some(d => d.tipo === 'Contrato');
+  document.getElementById('btnContratoLabel').textContent = temContrato ? 'Editar contrato' : 'Gerar contrato';
+  const caBox = document.getElementById('clienteAtivoBox');
+  if (ehAtivo) {
+    const onb = onboardingStatusAtual(l);
+    const fmtV = v => 'R$ ' + Math.round(parseFloat(v)||0).toLocaleString('pt-BR');
+    caBox.style.display = '';
+    caBox.innerHTML = `<div class="cover-card" style="padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div><div class="form-label" style="margin:0">Data de contratação</div><div class="form-value">${fmtDataBR(dataContratacaoLead(l))}</div></div>
+        <div><div class="form-label" style="margin:0">Pacote</div><div class="form-value">${l.pacote || '—'}</div></div>
+        <div><div class="form-label" style="margin:0">Valor mensal</div><div class="form-value" style="color:var(--green);font-weight:700">${fmtV(l.valor_fechado||l.valor_estimado)}</div></div>
+        <div><div class="form-label" style="margin:0">Onboarding</div><div class="form-value">${onb ? `<span class="badge badge-${onb.pct>=100?'fechado':'novo'}">${onb.label} · ${onb.pct}%</span>` : `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="closeModal('detailModal');abrirOnboarding('${l.id}')">Iniciar onboarding</button>`}</div></div>
+      </div>
+      ${onb ? `<button class="btn-secondary" style="margin-top:10px;padding:6px 12px;font-size:11.5px" onclick="closeModal('detailModal');abrirOnboarding('${l.id}')">Ver onboarding</button>` : ''}
+    </div>`;
+  } else { caBox.style.display = 'none'; }
+
   // Histórico
   const hl = document.getElementById('histList');
   const hist = (l.historico||[]).slice().reverse();
@@ -7427,6 +7499,15 @@ function abrirPacoteModal(mode) {
   onPacoteSel();
   document.getElementById('pacoteModal').classList.add('open');
 }
+function gerarFaturasIniciais(valorMensal) {
+  const hoje = new Date();
+  const arr = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, hoje.getDate());
+    arr.push({ num: i + 1, vencimento: d.toISOString().slice(0, 10), valor: valorMensal, forma: 'Pix', status: 'pendente', pago_em: null });
+  }
+  return arr;
+}
 function confirmarPacote() {
   const l = leads.find(x => x.id === currentLeadId); if (!l) return;
   const pac = document.getElementById('pacoteSel').value;
@@ -7439,6 +7520,8 @@ function confirmarPacote() {
   l.ultima_interacao = hojeStr();
   if (_pacoteMode === 'fechar') {
     l.valor_estimado = val; l.valor_fechado = val; l.status = 'Fechado';
+    l.data_contratacao = hojeStr();
+    if (!l.faturas) l.faturas = gerarFaturasIniciais(val);
     logEvento(l, 'Fechado');
     logEvento(l, 'Fechado: ' + detalhe);
   } else {
@@ -7856,6 +7939,99 @@ function gerarContrato() {
   closeModal('contratoModal');
   showToast('Contrato gerado e salvo em Documentos do cliente');
 }
+function dataContratacaoLead(l) {
+  if (l.data_contratacao) return l.data_contratacao;
+  const ev = (l.historico||[]).filter(h=>h.tipo==='Fechado').slice(-1)[0];
+  return ev ? ev.quando.slice(0,10) : (l.ultima_interacao || l.data_adicao || '');
+}
+function fmtDataBR(iso) { if (!iso) return '—'; const [y,m,d] = String(iso).slice(0,10).split('-'); return `${d}/${m}/${y}`; }
+function onboardingStatusAtual(l) {
+  if (!l.onboarding) return null;
+  const fases = l.onboarding.fases || [];
+  for (let fi = 0; fi < ONBOARDING_TEMPLATE.length; fi++) {
+    const total = ONBOARDING_TEMPLATE[fi].passos.length;
+    const feitos = (fases[fi] && fases[fi].passos || []).filter(p => p.feito).length;
+    if (feitos < total) return { label: ONBOARDING_TEMPLATE[fi].fase, pct: Math.round(feitos/total*100) };
+  }
+  return { label: 'Concluído', pct: 100 };
+}
+function abrirContasReceber() {
+  if (!podeB2G()) { showToast('Acesso restrito'); return; }
+  const clientes = leads.filter(l => l.status === 'Fechado' && l.faturas && l.faturas.length);
+  const fmt = v => 'R$ ' + Math.round(parseFloat(v)||0).toLocaleString('pt-BR');
+  const todasFaturas = [];
+  clientes.forEach(l => (l.faturas||[]).forEach((f, idx) => todasFaturas.push({ l, f, idx })));
+  const hoje = hojeStr();
+  const pendentes = todasFaturas.filter(x => x.f.status !== 'pago');
+  const atrasadas = pendentes.filter(x => x.f.vencimento < hoje);
+  const totalPendente = pendentes.reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
+  const totalAtrasado = atrasadas.reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
+  const recebidoMes = todasFaturas.filter(x => x.f.status==='pago' && (x.f.pago_em||'').slice(0,7) === hoje.slice(0,7)).reduce((s,x) => s + (parseFloat(x.f.valor)||0), 0);
+  const receitaMensalAtiva = clientes.reduce((s, l) => s + (parseFloat(l.valor_fechado) || parseFloat(l.valor_estimado) || 0), 0);
+  document.getElementById('contasReceberStats').innerHTML = `
+    <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmt(receitaMensalAtiva)}</div><div class="l">Receita mensal ativa</div></div>
+    <div class="hoje-stat"><div class="n" style="color:var(--accent)">${fmt(totalPendente)}</div><div class="l">A receber (pendente)</div></div>
+    <div class="hoje-stat"><div class="n" style="color:var(--red)">${fmt(totalAtrasado)}</div><div class="l">Em atraso</div></div>
+    <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmt(recebidoMes)}</div><div class="l">Recebido este mês</div></div>`;
+  const linhas = todasFaturas.slice().sort((a,b) => a.f.vencimento.localeCompare(b.f.vencimento));
+  document.getElementById('contasReceberBody').innerHTML = linhas.length ? `<div class="table-wrap"><table>
+    <thead><tr><th>Cliente</th><th>Fatura</th><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Status</th><th></th></tr></thead>
+    <tbody>${linhas.map(({l,f,idx}) => { const atrasada = f.status !== 'pago' && f.vencimento < hoje; return `<tr>
+      <td><div class="td-empresa" style="cursor:pointer" onclick="closeModal('contasReceberModal');openDetail('${l.id}');setTimeout(()=>showModalTab('financeiro'),150)">${l.empresa}</div></td>
+      <td>#${f.num}/12</td>
+      <td style="${atrasada?'color:var(--red);font-weight:700':''}">${fmtDataBR(f.vencimento)}</td>
+      <td style="font-weight:700">${fmt(f.valor)}</td>
+      <td>${f.forma||'—'}</td>
+      <td><span class="badge badge-${f.status==='pago'?'fechado':(atrasada?'perdido':'novo')}">${f.status==='pago'?'Pago':(atrasada?'Atrasada':'Pendente')}</span></td>
+      <td>${f.status==='pago'
+        ? `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="liquidarFaturaGlobal('${l.id}',${idx},false)">Desfazer</button>`
+        : `<button class="btn-save" style="padding:5px 10px;font-size:11px" onclick="liquidarFaturaGlobal('${l.id}',${idx},true)">Liquidar</button>`}</td>
+    </tr>`; }).join('')}</tbody></table></div>` : '<div style="color:var(--text3);font-size:13px;padding:18px">Nenhuma fatura gerada ainda — faturas são criadas automaticamente quando um cliente fecha contrato.</div>';
+  document.getElementById('contasReceberModal').classList.add('open');
+}
+async function liquidarFaturaGlobal(leadId, idx, pago) {
+  const l = leads.find(x => x.id === leadId); if (!l || !l.faturas) return;
+  l.faturas[idx].status = pago ? 'pago' : 'pendente';
+  l.faturas[idx].pago_em = pago ? hojeStr() : null;
+  await persistFaturas(l);
+  abrirContasReceber();
+}
+function renderFinanceiroModal() {
+  const l = leads.find(x => x.id === currentLeadId); const box = document.getElementById('financeiroList'); if (!l || !box) return;
+  if (!podeB2G()) { box.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:18px">Acesso restrito.</div>'; return; }
+  if (!l.faturas || !l.faturas.length) { box.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:18px">Sem faturas geradas para este cliente.</div>'; return; }
+  const fmt = v => 'R$ ' + Math.round(parseFloat(v)||0).toLocaleString('pt-BR');
+  box.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Status</th><th></th></tr></thead>
+    <tbody>${l.faturas.map((f,i) => `<tr>
+      <td>${f.num}</td>
+      <td>${fmtDataBR(f.vencimento)}</td>
+      <td><input class="form-input" style="padding:5px 8px;font-size:12px;width:100px" type="number" value="${f.valor}" onchange="alterarFatura(${i},'valor',this.value)"></td>
+      <td><select class="form-input" style="padding:5px 8px;font-size:12px" onchange="alterarFatura(${i},'forma',this.value)">
+        ${['Pix','Boleto','Cartão','Transferência'].map(fp => `<option ${f.forma===fp?'selected':''}>${fp}</option>`).join('')}
+      </select></td>
+      <td><span class="badge badge-${f.status==='pago'?'fechado':'novo'}">${f.status==='pago'?'Pago':'Pendente'}</span></td>
+      <td>${f.status==='pago'
+        ? `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="liquidarFatura(${i},false)">Desfazer</button>`
+        : `<button class="btn-save" style="padding:5px 10px;font-size:11px" onclick="liquidarFatura(${i},true)">Liquidar</button>`}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+async function persistFaturas(l) {
+  save();
+  if (sb) { try { await sb.from('leads').update({ faturas: l.faturas }).eq('id', l.id); } catch(e){ console.warn(e); } }
+}
+async function alterarFatura(idx, campo, valor) {
+  const l = leads.find(x => x.id === currentLeadId); if (!l || !l.faturas) return;
+  l.faturas[idx][campo] = campo === 'valor' ? (parseFloat(valor)||0) : valor;
+  await persistFaturas(l);
+}
+async function liquidarFatura(idx, pago) {
+  const l = leads.find(x => x.id === currentLeadId); if (!l || !l.faturas) return;
+  l.faturas[idx].status = pago ? 'pago' : 'pendente';
+  l.faturas[idx].pago_em = pago ? hojeStr() : null;
+  await persistFaturas(l);
+  renderFinanceiroModal();
+}
 function renderDocsModal() {
   const l = leads.find(x => x.id === currentLeadId); const box = document.getElementById('docsList');
   if (!l || !box) return;
@@ -7969,22 +8145,26 @@ function renderAtivos() {
   const parc = getParceiros().filter(p => p.status === 'parceiro_ativo');
   const cnt = document.getElementById('ativosCount'); if (cnt) cnt.textContent = clientes.length + parc.length;
   const fmt = v => 'R$ ' + Math.round(parseFloat(v) || 0).toLocaleString('pt-BR');
-  const receita = clientes.reduce((s, l) => s + (parseFloat(l.valor_fechado) || parseFloat(l.valor_estimado) || 0), 0);
   const st = document.getElementById('ativosStats');
   if (st) st.innerHTML = `
     <div class="hoje-stat"><div class="n" style="color:var(--green)">${clientes.length}</div><div class="l">Clientes ativos</div></div>
-    <div class="hoje-stat"><div class="n" style="color:var(--primary);font-size:20px">${parc.length}</div><div class="l">Parceiros ativos</div></div>
-    <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmt(receita)}</div><div class="l">Receita mensal ativa</div></div>`;
+    <div class="hoje-stat"><div class="n" style="color:var(--primary);font-size:20px">${parc.length}</div><div class="l">Parceiros ativos</div></div>`;
+  const cxr = document.getElementById('ativosCxrBtnBox');
+  if (cxr) cxr.innerHTML = podeB2G() ? `<button class="btn-vip" onclick="abrirContasReceber()"><svg class="ic"><use href="#i-money"/></svg> ★ Contas a Receber</button>` : '';
   const body = document.getElementById('ativosBody'); if (!body) return;
   const tabCli = clientes.length ? `<div class="table-wrap" style="margin-top:6px"><table>
-    <thead><tr><th>Cliente</th><th>Contato</th><th>Pacote</th><th>Valor mensal</th><th></th><th></th></tr></thead>
-    <tbody>${clientes.map(l => `<tr onclick="openDetail('${l.id}')">
+    <thead><tr><th>Cliente</th><th>Contato</th><th>Pacote</th><th>Valor mensal</th><th>Contratação</th><th>Onboarding</th><th></th></tr></thead>
+    <tbody>${clientes.map(l => { const onb = onboardingStatusAtual(l); const temContrato = (l.documentos||[]).some(d=>d.tipo==='Contrato'); return `<tr onclick="openDetail('${l.id}')">
       <td><div class="td-empresa">${l.empresa}</div><div class="td-contato">${l.cidade||''}</div></td>
       <td>${l.nome_contato||'—'}</td><td>${l.pacote||'—'}</td>
       <td style="font-weight:700;color:var(--green)">${fmt(l.valor_fechado||l.valor_estimado)}</td>
-      <td><button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();openDetail('${l.id}');setTimeout(abrirContrato,150)">Contrato</button></td>
-      <td><button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();abrirOnboarding('${l.id}')">${l.onboarding ? 'Ver onboarding' : 'Iniciar onboarding'}</button></td>
-    </tr>`).join('')}</tbody></table></div>` : '<div style="color:var(--text3);font-size:13px;padding:16px">Nenhum cliente fechado ainda.</div>';
+      <td>${fmtDataBR(dataContratacaoLead(l))}</td>
+      <td>${onb ? `<span class="badge badge-${onb.pct>=100?'fechado':'novo'}" style="font-size:10.5px">${onb.label} · ${onb.pct}%</span>` : '<span style="color:var(--text3);font-size:11px">não iniciado</span>'}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();openDetail('${l.id}');setTimeout(abrirContrato,150)">${temContrato ? 'Editar contrato' : 'Contrato'}</button>
+        <button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();abrirOnboarding('${l.id}')">${l.onboarding ? 'Ver onboarding' : 'Iniciar onboarding'}</button>
+      </td>
+    </tr>`; }).join('')}</tbody></table></div>` : '<div style="color:var(--text3);font-size:13px;padding:16px">Nenhum cliente fechado ainda.</div>';
   const tabParc = parc.length ? `<div class="table-wrap" style="margin-top:16px"><table>
     <thead><tr><th>Parceiro ativo</th><th>Tipo</th><th>Cidade</th><th>Contato</th></tr></thead>
     <tbody>${parc.map(p => `<tr onclick="abrirParceiroEdit('${p.id}')" style="cursor:pointer">
@@ -8000,36 +8180,36 @@ function renderAtivos() {
 // Fases e entregáveis baseados no fluxo oficial de implantação Flex ON.
 const ONBOARDING_TEMPLATE = [
   { fase: 'Fase 0 — Onboarding', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
-    'Kickoff: apresentação do time, cronograma de 120 dias e responsáveis',
-    'DOC01 — identificação da empresa, GHEs e critérios de severidade/probabilidade',
-    'DOC15 — cronograma detalhado de implementação (120 dias)',
-    'Acesso à plataforma RPS-1 — conta e setores configurados',
-    'DOC09 — comunicado interno a todos os colaboradores (com recibo assinado)'
+    { texto: 'Kickoff: apresentação do time, cronograma de 120 dias e responsáveis', dica: 'Agende em até 48h após a assinatura. Apresente o time Flex ON, o cliente e alinhe expectativas — quem é o ponto focal do cliente.' },
+    { texto: 'DOC01 — identificação da empresa, GHEs e critérios de severidade/probabilidade', dica: 'Levante CNAE, setores, nº de colaboradores por GHE (Grupo Homogêneo de Exposição) e os critérios que vão pontuar severidade x probabilidade.' },
+    { texto: 'DOC15 — cronograma detalhado de implementação (120 dias)', dica: 'Gere o cronograma com as datas reais (não genéricas) e envie por e-mail ao ponto focal do cliente.' },
+    { texto: 'Acesso à plataforma RPS-1 — conta e setores configurados', dica: 'Crie a conta do cliente, cadastre os setores/GHEs e teste o envio de um link de pesquisa antes de liberar pro cliente.' },
+    { texto: 'DOC09 — comunicado interno a todos os colaboradores (com recibo assinado)', dica: 'O comunicado precisa ser assinado/recebido — isso é evidência de conformidade caso haja fiscalização.' }
   ]},
   { fase: 'Fase 1 — Diagnóstico (RPS-1)', dias: 'Dias 6–30', responsavel: 'CS + Colaboradores', passos: [
-    'Envio dos links individuais da pesquisa (dias 6–7)',
-    'Monitoramento das respostas — meta de 95% de confiança estatística (crítico se <60% até o dia 15)',
-    'DOC02 — Inventário de Riscos (8 categorias FRPRT)',
-    'DOC07 — registro formal de participação dos colaboradores',
-    'Comunicação dos resultados (RH / CIPA / gestores)',
-    'Notificação ao PCMSO sobre setores de risco ALTO/CRÍTICO (dia 30)'
+    { texto: 'Envio dos links individuais da pesquisa (dias 6–7)', dica: 'Envie por e-mail E WhatsApp — taxa de resposta cai muito se for só um canal.' },
+    { texto: 'Monitoramento das respostas — meta de 95% de confiança estatística (crítico se <60% até o dia 15)', dica: 'Se passar do dia 15 com <60%, escale para o cliente: pedir que gestores cobrem as equipes a responder.' },
+    { texto: 'DOC02 — Inventário de Riscos (8 categorias FRPRT)', dica: 'Cruze as respostas da pesquisa com as 8 categorias FRPRT antes de fechar o inventário.' },
+    { texto: 'DOC07 — registro formal de participação dos colaboradores', dica: 'Guarde print/relatório da plataforma com % de respondentes por setor — vira anexo do DOC07.' },
+    { texto: 'Comunicação dos resultados (RH / CIPA / gestores)', dica: 'Reunião de devolutiva com RH/CIPA antes de avançar pra Fase 2 — eles precisam validar prioridades.' },
+    { texto: 'Notificação ao PCMSO sobre setores de risco ALTO/CRÍTICO (dia 30)', dica: 'Formalize por e-mail ao médico do trabalho responsável pelo PCMSO do cliente, com cópia pro RH.' }
   ]},
   { fase: 'Fase 2 — Implementação', dias: 'Dias 31–120', responsavel: 'CS + Cliente', passos: [
-    'Investigação: análise do IRO e priorização dos GHEs críticos',
-    'Avaliação Ergonômica Preliminar (AEP) — NR-17',
-    'Entrevistas / grupos focais com colaboradores',
-    'Análise de indicadores organizacionais (afastamentos CID-F, turnover, horas extras, reclamações)',
-    'DOC03 — plano de ação (hierarquia Eliminar → Substituir → Eng. → Adm.)',
-    'Publicação das políticas (DOC04/DOC05 — saúde mental e anti-assédio, Lei 14.457/22)',
-    'Ativação do canal de denúncias (DOC06)',
-    'Treinamento de gestores (DOC11) e treinamento geral NR-1 (DOC12 + DOC16)',
-    'Reavaliação de risco pós-medidas e checklist de conformidade (DOC08/DOC10)'
+    { texto: 'Investigação: análise do IRO e priorização dos GHEs críticos', dica: 'Priorize pelos GHEs com maior severidade x maior nº de pessoas expostas, não só pela média geral.' },
+    { texto: 'Avaliação Ergonômica Preliminar (AEP) — NR-17', dica: 'Foque nos setores apontados como críticos na pesquisa — não precisa avaliar 100% da empresa de uma vez.' },
+    { texto: 'Entrevistas / grupos focais com colaboradores', dica: 'Grupos de 5-8 pessoas, sem a presença de gestores diretos, para ter respostas mais honestas.' },
+    { texto: 'Análise de indicadores organizacionais (afastamentos CID-F, turnover, horas extras, reclamações)', dica: 'Peça ao RH os últimos 12 meses desses indicadores — eles embasam o plano de ação.' },
+    { texto: 'DOC03 — plano de ação (hierarquia Eliminar → Substituir → Eng. → Adm.)', dica: 'Sempre tente medidas de Eliminação/Substituição antes de cair só em treinamento — é o que a fiscalização espera ver.' },
+    { texto: 'Publicação das políticas (DOC04/DOC05 — saúde mental e anti-assédio, Lei 14.457/22)', dica: 'As políticas precisam estar visíveis e acessíveis (intranet, mural, etc.), não só assinadas e guardadas numa gaveta.' },
+    { texto: 'Ativação do canal de denúncias (DOC06)', dica: 'Teste o canal você mesma antes de divulgar pro cliente — confirme que chega notificação e há fluxo de resposta.' },
+    { texto: 'Treinamento de gestores (DOC11) e treinamento geral NR-1 (DOC12 + DOC16)', dica: 'Treine gestores primeiro — eles vão liderar a cultura. Depois o treinamento geral, com presença registrada (DOC16).' },
+    { texto: 'Reavaliação de risco pós-medidas e checklist de conformidade (DOC08/DOC10)', dica: 'Compare o risco antes/depois das medidas — esse comparativo é o que prova efetividade pro cliente e pra fiscalização.' }
   ]},
   { fase: 'Fase 3 — Monitoramento contínuo', dias: 'Dia 121 em diante', responsavel: 'Flex ON', passos: [
-    'Revisão trimestral de indicadores (DOC08)',
-    'Reaplicação anual do diagnóstico',
-    'Revisão anual do PGR (DOC02/DOC03)',
-    'Reaplicação anual do checklist de conformidade (DOC10)'
+    { texto: 'Revisão trimestral de indicadores (DOC08)', dica: 'Agende lembrete recorrente — esse passo costuma ser esquecido depois que o cliente "esfria".' },
+    { texto: 'Reaplicação anual do diagnóstico', dica: 'Reaplique a mesma pesquisa (ou versão atualizada) pra comparar evolução ano a ano.' },
+    { texto: 'Revisão anual do PGR (DOC02/DOC03)', dica: 'Revise junto com a reaplicação do diagnóstico — os dois andam juntos.' },
+    { texto: 'Reaplicação anual do checklist de conformidade (DOC10)', dica: 'Use esse checklist pra gerar um relatório anual de conformidade pro cliente — é um ótimo gatilho de renovação/upsell.' }
   ]}
 ];
 
@@ -8074,11 +8254,14 @@ function renderOnboardingModal() {
             <div style="font-size:11px;color:var(--text3)">${f.dias} · ${f.responsavel} · ${faseFeitos}/${f.passos.length}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
-            ${f.passos.map((texto, pi) => {
+            ${f.passos.map((item, pi) => {
               const passo = fasePassos[pi] || { feito:false, quando:'' };
               return `<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;${passo.feito ? 'color:var(--text3);text-decoration:line-through' : ''}">
                 <input type="checkbox" style="margin-top:2px" ${passo.feito ? 'checked' : ''} onchange="marcarOnboardingPasso(${fi},${pi})">
-                <span>${texto}${passo.feito && passo.quando ? ` <span style="text-decoration:none;color:var(--text3);font-size:11px">(${formatBR(passo.quando)})</span>` : ''}</span>
+                <span>
+                  ${item.texto}${passo.feito && passo.quando ? ` <span style="text-decoration:none;color:var(--text3);font-size:11px">(${formatBR(passo.quando)})</span>` : ''}
+                  ${item.dica ? `<div style="text-decoration:none;color:var(--text3);font-size:11px;margin-top:2px">💡 ${item.dica}</div>` : ''}
+                </span>
               </label>`;
             }).join('')}
           </div>
@@ -9228,7 +9411,7 @@ function startReloadCountdown() {
 
 // ══ NUVEM (Supabase) — login, papéis e sincronização de leads ═════════════════
 let sb = null;
-const LEAD_COLS = ['id','empresa','nome_contato','cargo','email','telefone','site','setor','funcionarios','faturamento','cidade','linkedin_empresa','linkedin_contato','canal','fonte','status','abordagem','prioridade','valor_estimado','pacote','proposta_valor','valor_fechado','reuniao_data','reuniao_link','motivo_desq','notas','cadencia','historico','data_adicao','ultima_interacao','proximo_passo','data_proximo'];
+const LEAD_COLS = ['id','empresa','nome_contato','cargo','email','telefone','site','setor','funcionarios','faturamento','cidade','linkedin_empresa','linkedin_contato','canal','fonte','status','abordagem','prioridade','valor_estimado','pacote','proposta_valor','valor_fechado','reuniao_data','reuniao_link','motivo_desq','notas','cadencia','historico','data_adicao','ultima_interacao','proximo_passo','data_proximo','data_contratacao'];
 const _num = v => (v === '' || v === undefined || v === null || isNaN(Number(v))) ? null : Number(v);
 function paraCloud(l) {
   const o = {};
@@ -9241,6 +9424,7 @@ function paraCloud(l) {
   if (l.sinais) o.sinais = l.sinais; // sinal de intenção (só envia se existir; requer coluna sinais)
   if (l.parceiro_indicador) o.parceiro_indicador = l.parceiro_indicador; // parceiro que indicou (requer coluna)
   if (l.onboarding) o.onboarding = l.onboarding; // checklist de implantação NR-1 (requer coluna)
+  if (l.faturas) o.faturas = l.faturas; // financeiro: 12 primeiras faturas do contrato (requer coluna)
   // dono: preserva null (lead no POOL) e o dono existente; só preenche com o usuário atual quando o campo nunca foi definido
   o.dono = (l.dono === undefined ? (window.CAPTURA.user && window.CAPTURA.user.id) || null : l.dono);
   return o;
