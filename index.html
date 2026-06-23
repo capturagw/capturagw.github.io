@@ -5394,6 +5394,11 @@ window.PARCEIROS_DATA = {
   </div>
 </div>
 
+<div class="cover-card" id="metaIndividualCard" style="display:none;margin-bottom:18px">
+  <div class="cover-hd"><span class="t">Suas metas (definidas pela liderança)</span></div>
+  <div id="metaIndividualBody"></div>
+</div>
+
 <div class="toolbar">
   <div class="search-wrap">
     <span class="search-icon"><svg class="ic"><use href="#i-search"/></svg></span>
@@ -5983,6 +5988,23 @@ window.PARCEIROS_DATA = {
       <button class="modal-close" onclick="closeModal('pipelineVendedorModal')">✕</button>
     </div>
     <div id="pipelineVendedorBody"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="metaVendedorModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title"><svg class="ic"><use href="#i-flag"/></svg> Atribuir meta — <span id="mvNome">vendedor(a)</span></div>
+      <button class="modal-close" onclick="closeModal('metaVendedorModal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full"><label class="form-label">Meta de contatos (leads contatados)</label><input class="form-input" id="mvContatos" type="number" placeholder="20"></div>
+      <div class="form-group full"><label class="form-label">Meta de reuniões agendadas</label><input class="form-input" id="mvReunioes" type="number" placeholder="10"></div>
+      <div class="form-group full"><label class="form-label">Meta de fechamentos</label><input class="form-input" id="mvFechamentos" type="number" placeholder="3"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="salvarMetaVendedor()">Salvar meta</button>
+    </div>
   </div>
 </div>
 
@@ -8073,9 +8095,9 @@ async function renderEquipe() {
   body.innerHTML = '<div style="color:var(--text3);padding:18px">Carregando equipe...</div>';
   let perfis = [], todos = [], parceirosTodos = [];
   try {
-    const r1 = await sb.from('perfis').select('id,nome,email,papel'); perfis = r1.data || [];
-    const r2 = await sb.from('leads').select('id,empresa,nome_contato,canal,status,valor_estimado,valor_fechado,dono'); todos = r2.data || [];
-    const r3 = await sb.from('parceiros').select('id,nome,tipo,status,dono'); parceirosTodos = r3.data || [];
+    const r1 = await sb.from('perfis').select('id,nome,email,papel,metas'); perfis = r1.data || [];
+    const r2 = await sb.from('leads').select('id,empresa,nome_contato,canal,status,valor_estimado,valor_fechado,dono,historico,cadencia,reuniao_data'); todos = r2.data || [];
+    const r3 = await sb.from('parceiros').select('id,nome,tipo,status,dono,historico,cadencia'); parceirosTodos = r3.data || [];
   } catch (e) { body.innerHTML = '<div style="color:var(--red);padding:18px">Erro ao carregar a equipe.</div>'; return; }
   _equipeCache = { perfis, leadsAll: todos, parceirosAll: parceirosTodos };
   const map = {};
@@ -8128,32 +8150,42 @@ async function renderEquipe() {
     m: map[p.id] || { total:0, cf:0, parceiro:0, residencial:0, contatado:0, proposta:0, fechado:0, valorFech:0, valorPipe:0 },
     mp: mapParc[p.id] || { total:0, ativo:0 }
   })).sort((a, b) => b.m.valorFech - a.m.valorFech);
+  const VENDOR_CORES = ['#f4ebe1','#e8f0ec','#eee6f4','#fdeee6','#e6f0f4','#f4f0e2','#ece6f4','#e8f4ec'];
   body.innerHTML = `<div class="table-wrap" style="margin-top:6px"><table>
     <thead><tr><th>Vendedor(a)</th><th>Papel</th><th>Leads C.F</th><th>Leads Parceiros</th><th>Leads Residenciais</th><th>Receita Ativa</th><th>Em Pipeline</th></tr></thead>
-    <tbody>${linhas.map(({p, m, mp}) => `<tr style="cursor:pointer" onclick="abrirPipelineVendedor('${p.id}')">
+    <tbody>${linhas.map(({p, m, mp}, idx) => { const cor = VENDOR_CORES[idx % VENDOR_CORES.length]; return `<tr style="cursor:pointer;background:${cor}" onclick="abrirPipelineVendedor('${p.id}')">
       <td><div class="td-empresa">${p.nome || p.email}</div><div class="td-contato">${p.email}</div></td>
       <td><span class="badge badge-${p.papel === 'master' ? 'fechado' : 'novo'}">${p.papel === 'master' ? 'Master' : 'Vendedor'}</span></td>
       <td>${m.cf}</td>
-      <td>${m.parceiro}${mp.total ? ` <span style="color:var(--text3);font-size:11px">(+${mp.total} na tabela)</span>` : ''}</td>
+      <td>${mp.total}</td>
       <td>${m.residencial}</td>
       <td style="font-weight:700;color:var(--green)">${fmt(m.valorFech)}</td>
       <td style="color:var(--accent)">${fmt(m.valorPipe)}</td>
     </tr>
-    <tr style="background:transparent"><td colspan="7" style="text-align:center;padding:6px 0 14px;border-top:none">
+    <tr style="background:${cor}"><td colspan="7" style="text-align:center;padding:6px 0 14px;border-top:none">
       <button class="btn-secondary" style="padding:6px 14px;font-size:11.5px" onclick="event.stopPropagation();abrirPipelineVendedor('${p.id}')">Ver pipeline do vendedor</button>
-    </td></tr>`).join('')}</tbody></table></div>`;
+      <button class="btn-secondary" style="padding:6px 14px;font-size:11.5px" onclick="event.stopPropagation();abrirMetaVendedor('${p.id}')">Atribuir meta</button>
+    </td></tr>`; }).join('')}</tbody></table></div>`;
 }
 
+function ultimaAcaoLead(l) {
+  if (l.historico && l.historico.length) {
+    const h = l.historico[l.historico.length - 1];
+    return `${h.tipo} · ${fmtDataHora(h.quando)}`;
+  }
+  if (l.cadencia) return 'Cadência iniciada, sem toques registrados ainda';
+  return 'Assumiu o lead — ainda não iniciou a cadência';
+}
 function abrirPipelineVendedor(id) {
   const p = _equipeCache.perfis.find(x => x.id === id); if (!p) return;
   const meusLeads = _equipeCache.leadsAll.filter(l => l.dono === id);
   const meusParc = _equipeCache.parceirosAll.filter(x => x.dono === id);
   const cf = meusLeads.filter(l => l.canal !== 'Parceiro' && l.canal !== 'Residencial');
-  const parc = meusLeads.filter(l => l.canal === 'Parceiro');
   const res = meusLeads.filter(l => l.canal === 'Residencial');
   const contatados = meusLeads.filter(l => l.status === 'Contatado').length;
   const propostas = meusLeads.filter(l => l.status === 'Proposta Enviada').length;
-  const fechados = meusLeads.filter(l => l.status === 'Fechado').length;
+  const ativos = meusLeads.filter(l => l.status === 'Fechado').length;
+  const parceirosAtivos = meusParc.filter(x => x.status === 'parceiro_ativo').length;
   const valorFech = meusLeads.filter(l => l.status === 'Fechado').reduce((s,l) => s + (parseFloat(l.valor_fechado) || parseFloat(l.valor_estimado) || 0), 0);
   const valorPipe = meusLeads.filter(l => !['Fechado','Perdido','Desqualificado'].includes(l.status)).reduce((s,l) => s + ((parseFloat(l.valor_estimado) || 0) * (STAGE_PROB[l.status] || 0)), 0);
   document.getElementById('pvNome').textContent = p.nome || p.email;
@@ -8163,39 +8195,84 @@ function abrirPipelineVendedor(id) {
         <span style="font-weight:600">${l.empresa || l.nome_contato || '(sem nome)'}</span>
         <span class="badge badge-${(l.status||'').toLowerCase().includes('fechado')?'fechado':'novo'}" style="font-size:10px">${l.status || '—'}</span>
       </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">Última ação: ${ultimaAcaoLead(l)}</div>
     </div>`).join('') : `<div style="color:var(--text3);font-size:12.5px;padding:6px 0">${vazio}</div>`;
   const listaParc = arr => arr.length ? arr.map(x => `<div class="hoje-item" style="cursor:pointer" onclick="closeModal('pipelineVendedorModal');abrirParceiroEdit('${x.id}')">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
         <span style="font-weight:600">${x.nome}</span>
         <span class="badge badge-${x.status === 'parceiro_ativo' ? 'fechado' : 'novo'}" style="font-size:10px">${x.status || '—'}</span>
       </div>
-    </div>`).join('') : `<div style="color:var(--text3);font-size:12.5px;padding:6px 0">Nenhum parceiro assumido na tabela de parceiros.</div>`;
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">Última ação: ${(x.historico && x.historico.length) ? x.historico[x.historico.length-1].tipo+' · '+fmtDataHora(x.historico[x.historico.length-1].quando) : (x.cadencia ? 'Cadência iniciada, sem toques ainda' : 'Assumiu o parceiro — ainda não iniciou a cadência')}</div>
+    </div>`).join('') : `<div style="color:var(--text3);font-size:12.5px;padding:6px 0">Nenhum parceiro assumido.</div>`;
+  const metas = p.metas;
+  const metaHTML = metas ? `
+    <div style="margin-top:16px">
+      <div class="cover-hd" style="margin-bottom:10px"><span class="t">Metas atribuídas</span></div>
+      <div style="display:flex;gap:22px;justify-content:center;padding:6px 0">
+        ${[
+          { label:'Contatos', valor: contatados, meta: metas.contatos, cor:'var(--text2)' },
+          { label:'Reuniões', valor: meusLeads.filter(l=>l.reuniao_data).length, meta: metas.reunioes, cor:'var(--accent)' },
+          { label:'Fechamentos', valor: ativos, meta: metas.fechamentos, cor:'var(--green)' }
+        ].filter(g => g.meta).map(g => { const pct = Math.min(100, Math.round(g.valor / g.meta * 100));
+          return `<div style="text-align:center;width:70px">
+            <div style="height:120px;width:28px;margin:0 auto;background:rgba(0,0,0,.06);border-radius:8px;display:flex;align-items:flex-end;overflow:hidden">
+              <div style="width:100%;height:${pct}%;background:${g.cor};border-radius:8px 8px 0 0;transition:height .4s"></div>
+            </div>
+            <div style="font-size:13px;font-weight:800;margin-top:6px">${g.valor}/${g.meta}</div>
+            <div style="font-size:10.5px;color:var(--text3)">${g.label}</div>
+            <div style="font-size:10.5px;font-weight:700;color:${pct>=100?'var(--green)':'var(--text2)'}">${pct}%</div>
+          </div>`; }).join('')}
+      </div>
+    </div>` : '';
   document.getElementById('pipelineVendedorBody').innerHTML = `
     <div class="hoje-stats">
       <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:18px">${contatados}</div><div class="l">Contatados</div></div>
       <div class="hoje-stat"><div class="n" style="color:var(--accent);font-size:18px">${propostas}</div><div class="l">Propostas</div></div>
-      <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:18px">${fechados}</div><div class="l">Fechados</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:18px">${ativos}</div><div class="l">Clientes Ativos</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:18px">${parceirosAtivos}</div><div class="l">Parceiros Ativos</div></div>
       <div class="hoje-stat"><div class="n" style="color:var(--green)">${fmtReais(valorFech)}</div><div class="l">Receita fechada</div></div>
       <div class="hoje-stat"><div class="n" style="color:var(--accent)">${fmtReais(valorPipe)}</div><div class="l">Em pipeline</div></div>
     </div>
+    ${metaHTML}
     <div style="margin-top:16px">
       <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Cliente Final (${cf.length})</span></div>
       ${lista(cf, 'Nenhum lead cliente final.')}
-    </div>
-    <div style="margin-top:16px">
-      <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Parceiros (${parc.length})</span></div>
-      ${lista(parc, 'Nenhum lead via parceiro.')}
     </div>
     <div style="margin-top:16px">
       <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Residenciais (${res.length})</span></div>
       ${lista(res, 'Nenhum lead residencial.')}
     </div>
     <div style="margin-top:16px">
-      <div class="cover-hd" style="margin-bottom:6px"><span class="t">Parceiros assumidos (${meusParc.length})</span></div>
+      <div class="cover-hd" style="margin-bottom:6px"><span class="t">Leads Parceiros / Parceiros assumidos (${meusParc.length})</span></div>
       ${listaParc(meusParc)}
     </div>`;
   document.getElementById('pipelineVendedorModal').classList.add('open');
 }
+
+function abrirMetaVendedor(id) {
+  const p = _equipeCache.perfis.find(x => x.id === id); if (!p) return;
+  _metaVendedorId = id;
+  document.getElementById('mvNome').textContent = p.nome || p.email;
+  const m = p.metas || {};
+  document.getElementById('mvContatos').value = m.contatos || '';
+  document.getElementById('mvReunioes').value = m.reunioes || '';
+  document.getElementById('mvFechamentos').value = m.fechamentos || '';
+  document.getElementById('metaVendedorModal').classList.add('open');
+}
+async function salvarMetaVendedor() {
+  const id = _metaVendedorId; if (!id || !sb) return;
+  const metas = {
+    contatos: parseInt(document.getElementById('mvContatos').value) || 0,
+    reunioes: parseInt(document.getElementById('mvReunioes').value) || 0,
+    fechamentos: parseInt(document.getElementById('mvFechamentos').value) || 0
+  };
+  try { await sb.from('perfis').update({ metas }).eq('id', id); } catch (e) { console.warn(e); showToast('Erro ao salvar meta'); return; }
+  const p = _equipeCache.perfis.find(x => x.id === id); if (p) p.metas = metas;
+  closeModal('metaVendedorModal');
+  showToast('✓ Meta atribuída');
+  renderEquipe();
+}
+let _metaVendedorId = null;
 
 async function distribuirPool() {
   if ((window.CAPTURA.user?.papel) !== 'master') { showToast('Apenas o master pode distribuir o pool'); return; }
@@ -8387,6 +8464,32 @@ function renderPlanoDate() {
 
 // ══ METAS DO MÊS ══════════════════════════════════════════════════════════════
 const METAS_KEY = 'flexon_metas_v1';
+function renderMetaIndividual() {
+  const card = document.getElementById('metaIndividualCard'); if (!card) return;
+  const metas = window.CAPTURA.user && window.CAPTURA.user.metas;
+  if (!metas || !(metas.contatos || metas.reunioes || metas.fechamentos)) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  const meusLeads = leads.filter(souDono);
+  const contatados = meusLeads.filter(l => l.status && l.status !== 'Novo Lead').length;
+  const reunioes = meusLeads.filter(l => l.reuniao_data).length;
+  const fechamentos = meusLeads.filter(l => l.status === 'Fechado').length;
+  const grupos = [
+    { label:'Contatos', valor: contatados, meta: metas.contatos, cor:'var(--text2)' },
+    { label:'Reuniões agendadas', valor: reunioes, meta: metas.reunioes, cor:'var(--accent)' },
+    { label:'Fechamentos', valor: fechamentos, meta: metas.fechamentos, cor:'var(--green)' }
+  ].filter(g => g.meta);
+  document.getElementById('metaIndividualBody').innerHTML = `<div style="display:flex;gap:28px;justify-content:center;padding:10px 0;flex-wrap:wrap">
+    ${grupos.map(g => { const pct = Math.min(100, Math.round(g.valor / g.meta * 100));
+      return `<div style="text-align:center;width:90px">
+        <div style="height:140px;width:34px;margin:0 auto;background:rgba(0,0,0,.06);border-radius:9px;display:flex;align-items:flex-end;overflow:hidden">
+          <div style="width:100%;height:${pct}%;background:${g.cor};border-radius:9px 9px 0 0;transition:height .5s"></div>
+        </div>
+        <div style="font-size:15px;font-weight:800;margin-top:7px">${g.valor}/${g.meta}</div>
+        <div style="font-size:11px;color:var(--text3)">${g.label}</div>
+        <div style="font-size:11px;font-weight:700;color:${pct>=100?'var(--green)':'var(--text2)'}">${pct>=100?'🎉 batida!':pct+'%'}</div>
+      </div>`; }).join('')}
+  </div>`;
+}
 function getMetas() {
   const m = JSON.parse(localStorage.getItem(METAS_KEY) || '{}');
   return { fechamento: m.fechamento || 50000, propostas: m.propostas || 20 };
@@ -8461,6 +8564,7 @@ function renderHero() {
     'Foque na próxima ação, não no número da meta. A meta é consequência.'
   ]);
   document.getElementById('whMsg').innerHTML = `${msg}<div style="margin-top:10px;font-size:13px;color:var(--text3);font-style:italic">💡 ${frase}</div>`;
+  renderMetaIndividual();
   const metas = getMetas();
   const fech = leads.filter(fechadoNoMes).reduce((s,l)=> s + (parseInt(l.valor_estimado)||0), 0);
   const pct = Math.min(100, Math.round(fech / (metas.fechamento||1) * 100));
@@ -8669,12 +8773,6 @@ async function setParcStatus(nome, status) {
   else showToast('✓ ' + nome + ' → ' + (PARC_STATUS_LABELS[status] || status));
 }
 
-function copyPitch(tipo, nome) {
-  const pitch = window.PARCEIROS_DATA?.pitch_por_tipo?.[tipo] || '';
-  const texto = `Olá! Aqui é a ${meuNome()}, da Flex ON.\n\n${pitch}\n\nFaz sentido uma conversa rápida sobre como funcionaria entre Flex ON e ${nome}?`;
-  navigator.clipboard.writeText(texto).then(() => showToast('✓ Pitch copiado — cole no email ou WhatsApp'));
-}
-
 const TIPO_LABELS = {
   'clinica_sst': 'Clínica SST', 'contabilidade': 'Contabilidade',
   'corretora_beneficios': 'Corretora', 'consultoria_rh': 'Consultoria RH', 'outro': 'Outro'
@@ -8733,6 +8831,12 @@ async function iniciarCadenciaParc(){
   p.cadencia = { inicio: hojeStr(), passos: PARC_CADENCIA_TEMPLATE.map(()=>({ feito:false, quando:'' })) };
   if (p.status === 'novo') setParcStatus(p.nome, 'contatado');
   await persistParcCadencia(p); renderParcCadencia(); showToast('Cadência de prospecção iniciada');
+}
+async function iniciarCadenciaParcCard(id) {
+  const p = (PARCEIROS_CLOUD || []).find(x => String(x.id) === String(id)); if (!p || p.cadencia) return;
+  p.cadencia = { inicio: hojeStr(), passos: PARC_CADENCIA_TEMPLATE.map(()=>({ feito:false, quando:'' })) };
+  if (p.status === 'novo') setParcStatus(p.nome, 'contatado');
+  await persistParcCadencia(p); showToast('Cadência de prospecção iniciada');
 }
 async function marcarToqueParc(idx){
   const p = _parcAtual(); if (!p || !p.cadencia) return;
@@ -8957,12 +9061,17 @@ function renderParceiros() {
       ${(p.historico && p.historico.length)
         ? `<div class="parc-ult"><svg class="ic"><use href="#i-cal"/></svg> Última: ${p.historico[p.historico.length-1].tipo} · ${fmtDataHora(p.historico[p.historico.length-1].quando)}</div>`
         : `<div class="parc-ult parc-ult-empty"><svg class="ic"><use href="#i-cal"/></svg> Sem registros ainda — use os botões acima</div>`}
+      <div style="margin:8px 0">
+        ${p.cadencia
+          ? (() => { const prox = proximoToqueParc(p); const feitos = p.cadencia.passos.filter(x=>x.feito).length;
+              return `<button class="btn-pitch" type="button" onclick="abrirParceiroEdit('${p.id}')"><svg class="ic"><use href="#i-repeat"/></svg> Cadência ${feitos}/${PARC_CADENCIA_TEMPLATE.length}${prox ? ' · próx: '+prox.tipo : ' · concluída'}</button>`; })()
+          : `<button class="btn-pitch" type="button" onclick="iniciarCadenciaParcCard('${p.id}')"><svg class="ic"><use href="#i-repeat"/></svg> Iniciar cadência de prospecção</button>`}
+      </div>
       <div class="parc-foot">
         <select class="parc-status" onchange="setParcStatus('${nomeEsc}', this.value)">
           ${Object.entries(PARC_STATUS_LABELS).map(([k, v]) =>
             `<option value="${k}" ${p.status === k ? 'selected' : ''}>${v}</option>`).join('')}
         </select>
-        <button class="btn-pitch" onclick="copyPitch('${p.tipo}', '${nomeEsc}')"><svg class="ic"><use href="#i-copy"/></svg> Copiar pitch</button>
         <button class="btn-pitch" onclick="abrirParceiroEdit('${p.id}')"><svg class="ic"><use href="#i-edit"/></svg> Editar</button>
       </div>
       ${(p.clientes_indicados && p.clientes_indicados.length) ? `<div class="parc-ult"><svg class="ic"><use href="#i-users"/></svg> Indicou: ${p.clientes_indicados.map(c=>c.nome).join(', ')}</div>` : ''}
@@ -9223,7 +9332,12 @@ async function aposLogin(session) {
     const { data: pf } = await sb.from('perfis').select('foto_url').eq('id', session.user.id).single();
     if (pf && pf.foto_url) foto = pf.foto_url;
   } catch (e) {}
-  window.CAPTURA.user = { id: session.user.id, email: session.user.email, nome, papel, foto };
+  let metas = null;
+  try {
+    const { data: pm } = await sb.from('perfis').select('metas').eq('id', session.user.id).single();
+    if (pm && pm.metas) metas = pm.metas;
+  } catch (e) {}
+  window.CAPTURA.user = { id: session.user.id, email: session.user.email, nome, papel, foto, metas };
 
   // carrega leads da nuvem; se vazio e há dados locais, migra
   let cloud = [];
