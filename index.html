@@ -163,6 +163,26 @@
   }
   .btn-vip:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(212,160,23,0.5); }
 
+  .apptab-vip {
+    background: linear-gradient(135deg, #f0c14b, #d4a017) !important;
+    color: #2a1f00 !important;
+    font-weight: 800;
+  }
+  .fin-banner {
+    display: flex; align-items: center; gap: 16px;
+    background: linear-gradient(135deg, #fdf3da, #f7e2ab);
+    border: 1px solid #e3c266;
+    border-radius: 14px;
+    padding: 18px 22px;
+  }
+  .fin-banner-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, #f0c14b, #d4a017);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(212,160,23,0.35);
+  }
+
   .btn-secondary {
     background: var(--white);
     color: var(--text2);
@@ -1330,9 +1350,9 @@
   .desq-donut-hole span { font-size: 11px; color: var(--text3); }
   .desq-legenda { flex: 1; min-width: 220px; }
   .desq-leg-titulo { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text2); margin-bottom: 10px; }
-  .desq-leg-item { display: flex; align-items: center; gap: 9px; padding: 4px 0; font-size: 13px; }
+  .desq-leg-item { display: flex; align-items: center; gap: 7px; padding: 4px 0; font-size: 13px; }
   .desq-leg-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
-  .desq-leg-nome { flex: 1; color: var(--text); }
+  .desq-leg-nome { color: var(--text); }
   .desq-leg-n { color: var(--text3); font-weight: 600; }
 
   /* ─── DONUT das metas ─────────────────────────────── */
@@ -5355,6 +5375,7 @@ window.PARCEIROS_DATA = {
   <button class="app-tab" id="apptab-parceiros" onclick="switchAppView('parceiros')"><svg class="ic"><use href="#i-hands"/></svg> Parceiros <span class="kanban-count" id="parcCount"></span></button>
   <button class="app-tab" id="apptab-ativos" onclick="switchAppView('ativos')"><svg class="ic"><use href="#i-flag"/></svg> Ativos <span class="kanban-count" id="ativosCount">0</span></button>
   <button class="app-tab" id="apptab-b2g" onclick="switchAppView('b2g')"><svg class="ic"><use href="#i-building"/></svg> B2G <span class="kanban-count" id="b2gCount">0</span></button>
+  <button class="app-tab apptab-vip" id="apptab-financeiro" onclick="switchAppView('financeiro')" style="display:none"><svg class="ic"><use href="#i-money"/></svg> ★ Financeiro</button>
   <button class="app-tab" id="apptab-desq" onclick="switchAppView('desq')"><svg class="ic"><use href="#i-trash"/></svg> Desqualificados <span class="kanban-count" id="desqCount">0</span></button>
 </nav>
 
@@ -5637,14 +5658,18 @@ window.PARCEIROS_DATA = {
   </div>
 </div>
 
-<div class="modal-overlay" id="contasReceberModal">
-  <div class="modal" style="max-width:920px">
-    <div class="modal-header">
-      <div class="modal-title"><svg class="ic"><use href="#i-money"/></svg> Contas a Receber</div>
-      <button class="modal-close" onclick="closeModal('contasReceberModal')">✕</button>
+<!-- ═══ VIEW: FINANCEIRO (Ambiente Financeiro · Contas a Receber — só Giovanna/André) ═══ -->
+<div class="app-view" id="appview-financeiro">
+  <div class="parceiros-wrap">
+    <div class="fin-banner">
+      <div class="fin-banner-icon"><svg class="ic" style="width:26px;height:26px;stroke:#2a1f00"><use href="#i-money"/></svg></div>
+      <div>
+        <div class="section-title" style="margin:0">Ambiente Financeiro</div>
+        <div class="section-sub" style="margin:2px 0 0">Contas a Receber — visão consolidada de todas as faturas dos clientes ativos. Acesso restrito.</div>
+      </div>
     </div>
-    <div id="contasReceberStats" class="hoje-stats" style="margin-bottom:14px"></div>
-    <div id="contasReceberBody"></div>
+    <div id="contasReceberStats" class="hoje-stats" style="margin-top:16px"></div>
+    <div id="contasReceberBody" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -7885,7 +7910,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 
 // ══ NAVEGAÇÃO ENTRE VIEWS ════════════════════════════════════════════════════
 function switchAppView(view) {
-  ['pipeline','hoje','quentes','residenciais','parceiros','ativos','desq','b2g','equipe'].forEach(v => {
+  ['pipeline','hoje','quentes','residenciais','parceiros','ativos','desq','b2g','equipe','financeiro'].forEach(v => {
     const av = document.getElementById('appview-' + v); if (av) av.classList.toggle('active', v === view);
     const at = document.getElementById('apptab-' + v); if (at) at.classList.toggle('active', v === view);
   });
@@ -7896,6 +7921,7 @@ function switchAppView(view) {
   if (view === 'equipe') renderEquipe();
   if (view === 'residenciais') renderResidenciais();
   if (view === 'ativos') renderAtivos();
+  if (view === 'financeiro') abrirContasReceber();
   if (view === 'pipeline') setTimeout(animateKPIs, 60);
 }
 
@@ -7977,7 +8003,7 @@ function abrirContasReceber() {
   document.getElementById('contasReceberBody').innerHTML = linhas.length ? `<div class="table-wrap"><table>
     <thead><tr><th>Cliente</th><th>Fatura</th><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Status</th><th></th></tr></thead>
     <tbody>${linhas.map(({l,f,idx}) => { const atrasada = f.status !== 'pago' && f.vencimento < hoje; return `<tr>
-      <td><div class="td-empresa" style="cursor:pointer" onclick="closeModal('contasReceberModal');openDetail('${l.id}');setTimeout(()=>showModalTab('financeiro'),150)">${l.empresa}</div></td>
+      <td><div class="td-empresa" style="cursor:pointer" onclick="openDetail('${l.id}');setTimeout(()=>showModalTab('financeiro'),150)">${l.empresa}</div></td>
       <td>#${f.num}/12</td>
       <td style="${atrasada?'color:var(--red);font-weight:700':''}">${fmtDataBR(f.vencimento)}</td>
       <td style="font-weight:700">${fmt(f.valor)}</td>
@@ -7987,7 +8013,6 @@ function abrirContasReceber() {
         ? `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="liquidarFaturaGlobal('${l.id}',${idx},false)">Desfazer</button>`
         : `<button class="btn-save" style="padding:5px 10px;font-size:11px" onclick="liquidarFaturaGlobal('${l.id}',${idx},true)">Liquidar</button>`}</td>
     </tr>`; }).join('')}</tbody></table></div>` : '<div style="color:var(--text3);font-size:13px;padding:18px">Nenhuma fatura gerada ainda — faturas são criadas automaticamente quando um cliente fecha contrato.</div>';
-  document.getElementById('contasReceberModal').classList.add('open');
 }
 async function liquidarFaturaGlobal(leadId, idx, pago) {
   const l = leads.find(x => x.id === leadId); if (!l || !l.faturas) return;
@@ -7999,7 +8024,11 @@ async function liquidarFaturaGlobal(leadId, idx, pago) {
 function renderFinanceiroModal() {
   const l = leads.find(x => x.id === currentLeadId); const box = document.getElementById('financeiroList'); if (!l || !box) return;
   if (!podeB2G()) { box.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:18px">Acesso restrito.</div>'; return; }
-  if (!l.faturas || !l.faturas.length) { box.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:18px">Sem faturas geradas para este cliente.</div>'; return; }
+  if (!l.faturas || !l.faturas.length) {
+    box.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:18px">Este cliente ficou ativo antes do financeiro existir, por isso não tem faturas.
+      <div style="margin-top:10px"><button class="btn-save" onclick="gerarFaturasRetroativo('${l.id}')">Gerar as 12 primeiras faturas agora</button></div></div>`;
+    return;
+  }
   const fmt = v => 'R$ ' + Math.round(parseFloat(v)||0).toLocaleString('pt-BR');
   box.innerHTML = `<div class="table-wrap"><table>
     <thead><tr><th>#</th><th>Vencimento</th><th>Valor</th><th>Forma</th><th>Status</th><th></th></tr></thead>
@@ -8015,6 +8044,13 @@ function renderFinanceiroModal() {
         ? `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="liquidarFatura(${i},false)">Desfazer</button>`
         : `<button class="btn-save" style="padding:5px 10px;font-size:11px" onclick="liquidarFatura(${i},true)">Liquidar</button>`}</td>
     </tr>`).join('')}</tbody></table></div>`;
+}
+async function gerarFaturasRetroativo(id) {
+  const l = leads.find(x => x.id === id); if (!l || l.faturas) return;
+  l.faturas = gerarFaturasIniciais(l.valor_fechado || l.valor_estimado || 0);
+  await persistFaturas(l);
+  renderFinanceiroModal();
+  showToast('✓ Faturas geradas');
 }
 async function persistFaturas(l) {
   save();
@@ -8124,9 +8160,12 @@ function renderResidenciais() {
   }
   const body = document.getElementById('resBody'); if (!body) return;
   if (!res.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:34px;color:var(--text3)">Nenhum lead residencial ainda. A máquina prospecta condomínios, administradoras e síndicos em Goiânia.</td></tr>'; return; }
-  const RES_PAGE_SIZE = 30;
+  const RES_PAGE_SIZE = 15;
+  const totalPaginas = Math.ceil(res.length / RES_PAGE_SIZE);
   if (!_resPagina) _resPagina = 1;
-  const visiveis = res.slice(0, _resPagina * RES_PAGE_SIZE);
+  if (_resPagina > totalPaginas) _resPagina = totalPaginas;
+  const inicio = (_resPagina - 1) * RES_PAGE_SIZE;
+  const visiveis = res.slice(inicio, inicio + RES_PAGE_SIZE);
   body.innerHTML = visiveis.map(l => `
     <tr onclick="openDetail('${l.id}')">
       <td><div class="td-empresa">${l.empresa}</div><div class="td-contato">${(l.notas||'').slice(0,46)}</div></td>
@@ -8135,10 +8174,15 @@ function renderResidenciais() {
       <td>${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a>`:'—'}</td>
       <td><span class="badge badge-${STATUS_COLORS[l.status]||'novo'}">${l.status}</span></td>
       <td style="font-size:12px;color:var(--text3)">${l.proximo_passo||'—'}</td>
-    </tr>`).join('') + (visiveis.length < res.length
-      ? `<tr><td colspan="6" style="text-align:center;padding:14px"><button class="btn-secondary" onclick="event.stopPropagation();_resPagina++;renderResidenciais()">Carregar mais (${res.length - visiveis.length} restantes)</button></td></tr>`
-      : '');
+    </tr>`).join('') + (totalPaginas > 1 ? `<tr><td colspan="6" style="padding:14px">
+      <div style="display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap">
+        <button class="btn-secondary" style="padding:6px 10px" ${_resPagina<=1?'disabled':''} onclick="event.stopPropagation();irParaPaginaRes(${_resPagina-1})">‹ Anterior</button>
+        ${Array.from({length: totalPaginas}, (_, i) => i+1).map(p => `<button class="btn-secondary" style="padding:6px 11px;${p===_resPagina?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="event.stopPropagation();irParaPaginaRes(${p})">${p}</button>`).join('')}
+        <button class="btn-secondary" style="padding:6px 10px" ${_resPagina>=totalPaginas?'disabled':''} onclick="event.stopPropagation();irParaPaginaRes(${_resPagina+1})">Próxima ›</button>
+      </div>
+    </td></tr>` : '');
 }
+function irParaPaginaRes(p) { _resPagina = p; renderResidenciais(); }
 let _resPagina = 1;
 function openAddResidencial() {
   document.getElementById('addModal').classList.add('open');
@@ -8156,7 +8200,7 @@ function renderAtivos() {
     <div class="hoje-stat"><div class="n" style="color:var(--green)">${clientes.length}</div><div class="l">Clientes ativos</div></div>
     <div class="hoje-stat"><div class="n" style="color:var(--primary);font-size:20px">${parc.length}</div><div class="l">Parceiros ativos</div></div>`;
   const cxr = document.getElementById('ativosCxrBtnBox');
-  if (cxr) cxr.innerHTML = podeB2G() ? `<button class="btn-vip" onclick="abrirContasReceber()"><svg class="ic"><use href="#i-money"/></svg> ★ Contas a Receber</button>` : '';
+  if (cxr) cxr.innerHTML = podeB2G() ? `<button class="btn-vip" onclick="switchAppView('financeiro')"><svg class="ic"><use href="#i-money"/></svg> ★ Ambiente Financeiro</button>` : '';
   const body = document.getElementById('ativosBody'); if (!body) return;
   const tabCli = clientes.length ? `<div class="table-wrap" style="margin-top:6px"><table>
     <thead><tr><th>Cliente</th><th>Contato</th><th>Pacote</th><th>Valor mensal</th><th>Contratação</th><th>Onboarding</th><th></th></tr></thead>
@@ -8230,6 +8274,7 @@ function abrirOnboarding(id) {
   document.getElementById('onbEmpresa').textContent = l.empresa || '—';
   renderOnboardingModal();
   document.getElementById('onboardingModal').classList.add('open');
+  if (document.getElementById('appview-ativos')?.classList.contains('active')) renderAtivos();
 }
 
 async function marcarOnboardingPasso(fi, pi) {
@@ -8237,6 +8282,7 @@ async function marcarOnboardingPasso(fi, pi) {
   const passo = l.onboarding.fases[fi].passos[pi];
   passo.feito = !passo.feito; passo.quando = passo.feito ? hojeStr() : '';
   save(); renderOnboardingModal();
+  if (document.getElementById('appview-ativos')?.classList.contains('active')) renderAtivos();
   if (sb) { try { await sb.from('leads').update({ onboarding: l.onboarding }).eq('id', l.id); } catch (e) { console.warn(e); } }
 }
 
@@ -8351,9 +8397,11 @@ async function renderEquipe() {
       <td style="font-weight:700;color:var(--green)">${fmt(m.valorFech)}</td>
       <td style="color:var(--accent)">${fmt(m.valorPipe)}</td>
     </tr>
-    <tr style="background:${cor}"><td colspan="7" style="text-align:center;padding:6px 0 14px;border-top:none">
-      <button class="btn-secondary" style="padding:6px 14px;font-size:11.5px" onclick="event.stopPropagation();abrirPipelineVendedor('${p.id}')">Ver pipeline do vendedor</button>
-      <button class="btn-secondary" style="padding:6px 14px;font-size:11.5px" onclick="event.stopPropagation();abrirMetaVendedor('${p.id}')">Atribuir meta</button>
+    <tr style="background:${cor}"><td colspan="7" style="text-align:center;padding:10px 0 18px;border-top:1px solid rgba(0,0,0,.07)">
+      <div style="display:inline-flex;gap:14px;align-items:center">
+        <button class="btn-primary" style="padding:9px 18px;font-size:12px" onclick="event.stopPropagation();abrirPipelineVendedor('${p.id}')"><svg class="ic" style="stroke:#fff;width:14px;height:14px"><use href="#i-chart"/></svg> Ver pipeline do vendedor</button>
+        <button class="btn-secondary" style="padding:9px 18px;font-size:12px" onclick="event.stopPropagation();abrirMetaVendedor('${p.id}')"><svg class="ic" style="width:14px;height:14px"><use href="#i-flag"/></svg> Atribuir meta</button>
+      </div>
     </td></tr>`; }).join('')}</tbody></table></div>`;
 }
 
@@ -9466,6 +9514,9 @@ function atualizarHeaderUser() {
   // B2G (licitações): só Giovanna e André (comercial)
   const tabB2G = document.getElementById('apptab-b2g');
   if (tabB2G) tabB2G.style.display = podeB2G() ? '' : 'none';
+  // Financeiro / Contas a Receber: só Giovanna e André (comercial)
+  const tabFin = document.getElementById('apptab-financeiro');
+  if (tabFin) tabFin.style.display = podeB2G() ? '' : 'none';
   // Limpar duplicados: só Giovanna
   const bDed = document.getElementById('btnDedupe');
   if (bDed) bDed.style.display = souGiovanna() ? '' : 'none';
