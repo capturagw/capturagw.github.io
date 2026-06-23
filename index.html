@@ -5612,7 +5612,7 @@ window.PARCEIROS_DATA = {
         <div class="section-sub">Condomínios, administradoras e síndicos — gestão de academia em condomínio (treinadores + sistema).</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddResidencial()">+ Novo residencial</button>
       </div>
-      <input class="filter filter-search" id="resBusca" type="text" placeholder="Buscar residencial..." oninput="renderResidenciais()" style="min-width:180px">
+      <input class="filter filter-search" id="resBusca" type="text" placeholder="Buscar residencial..." oninput="_resPagina=1;renderResidenciais()" style="min-width:180px">
     </div>
     <div class="hoje-stats" id="resStats" style="margin-top:14px"></div>
     <div class="table-wrap" style="margin-top:8px">
@@ -8124,7 +8124,10 @@ function renderResidenciais() {
   }
   const body = document.getElementById('resBody'); if (!body) return;
   if (!res.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:34px;color:var(--text3)">Nenhum lead residencial ainda. A máquina prospecta condomínios, administradoras e síndicos em Goiânia.</td></tr>'; return; }
-  body.innerHTML = res.map(l => `
+  const RES_PAGE_SIZE = 30;
+  if (!_resPagina) _resPagina = 1;
+  const visiveis = res.slice(0, _resPagina * RES_PAGE_SIZE);
+  body.innerHTML = visiveis.map(l => `
     <tr onclick="openDetail('${l.id}')">
       <td><div class="td-empresa">${l.empresa}</div><div class="td-contato">${(l.notas||'').slice(0,46)}</div></td>
       <td>${l.nome_contato||'—'}</td>
@@ -8132,8 +8135,11 @@ function renderResidenciais() {
       <td>${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a>`:'—'}</td>
       <td><span class="badge badge-${STATUS_COLORS[l.status]||'novo'}">${l.status}</span></td>
       <td style="font-size:12px;color:var(--text3)">${l.proximo_passo||'—'}</td>
-    </tr>`).join('');
+    </tr>`).join('') + (visiveis.length < res.length
+      ? `<tr><td colspan="6" style="text-align:center;padding:14px"><button class="btn-secondary" onclick="event.stopPropagation();_resPagina++;renderResidenciais()">Carregar mais (${res.length - visiveis.length} restantes)</button></td></tr>`
+      : '');
 }
+let _resPagina = 1;
 function openAddResidencial() {
   document.getElementById('addModal').classList.add('open');
   // marca o canal padrão como Residencial (o usuário pode trocar no cadastro)
