@@ -5445,6 +5445,10 @@ window.PARCEIROS_DATA = {
       <div class="meta-edit-row"><label>Meta de propostas enviadas</label><input id="metaPropInput" type="number" placeholder="20"></div>
       <button class="btn-save" onclick="salvarMetas()">Salvar metas</button>
     </div>
+    <div class="cover-card" id="metaIndividualCard" style="display:none;margin:14px 0 0;border-top:1px solid var(--border);border-radius:0;padding:14px 0 0;box-shadow:none">
+      <div class="cover-hd"><span class="t">Suas metas (definidas pela liderança)</span></div>
+      <div id="metaIndividualBody"></div>
+    </div>
   </div>
   <div class="cover-card">
     <div class="cover-hd"><span class="t" id="calTitulo">Resumo do mês</span></div>
@@ -5458,11 +5462,6 @@ window.PARCEIROS_DATA = {
       <span><i class="cd-fech" style="background:#1f9d6b"></i>Fechados</span>
     </div>
   </div>
-</div>
-
-<div class="cover-card" id="metaIndividualCard" style="display:none;margin-bottom:18px">
-  <div class="cover-hd"><span class="t">Suas metas (definidas pela liderança)</span></div>
-  <div id="metaIndividualBody"></div>
 </div>
 
 <div class="toolbar">
@@ -5715,9 +5714,10 @@ window.PARCEIROS_DATA = {
     </div>
 
     <div class="cover-card" id="credVault" style="display:none;margin-top:14px">
-      <div class="cover-hd"><span class="t">Portais de compras públicas — credenciais</span><button class="ed" onclick="salvarCreds()"><svg class="ic" style="width:13px;height:13px"><use href="#i-edit"/></svg> Salvar</button></div>
-      <div class="section-sub" style="margin-bottom:12px">⚠️ As senhas ficam salvas neste computador (texto local). Preencha conforme for criando seus cadastros.</div>
-      <div id="credList"></div>
+      <div class="cover-hd"><span class="t">Portais de compras públicas — credenciais</span><button class="ed" id="credSaveBtn" onclick="salvarCreds()" style="display:none"><svg class="ic" style="width:13px;height:13px"><use href="#i-edit"/></svg> Salvar</button></div>
+      <div class="section-sub" style="margin-bottom:12px">🔒 Cofre criptografado neste navegador — as senhas nunca ficam em texto puro. A senha-mestra não é salva em nenhum lugar; se esquecer, será preciso recriar o cofre.</div>
+      <div id="credLock"></div>
+      <div id="credList" style="display:none"></div>
     </div>
 
     <div class="b2g-stats" id="b2gStats" style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0"></div>
@@ -8646,21 +8646,82 @@ const B2G_PORTAIS = [
   { nome: 'Portal de Compras Públicas', url: 'https://www.portaldecompraspublicas.com.br', nota: 'Plataforma privada de pregões' },
   { nome: 'BEC/SP — Bolsa Eletrônica de Compras SP', url: 'https://www.bec.sp.gov.br', nota: 'Estado de São Paulo' },
   { nome: 'Licitanet', url: 'https://licitanet.com.br', nota: 'Plataforma de pregão eletrônico' },
-  { nome: 'LICITABASE', url: 'https://www.licitabase.com/search', nota: 'Busca/monitoramento de editais', login: 'giovanna@flexon.fit', senha: 'gigica7498' }
+  { nome: 'LICITABASE', url: 'https://www.licitabase.com/search', nota: 'Busca/monitoramento de editais' }
 ];
-function getCreds() {
-  const saved = JSON.parse(localStorage.getItem(CRED_KEY) || 'null');
-  if (saved) return saved;
-  return B2G_PORTAIS.map(p => ({ nome: p.nome, url: p.url, nota: p.nota, login: p.login || '', senha: p.senha || '' }));
+let _credPass = null; // senha-mestra do cofre — só em memória, nunca persistida
+let _credCache = null; // credenciais decriptadas em memória enquanto o cofre está aberto
+function _credB64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function _credUnb64(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+async function _credDeriveKey(pass, saltB64) {
+  const salt = saltB64 ? _credUnb64(saltB64) : crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
+    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+  return { key, salt };
+}
+async function _persistCreds(creds) {
+  const { key, salt } = await _credDeriveKey(_credPass);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(creds)));
+  localStorage.setItem(CRED_KEY, JSON.stringify({ salt: _credB64(salt), iv: _credB64(iv), data: _credB64(enc) }));
+  _credCache = creds;
+}
+async function _abrirCofre(pass) {
+  const raw = JSON.parse(localStorage.getItem(CRED_KEY));
+  const { key } = await _credDeriveKey(pass, raw.salt);
+  const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: _credUnb64(raw.iv) }, key, _credUnb64(raw.data));
+  return JSON.parse(new TextDecoder().decode(dec));
 }
 function toggleCredVault() {
   const v = document.getElementById('credVault');
   const showing = v.style.display === 'none';
   v.style.display = showing ? 'block' : 'none';
-  if (showing) renderCreds();
+  if (showing) renderCredLock();
+}
+function renderCredLock() {
+  const saveBtn = document.getElementById('credSaveBtn');
+  if (_credPass) {
+    document.getElementById('credLock').innerHTML = '';
+    document.getElementById('credList').style.display = '';
+    saveBtn.style.display = '';
+    renderCreds();
+    return;
+  }
+  document.getElementById('credList').style.display = 'none';
+  saveBtn.style.display = 'none';
+  let raw = localStorage.getItem(CRED_KEY);
+  if (raw && Array.isArray(JSON.parse(raw))) { localStorage.removeItem(CRED_KEY); raw = null; } // migra formato antigo (texto puro) — descarta
+  document.getElementById('credLock').innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input class="form-input" type="password" id="credMasterPass" placeholder="Senha-mestra do cofre" style="max-width:240px" onkeydown="if(event.key==='Enter'){${raw ? 'desbloquearCofre()' : 'criarCofre()'}}">
+      <button class="btn-primary" onclick="${raw ? 'desbloquearCofre()' : 'criarCofre()'}">${raw ? 'Desbloquear cofre' : 'Criar senha do cofre'}</button>
+    </div>
+    <div id="credLockErro" style="color:#c0392b;font-size:12px;margin-top:8px"></div>
+    <div style="font-size:11.5px;color:var(--text3);margin-top:6px">${raw ? 'A senha não é salva em nenhum lugar — só você sabe.' : 'Crie uma senha que só você vai saber. Ela criptografa as senhas dos portais salvas aqui.'}</div>`;
+}
+async function criarCofre() {
+  const pass = document.getElementById('credMasterPass').value;
+  if (!pass || pass.length < 6) { document.getElementById('credLockErro').textContent = 'Use uma senha de pelo menos 6 caracteres.'; return; }
+  _credPass = pass;
+  const creds = B2G_PORTAIS.map(p => ({ nome: p.nome, url: p.url, nota: p.nota, login: '', senha: '' }));
+  await _persistCreds(creds);
+  renderCredLock();
+  showToast('✓ Cofre criado e criptografado');
+}
+async function desbloquearCofre() {
+  const pass = document.getElementById('credMasterPass').value;
+  try {
+    _credCache = await _abrirCofre(pass);
+    _credPass = pass;
+    renderCredLock();
+  } catch (e) {
+    document.getElementById('credLockErro').textContent = 'Senha incorreta.';
+  }
 }
 function renderCreds() {
-  const creds = getCreds();
+  const creds = _credCache || [];
   document.getElementById('credList').innerHTML = creds.map((c, i) => `
     <div class="cred-row">
       <div class="cred-nome"><a href="${c.url}" target="_blank">${c.nome}</a><span>${c.nota||''}</span></div>
@@ -8668,14 +8729,14 @@ function renderCreds() {
       <input class="cred-in" id="credSenha${i}" type="password" placeholder="senha" value="${(c.senha||'').replace(/"/g,'&quot;')}">
     </div>`).join('');
 }
-function salvarCreds() {
-  const creds = getCreds().map((c, i) => ({
+async function salvarCreds() {
+  const creds = (_credCache || []).map((c, i) => ({
     ...c,
     login: document.getElementById('credLogin'+i)?.value || '',
     senha: document.getElementById('credSenha'+i)?.value || ''
   }));
-  localStorage.setItem(CRED_KEY, JSON.stringify(creds));
-  showToast('✓ Credenciais salvas neste computador');
+  await _persistCreds(creds);
+  showToast('✓ Credenciais salvas e criptografadas');
 }
 // ══ ANDAMENTO DAS LICITAÇÕES (persistido no navegador, por link) ═══════════════
 const B2G_KEY = 'flexon_b2g_prog_v1';
