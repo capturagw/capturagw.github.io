@@ -5482,9 +5482,9 @@ window.PARCEIROS_DATA = {
 <div class="toolbar">
   <div class="search-wrap">
     <span class="search-icon"><svg class="ic"><use href="#i-search"/></svg></span>
-    <input class="search-box" id="searchBox" type="text" placeholder="Buscar empresa, contato, email..." oninput="renderLeads()">
+    <input class="search-box" id="searchBox" type="text" placeholder="Buscar empresa, contato, email..." oninput="_pipelinePage=1;renderLeads()">
   </div>
-  <select class="filter" id="filterStatus" onchange="renderLeads()">
+  <select class="filter" id="filterStatus" onchange="_pipelinePage=1;renderLeads()">
     <option value="">Todos os status</option>
     <option value="Novo Lead">Novo Lead</option>
     <option value="Contatado">Contatado</option>
@@ -5493,16 +5493,16 @@ window.PARCEIROS_DATA = {
     <option value="Fechado">Fechado</option>
     <option value="Perdido">Perdido</option>
   </select>
-  <select class="filter" id="filterSetor" onchange="renderLeads()">
+  <select class="filter" id="filterSetor" onchange="_pipelinePage=1;renderLeads()">
     <option value="">Todos os setores</option>
   </select>
-  <select class="filter" id="filterCanal" onchange="renderLeads()">
+  <select class="filter" id="filterCanal" onchange="_pipelinePage=1;renderLeads()">
     <option value="">Todos os canais</option>
     <option value="B2B Privado">B2B Privado</option>
     <option value="Parceiro">Parceiro</option>
     <option value="B2G Licitação">B2G Licitação</option>
   </select>
-  <select class="filter" id="filterPrioridade" onchange="renderLeads()">
+  <select class="filter" id="filterPrioridade" onchange="_pipelinePage=1;renderLeads()">
     <option value="">Todas prioridades</option>
     <option value="Alta">Alta</option>
     <option value="Média">Média</option>
@@ -5549,6 +5549,7 @@ window.PARCEIROS_DATA = {
       </thead>
       <tbody id="tableBody"></tbody>
     </table>
+    <div id="tablePag"></div>
   </div>
   <div id="kanbanView" class="kanban" style="display:none"></div>
 </main>
@@ -7172,17 +7173,35 @@ function quenteCard(l) {
   </div>`;
 }
 
+let _pipelinePage = 1;
+const PIPELINE_PAGE_SIZE = 20;
+function setPipelinePage(n) { _pipelinePage = n; renderLeads(); }
 function renderTable(data) {
   const tbody = document.getElementById('tableBody');
+  const pagBox = document.getElementById('tablePag');
   if (!data.length) {
     tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3)">
       Nenhum lead encontrado</td></tr>`;
+    if (pagBox) pagBox.innerHTML = '';
     return;
   }
   // Ordenar por score desc por padrão
   const sorted = [...data].map(l => ({ ...l, _score: calcScore(l) }))
     .sort((a, b) => b._score - a._score);
-  tbody.innerHTML = sorted.map(l => {
+  const totalPag = Math.max(1, Math.ceil(sorted.length / PIPELINE_PAGE_SIZE));
+  if (_pipelinePage > totalPag) _pipelinePage = totalPag;
+  if (_pipelinePage < 1) _pipelinePage = 1;
+  const ini = (_pipelinePage - 1) * PIPELINE_PAGE_SIZE;
+  const pagina = sorted.slice(ini, ini + PIPELINE_PAGE_SIZE);
+  if (pagBox) {
+    pagBox.innerHTML = totalPag > 1 ? `<div style="display:flex;justify-content:center;align-items:center;gap:6px;margin:14px 0;flex-wrap:wrap">
+      <span style="font-size:11.5px;color:var(--text3);margin-right:6px">${sorted.length} leads</span>
+      <button class="btn-secondary" style="padding:5px 10px" ${_pipelinePage<=1?'disabled':''} onclick="setPipelinePage(${_pipelinePage-1})">‹</button>
+      ${Array.from({length: totalPag}, (_,i)=>i+1).map(n => `<button class="btn-secondary" style="padding:5px 10px;${n===_pipelinePage?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="setPipelinePage(${n})">${n}</button>`).join('')}
+      <button class="btn-secondary" style="padding:5px 10px" ${_pipelinePage>=totalPag?'disabled':''} onclick="setPipelinePage(${_pipelinePage+1})">›</button>
+    </div>` : '';
+  }
+  tbody.innerHTML = pagina.map(l => {
     const sc = scoreColor(l._score);
     const ab = normAbordagem(l.abordagem);
     const abCls = ABORDAGEM_COLORS[ab] || 'guardiao';
