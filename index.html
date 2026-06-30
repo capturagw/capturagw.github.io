@@ -8057,11 +8057,14 @@ function dataContratacaoLead(l) {
 function fmtDataBR(iso) { if (!iso) return '—'; const [y,m,d] = String(iso).slice(0,10).split('-'); return `${d}/${m}/${y}`; }
 function onboardingStatusAtual(l) {
   if (!l.onboarding) return null;
+  const tipo = l.onboarding.tipo || 'fecomercio';
+  const template = (typeof ONBOARDING_TEMPLATES !== 'undefined' ? ONBOARDING_TEMPLATES[tipo] : null) || [];
+  if (!template.length) return { label: 'Em andamento', pct: 0 };
   const fases = l.onboarding.fases || [];
-  for (let fi = 0; fi < ONBOARDING_TEMPLATE.length; fi++) {
-    const total = ONBOARDING_TEMPLATE[fi].passos.length;
+  for (let fi = 0; fi < template.length; fi++) {
+    const total = template[fi].passos.length;
     const feitos = (fases[fi] && fases[fi].passos || []).filter(p => p.feito).length;
-    if (feitos < total) return { label: ONBOARDING_TEMPLATE[fi].fase, pct: Math.round(feitos/total*100) };
+    if (feitos < total) return { label: template[fi].fase, pct: Math.round(feitos/total*100) };
   }
   return { label: 'Concluído', pct: 100 };
 }
@@ -8345,50 +8348,280 @@ function renderAtivos() {
     <div class="section-sub" style="margin-top:18px;font-weight:700;color:var(--text2)">Parceiros ativos</div>${tabParc}`;
 }
 
-// ══ ONBOARDING DO CLIENTE (implantação NR-1, 120 dias) ════════════════════════
-// Fases e entregáveis baseados no fluxo oficial de implantação Flex ON.
-const ONBOARDING_TEMPLATE = [
-  { fase: 'Fase 0 — Onboarding', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
-    { texto: 'Kickoff: apresentação do time, cronograma de 120 dias e responsáveis', dica: 'Agende em até 48h após a assinatura. Apresente o time Flex ON, o cliente e alinhe expectativas — quem é o ponto focal do cliente.' },
-    { texto: 'DOC01 — identificação da empresa, GHEs e critérios de severidade/probabilidade', dica: 'Levante CNAE, setores, nº de colaboradores por GHE (Grupo Homogêneo de Exposição) e os critérios que vão pontuar severidade x probabilidade.' },
-    { texto: 'DOC15 — cronograma detalhado de implementação (120 dias)', dica: 'Gere o cronograma com as datas reais (não genéricas) e envie por e-mail ao ponto focal do cliente.' },
-    { texto: 'Acesso à plataforma RPS-1 — conta e setores configurados', dica: 'Crie a conta do cliente, cadastre os setores/GHEs e teste o envio de um link de pesquisa antes de liberar pro cliente.' },
-    { texto: 'DOC09 — comunicado interno a todos os colaboradores (com recibo assinado)', dica: 'O comunicado precisa ser assinado/recebido — isso é evidência de conformidade caso haja fiscalização.' }
-  ]},
-  { fase: 'Fase 1 — Diagnóstico (RPS-1)', dias: 'Dias 6–30', responsavel: 'CS + Colaboradores', passos: [
-    { texto: 'Envio dos links individuais da pesquisa (dias 6–7)', dica: 'Envie por e-mail E WhatsApp — taxa de resposta cai muito se for só um canal.' },
-    { texto: 'Monitoramento das respostas — meta de 95% de confiança estatística (crítico se <60% até o dia 15)', dica: 'Se passar do dia 15 com <60%, escale para o cliente: pedir que gestores cobrem as equipes a responder.' },
-    { texto: 'DOC02 — Inventário de Riscos (8 categorias FRPRT)', dica: 'Cruze as respostas da pesquisa com as 8 categorias FRPRT antes de fechar o inventário.' },
-    { texto: 'DOC07 — registro formal de participação dos colaboradores', dica: 'Guarde print/relatório da plataforma com % de respondentes por setor — vira anexo do DOC07.' },
-    { texto: 'Comunicação dos resultados (RH / CIPA / gestores)', dica: 'Reunião de devolutiva com RH/CIPA antes de avançar pra Fase 2 — eles precisam validar prioridades.' },
-    { texto: 'Notificação ao PCMSO sobre setores de risco ALTO/CRÍTICO (dia 30)', dica: 'Formalize por e-mail ao médico do trabalho responsável pelo PCMSO do cliente, com cópia pro RH.' }
-  ]},
-  { fase: 'Fase 2 — Implementação', dias: 'Dias 31–120', responsavel: 'CS + Cliente', passos: [
-    { texto: 'Investigação: análise do IRO e priorização dos GHEs críticos', dica: 'Priorize pelos GHEs com maior severidade x maior nº de pessoas expostas, não só pela média geral.' },
-    { texto: 'Avaliação Ergonômica Preliminar (AEP) — NR-17', dica: 'Foque nos setores apontados como críticos na pesquisa — não precisa avaliar 100% da empresa de uma vez.' },
-    { texto: 'Entrevistas / grupos focais com colaboradores', dica: 'Grupos de 5-8 pessoas, sem a presença de gestores diretos, para ter respostas mais honestas.' },
-    { texto: 'Análise de indicadores organizacionais (afastamentos CID-F, turnover, horas extras, reclamações)', dica: 'Peça ao RH os últimos 12 meses desses indicadores — eles embasam o plano de ação.' },
-    { texto: 'DOC03 — plano de ação (hierarquia Eliminar → Substituir → Eng. → Adm.)', dica: 'Sempre tente medidas de Eliminação/Substituição antes de cair só em treinamento — é o que a fiscalização espera ver.' },
-    { texto: 'Publicação das políticas (DOC04/DOC05 — saúde mental e anti-assédio, Lei 14.457/22)', dica: 'As políticas precisam estar visíveis e acessíveis (intranet, mural, etc.), não só assinadas e guardadas numa gaveta.' },
-    { texto: 'Ativação do canal de denúncias (DOC06)', dica: 'Teste o canal você mesma antes de divulgar pro cliente — confirme que chega notificação e há fluxo de resposta.' },
-    { texto: 'Treinamento de gestores (DOC11) e treinamento geral NR-1 (DOC12 + DOC16)', dica: 'Treine gestores primeiro — eles vão liderar a cultura. Depois o treinamento geral, com presença registrada (DOC16).' },
-    { texto: 'Reavaliação de risco pós-medidas e checklist de conformidade (DOC08/DOC10)', dica: 'Compare o risco antes/depois das medidas — esse comparativo é o que prova efetividade pro cliente e pra fiscalização.' }
-  ]},
-  { fase: 'Fase 3 — Monitoramento contínuo', dias: 'Dia 121 em diante', responsavel: 'Flex ON', passos: [
-    { texto: 'Revisão trimestral de indicadores (DOC08)', dica: 'Agende lembrete recorrente — esse passo costuma ser esquecido depois que o cliente "esfria".' },
-    { texto: 'Reaplicação anual do diagnóstico', dica: 'Reaplique a mesma pesquisa (ou versão atualizada) pra comparar evolução ano a ano.' },
-    { texto: 'Revisão anual do PGR (DOC02/DOC03)', dica: 'Revise junto com a reaplicação do diagnóstico — os dois andam juntos.' },
-    { texto: 'Reaplicação anual do checklist de conformidade (DOC10)', dica: 'Use esse checklist pra gerar um relatório anual de conformidade pro cliente — é um ótimo gatilho de renovação/upsell.' }
-  ]}
-];
+// ══ ONBOARDING DO CLIENTE ═══════════════════════════════════════════════════════
+// 2 fluxos: FeComércio (parceria, 120 dias) e por pacote (Diagnóstico / Essencial / G&E, 15 dias)
+
+const ONBOARDING_TIPOS = {
+  fecomercio: 'FeComércio (120 dias)',
+  diagnostico: 'Pacote Diagnóstico',
+  essencial: 'Pacote Essencial',
+  gestao: 'Gestão e Engajamento'
+};
+
+const ONBOARDING_TEMPLATES = {
+  fecomercio: [
+    { fase: 'Fase 1 — Onboarding', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Reunião de Kickoff — alinhar comitê, cronograma de 120 dias e responsáveis (RH, SESMT, CIPA, diretor)', prazo: 'Dia 1', dica: 'Coletar: organograma/GHEs, histórico de afastamentos, PGR/PCMSO vigentes. Agende em até 48h após a assinatura.' },
+      { texto: 'DOC01 — Ficha de Identificação + Critérios GRO (CNPJ, GHEs, severidade/probabilidade)', prazo: 'D+2', dica: 'Levante CNAE, setores, nº de colaboradores por GHE e os critérios que vão pontuar severidade × probabilidade.' },
+      { texto: 'DOC15 — Cronograma de Implantação 120 dias com prazos e marcos', prazo: 'D+2', dica: 'Gere o cronograma com datas reais (não genéricas) e envie por e-mail ao ponto focal do cliente.' },
+      { texto: 'Acesso à Plataforma RPS-1 — conta criada, GHEs configurados, links individuais gerados', prazo: 'Dias 2–3', dica: 'Criar conta, cadastrar setores/GHEs, verificar PGR vigente. Teste o envio de um link antes de liberar.' },
+      { texto: 'DOC09 — Comunicado Interno enviado a 100% dos colaboradores (com recibos assinados)', prazo: 'Dias 3–5', dica: 'O comunicado precisa ser assinado/recebido — é evidência de conformidade caso haja fiscalização.' },
+      { texto: 'Grupo de WhatsApp criado com comitê de implantação (RH, SESMT, CIPA, diretor)', prazo: 'Dia 1', dica: 'Dúvidas operacionais SEMPRE no grupo, nunca no privado. Exceto: canal reservado para dados sensíveis.' }
+    ]},
+    { fase: 'Fase 2 — Diagnóstico RPS-1', dias: 'Dias 6–30', responsavel: 'CS + Trabalhadores', passos: [
+      { texto: 'Disparo dos links individuais + comunicado reforçando confidencialidade', prazo: 'Dias 6–7', dica: 'Envie por e-mail E WhatsApp. Participação é requisito legal — comunicado deve reforçar isso.' },
+      { texto: 'Monitoramento da taxa de resposta — meta: ≥95% de confiança (crítico se <60% no D+15)', prazo: 'Dias 7–20', dica: 'Se <60% no D+15, escale para o cliente: gestores devem cobrar as equipes. Taxa baixa invalida o IRO.' },
+      { texto: 'DOC02 — IRO Inventário de Riscos (8 categorias FRPRT, 3 elementos por perigo)', prazo: 'D+25', dica: 'Cruze as respostas com as 8 categorias FRPRT — descrição, fontes e grupo exposto por perigo.' },
+      { texto: 'DOC07 — Registro formal de participação dos colaboradores', prazo: 'D+25', dica: 'Relatório da plataforma com % de respondentes por setor — evidência verificada pela Inspeção do Trabalho.' },
+      { texto: 'Devolutiva + comunicação dos resultados (reunião com RH, CIPA e gestores)', prazo: 'Dias 26–30', dica: 'Comunicar também aos trabalhadores os riscos e as medidas do Plano de Ação após a devolutiva.' },
+      { texto: 'Comunicação ao médico do PCMSO sobre setores de risco ALTO/CRÍTICO', prazo: 'D+30', dica: 'OBRIGATÓRIO quando houver risco ALTO/CRÍTICO. Informar para incluir monitoramento nos exames periódicos (NR-7).' }
+    ]},
+    { fase: 'Fase 3A — Investigação', dias: 'Dias 31–45', responsavel: 'CS + Cliente', passos: [
+      { texto: 'Análise do IRO — priorização dos GHEs críticos (severidade × nº de pessoas)', prazo: 'D+35', dica: 'Priorize pelos GHEs com maior severidade × maior nº de pessoas expostas, não só pela média geral.' },
+      { texto: 'AEP — Avaliação Ergonômica Preliminar (obrigatória, NR-17)', prazo: 'D+40', dica: 'Foque nos setores apontados como críticos — não precisa avaliar 100% da empresa de uma vez.' },
+      { texto: 'Entrevistas / grupos focais com colaboradores dos GHEs prioritários', prazo: 'D+40', dica: 'Grupos de 5–8 pessoas, sem presença de gestores diretos, para respostas mais honestas.' },
+      { texto: 'Análise de indicadores: afastamentos CID-F, turnover, horas extras, absenteísmo', prazo: 'D+45', dica: 'Peça ao RH os últimos 12 meses — embasam o plano de ação e identificam tendências.' },
+      { texto: 'DOC03 — Plano de Ação GRO (SW2H) aprovado pelo comitê', prazo: 'D+45', dica: 'Hierarquia: Eliminar → Substituir → Engenharia → Adm. Sempre tente as primeiras antes de cair só em treinamento.' }
+    ]},
+    { fase: 'Fase 3B — Adequação', dias: 'Dias 46–90', responsavel: 'CS + Cliente', passos: [
+      { texto: 'DOC04 — Política de Saúde Mental publicada e acessível a todos', prazo: 'D+55', dica: 'Precisa estar na intranet, mural ou app — não só assinada e guardada na gaveta.' },
+      { texto: 'DOC05 — Política de Prevenção ao Assédio publicada (Lei 14.457/22)', prazo: 'D+55', dica: 'Inclua: definições, canais de denúncia, proibições e consequências. Assinatura de ciência dos colaboradores.' },
+      { texto: 'Canal de Denúncias — setup + DOC06 publicado + ativação (D+50 a D+65)', prazo: 'D+65', dica: 'Reunião de alinhamento D+50: responsável interno, regras de sigilo, fluxo de tratamento. Teste o canal antes de divulgar.' },
+      { texto: 'DOC08 — Registro de Implementação: medidas realizadas documentadas', prazo: 'D+70', dica: 'Registre cada medida com data e responsável — prova de execução do plano de ação.' },
+      { texto: 'DOC13 — Ata de CIPA (Psicossociais NR-5) atualizada', prazo: 'D+75', dica: 'Incluir pauta específica sobre riscos psicossociais identificados no diagnóstico.' },
+      { texto: 'Flex ON Edu — kickoff: temas definidos, cronograma montado (D+55 a D+90)', prazo: 'D+60', dica: 'Definir com o RH os temas alinhados aos riscos prioritários e o formato (ao vivo, gravado, presencial).' },
+      { texto: 'DOC11 — Capacitação de gestores: trilha formativa executada e evidenciada', prazo: 'D+85', dica: 'Treine gestores PRIMEIRO — eles vão liderar a cultura. Registre presença e assunto.' },
+      { texto: 'DOC12 + DOC16 — Treinamento geral NR-1: lista de presença e termo de ciência assinados', prazo: 'D+90', dica: 'Treinamento geral pós-líderes. DOC16 = Termo de Ciência e Comprometimento de cada colaborador.' }
+    ]},
+    { fase: 'Fase 3C — Resultado e Conformidade', dias: 'Dias 91–120', responsavel: 'CS + Cliente', passos: [
+      { texto: 'DOC08 — Monitoramento de indicadores pós-medidas (afastamentos, absenteísmo, turnover)', prazo: 'D+100', dica: 'Compare antes/depois das medidas — esse comparativo prova efetividade para o cliente e para a fiscalização.' },
+      { texto: 'Reavaliação dos riscos: IRO revisado com os GHEs pós-implantação', prazo: 'D+110', dica: 'Verifique se os riscos reduziram com as medidas implementadas — registre formalmente.' },
+      { texto: 'DOC10 — Checklist de Conformidade preenchido e assinado', prazo: 'D+115', dica: 'Use o checklist para gerar relatório de conformidade — ótimo gatilho de renovação/upsell.' },
+      { texto: 'Declaração de Conformidade NR-1 + orientação eSocial (S-2240 / S-2220)', prazo: 'D+120', dica: 'Oriente o cliente sobre o registro no eSocial e guarde a declaração de conformidade.' }
+    ]},
+    { fase: 'Fase 4 — Acompanhamento Contínuo', dias: 'A partir D+121', responsavel: 'CS + Flex ON Edu', passos: [
+      { texto: 'DOC08 — Revisão trimestral de indicadores controlada pelo Captura', prazo: 'Trimestral', dica: 'Agende lembrete recorrente — esse passo costuma ser esquecido depois que o cliente esfria. Reunião mensal de 15 min.' },
+      { texto: 'Reavaliação anual completa do Diagnóstico RPS-1', prazo: 'Anual', dica: 'Reaplique a pesquisa e compare evolução ano a ano. Antecipe o agendamento 30 dias antes do aniversário.' },
+      { texto: 'Revisão e atualização anual do PGR (DOC02 + DOC03)', prazo: 'Anual', dica: 'Revisar IRO, Plano de Ação e Critérios. Incluir novos perigos. Datar e assinar a revisão.' },
+      { texto: 'Levantamento preliminar em novas situações (novos processos, equipamentos, reorganizações)', prazo: 'Sob demanda', dica: 'Obrigatório antes de novas atividades ou mudanças de processo que possam gerar novos riscos.' }
+    ]}
+  ],
+
+  diagnostico: [
+    { fase: 'Kickoff', dias: 'Dias 1–2', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Reunião de alinhamento — mapear setores, GHEs e perfil da empresa', prazo: 'Dia 1', dica: 'Definir cronograma de aplicação com o RH, ponto focal e responsáveis internos.' },
+      { texto: 'DOC01 — Ficha de Identificação: CNPJ, GHEs e nº de colaboradores por setor', prazo: 'Dia 2', dica: 'Levante CNAE, setores e critérios de severidade/probabilidade antes de configurar a plataforma.' }
+    ]},
+    { fase: 'Setup RPS-1', dias: 'Dias 3–5', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Ativação da plataforma RPS-1 — conta criada, setores cadastrados, links e QR Code prontos', prazo: 'Dia 3', dica: 'Sem instalação para ninguém. Teste o envio antes de liberar ao cliente.' },
+      { texto: 'DOC09 — Comunicado Interno enviado a todos os colaboradores', prazo: 'Dias 4–5', dica: 'Reforçar: participação confidencial, anônima e alinhada à NR-1. Guarde o recibo de recebimento.' }
+    ]},
+    { fase: 'Diagnóstico', dias: 'Dias 6–10', responsavel: 'CS + Trabalhadores', passos: [
+      { texto: 'Disparo dos links individuais para colaboradores e gestores', prazo: 'Dia 6', dica: 'Envie por e-mail E WhatsApp — taxa de resposta cai muito se for só um canal.' },
+      { texto: 'Monitoramento da taxa de resposta (meta: >80% — média histórica Flex ON)', prazo: 'Dias 7–10', dica: 'Se <60% até o dia 8, acionar o ponto focal para que gestores incentivem a equipe.' }
+    ]},
+    { fase: 'Relatório + Plano de Ação', dias: 'Dias 11–12', responsavel: 'CS Flex ON', passos: [
+      { texto: 'DOC02 — IRO Inventário de Riscos (8 categorias FRPRT, risco por GHE)', prazo: 'Dia 11', dica: 'Cruze respostas de colaboradores e gestores para identificar discrepâncias de percepção de risco.' },
+      { texto: 'DOC03 — Plano de Ação GRO (SW2H) entregue ao cliente', prazo: 'Dia 12', dica: 'Relatório PDF com priorização por GHE e nível de risco. Entregue na reunião de devolutiva.' },
+      { texto: 'DOC07 — Registro de Participação arquivado', prazo: 'Dia 12', dica: 'Relatório de respondentes por setor — evidência formal da realização do diagnóstico.' },
+      { texto: 'Reunião de devolutiva com RH/CIPA/gestores — comunicar riscos e medidas prioritárias', prazo: 'Dia 12', dica: 'Apresente os riscos prioritários e o plano de ação. Defina quem é responsável por cada medida.' }
+    ]},
+    { fase: 'Canal de Denúncias', dias: 'Dias 11–15', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Reunião de alinhamento: responsável interno, regras de sigilo e fluxo de resposta', prazo: 'Dia 11', dica: 'Defina: quem recebe, prazo máximo de resposta (30 dias) e como garantir o anonimato.' },
+      { texto: 'DOC06 — Procedimento do Canal de Denúncias publicado', prazo: 'Dia 13', dica: 'Canal anônimo, confidencial e disponível 24/7. Responsável designado e treinado.' },
+      { texto: 'Ativação e acesso no app — canal divulgado a todos os colaboradores', prazo: 'Dia 15', dica: 'Libere o canal e comunique o lançamento com QR Code e link de acesso.' }
+    ]}
+  ],
+
+  essencial: [
+    { fase: 'Kickoff', dias: 'Dias 1–2', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Reunião de alinhamento — mapear setores, GHEs, perfil da empresa e expectativas', prazo: 'Dia 1', dica: 'Definir cronograma de aplicação com o RH e responsáveis internos.' },
+      { texto: 'DOC01 — Ficha de Identificação: CNPJ, GHEs e nº de colaboradores por setor', prazo: 'Dia 2', dica: 'Levante CNAE, setores e critérios de severidade/probabilidade antes de configurar a plataforma.' }
+    ]},
+    { fase: 'Setup RPS-1', dias: 'Dias 3–5', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Ativação da plataforma RPS-1 — conta criada, setores cadastrados, links e QR Code prontos', prazo: 'Dia 3', dica: 'Sem instalação para ninguém. Teste antes de enviar ao cliente.' },
+      { texto: 'DOC09 — Comunicado Interno enviado a todos os colaboradores', prazo: 'Dias 4–5', dica: 'Reforçar: participação confidencial, anônima e alinhada à NR-1.' }
+    ]},
+    { fase: 'Diagnóstico', dias: 'Dias 6–10', responsavel: 'CS + Trabalhadores', passos: [
+      { texto: 'Disparo dos links individuais para colaboradores e gestores', prazo: 'Dia 6', dica: 'Envie por e-mail E WhatsApp — taxa de resposta cai muito se for só um canal.' },
+      { texto: 'Monitoramento da taxa de resposta (meta: >80%)', prazo: 'Dias 7–10', dica: 'Se <60% até o dia 8, acionar o ponto focal para que gestores incentivem a equipe.' }
+    ]},
+    { fase: 'Relatório + Plano de Ação', dias: 'Dias 11–12', responsavel: 'CS Flex ON', passos: [
+      { texto: 'DOC02 — IRO Inventário de Riscos (8 categorias FRPRT, risco por GHE)', prazo: 'Dia 11', dica: 'Cruze respostas de colaboradores e gestores para identificar discrepâncias.' },
+      { texto: 'DOC03 — Plano de Ação GRO (SW2H) entregue ao cliente', prazo: 'Dia 12', dica: 'Relatório PDF com priorização por GHE. Entregue na reunião de devolutiva.' },
+      { texto: 'DOC07 — Registro de Participação arquivado', prazo: 'Dia 12', dica: 'Relatório de respondentes por setor — evidência formal.' },
+      { texto: 'Reunião de devolutiva com RH/CIPA/gestores', prazo: 'Dia 12', dica: 'Apresente riscos prioritários e plano de ação.' }
+    ]},
+    { fase: 'Canal de Denúncias', dias: 'Dias 11–15', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Reunião de alinhamento: responsável interno, regras de sigilo e fluxo de resposta', prazo: 'Dia 11', dica: 'Defina: quem recebe, prazo máximo de resposta (30 dias) e como garantir o anonimato.' },
+      { texto: 'DOC06 — Procedimento do Canal de Denúncias publicado', prazo: 'Dia 13', dica: 'Canal anônimo, confidencial e disponível 24/7.' },
+      { texto: 'Ativação e acesso no app — canal divulgado a todos os colaboradores', prazo: 'Dia 15', dica: 'Libere o canal e comunique com QR Code e link.' }
+    ]},
+    { fase: 'Flex ON Edu — Ativação', dias: 'Dias 13–15', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Kickoff Edu: definir temas alinhados ao diagnóstico e cronograma anual de conteúdos', prazo: 'Dia 13', dica: 'Apresentar riscos priorizados pelo RPS-1. Definir com o RH o formato (ao vivo, gravado, presencial).' },
+      { texto: 'Ativação do app e acesso de colaboradores ao Flex ON Edu', prazo: 'Dia 14', dica: 'Microlearning, artigos e quiz disponíveis desde o primeiro acesso. Adesão histórica >80%.' },
+      { texto: 'DOC11 — Capacitação inicial de líderes: trilha formativa iniciada', prazo: 'Dia 15', dica: 'Líderes têm acesso primeiro — eles orientam a equipe. Registre participação na trilha inicial.' }
+    ]}
+  ],
+
+  gestao: [
+    { fase: 'Kickoff', dias: 'Dias 1–2', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Reunião de alinhamento — mapear setores, GHEs, perfil da empresa e expectativas', prazo: 'Dia 1', dica: 'Definir cronograma de aplicação com o RH e responsáveis internos.' },
+      { texto: 'DOC01 — Ficha de Identificação: CNPJ, GHEs e nº de colaboradores por setor', prazo: 'Dia 2', dica: 'Levante CNAE, setores e critérios de severidade/probabilidade antes de configurar a plataforma.' }
+    ]},
+    { fase: 'Setup RPS-1', dias: 'Dias 3–5', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Ativação da plataforma RPS-1 — conta criada, setores cadastrados, links e QR Code prontos', prazo: 'Dia 3', dica: 'Sem instalação para ninguém. Teste antes de enviar ao cliente.' },
+      { texto: 'DOC09 — Comunicado Interno enviado a todos os colaboradores', prazo: 'Dias 4–5', dica: 'Reforçar: participação confidencial, anônima e alinhada à NR-1.' }
+    ]},
+    { fase: 'Diagnóstico', dias: 'Dias 6–10', responsavel: 'CS + Trabalhadores', passos: [
+      { texto: 'Disparo dos links individuais para colaboradores e gestores', prazo: 'Dia 6', dica: 'Envie por e-mail E WhatsApp — taxa de resposta cai muito se for só um canal.' },
+      { texto: 'Monitoramento da taxa de resposta (meta: >80%)', prazo: 'Dias 7–10', dica: 'Se <60% até o dia 8, acionar o ponto focal para que gestores incentivem a equipe.' }
+    ]},
+    { fase: 'Relatório + Plano de Ação', dias: 'Dias 11–12', responsavel: 'CS Flex ON', passos: [
+      { texto: 'DOC02 — IRO Inventário de Riscos (8 categorias FRPRT, risco por GHE)', prazo: 'Dia 11', dica: 'Cruze respostas de colaboradores e gestores para identificar discrepâncias.' },
+      { texto: 'DOC03 — Plano de Ação GRO (SW2H) entregue ao cliente', prazo: 'Dia 12', dica: 'Relatório PDF com priorização por GHE. Entregue na reunião de devolutiva.' },
+      { texto: 'DOC07 — Registro de Participação arquivado', prazo: 'Dia 12', dica: 'Relatório de respondentes por setor — evidência formal.' },
+      { texto: 'Reunião de devolutiva com RH/CIPA/gestores', prazo: 'Dia 12', dica: 'Apresente riscos prioritários e plano de ação.' }
+    ]},
+    { fase: 'Canal de Denúncias', dias: 'Dias 11–15', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Reunião de alinhamento: responsável interno, regras de sigilo e fluxo de resposta', prazo: 'Dia 11', dica: 'Defina: quem recebe, prazo máximo de resposta (30 dias) e como garantir o anonimato.' },
+      { texto: 'DOC06 — Procedimento do Canal de Denúncias publicado', prazo: 'Dia 13', dica: 'Canal anônimo, confidencial e disponível 24/7.' },
+      { texto: 'Ativação e acesso no app — canal divulgado a todos os colaboradores', prazo: 'Dia 15', dica: 'Libere o canal e comunique com QR Code e link.' }
+    ]},
+    { fase: 'Flex ON Edu — Ativação', dias: 'Dias 13–15', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Kickoff Edu: definir temas alinhados ao diagnóstico e cronograma anual de conteúdos', prazo: 'Dia 13', dica: 'Apresentar riscos priorizados pelo RPS-1. Definir com o RH o formato e cronograma anual.' },
+      { texto: 'Ativação do app e acesso de colaboradores ao Flex ON Edu', prazo: 'Dia 14', dica: 'Microlearning, artigos e quiz disponíveis desde o primeiro acesso.' },
+      { texto: 'DOC11 — Capacitação inicial de líderes: trilha formativa iniciada', prazo: 'Dia 15', dica: 'Líderes têm acesso primeiro — registre participação na trilha inicial.' }
+    ]},
+    { fase: 'MEV360 — Programa 12 Meses', dias: 'Dias 13–15', responsavel: 'CS Flex ON', passos: [
+      { texto: 'Kickoff MEV360: programa personalizado de 12 meses configurado com base no diagnóstico', prazo: 'Dia 13', dica: 'Temas mensais, desafios e capacitações são adaptados aos riscos identificados pelo RPS-1.' },
+      { texto: 'Ativação do app MEV360 — feed corporativo, gamificação, ranking e lojinha de prêmios', prazo: 'Dia 14', dica: 'App com desafios gamificados, ginástica laboral, palestras e treinamentos de liderança humanizada.' },
+      { texto: 'DOC08 — Painel de monitoramento contínuo configurado (relatórios mensais automáticos)', prazo: 'Dia 15', dica: 'Toda interação gera dados estruturados — documentação pronta para fiscalização da NR-1.' },
+      { texto: 'DOC12 — Treinamento geral de lançamento com lista de presença registrada', prazo: 'Dia 15', dica: 'Registre o evento de lançamento do programa com os colaboradores.' }
+    ]}
+  ]
+};
+
+const ONBOARDING_RESUMO = {
+  fecomercio: {
+    label: 'FeComércio — Implantação Completa 120 dias',
+    servicos: [
+      'RPS-1 — Diagnóstico Psicossocial (Questionário HSE-IT validado, 7 dimensões)',
+      'Canal de Denúncias — anônimo, criptografado, Lei 14.457/22',
+      'Flex ON Edu — microlearning, palestras mensais, trilhas de capacitação de líderes',
+      'Acompanhamento CS — reunião mensal de 15 min + monitoramento trimestral de indicadores'
+    ],
+    documentos: [
+      { cod: 'DOC01', nome: 'Ficha de Identificação + Critérios GRO', tipo: 'Obrigatório' },
+      { cod: 'DOC02', nome: 'Inventário de Riscos (IRO)', tipo: 'Obrigatório' },
+      { cod: 'DOC03', nome: 'Plano de Ação GRO (SW2H)', tipo: 'Obrigatório' },
+      { cod: 'DOC08', nome: 'Registro de Implementação e Monitoramento', tipo: 'Obrigatório' },
+      { cod: 'DOC04', nome: 'Política de Saúde Mental', tipo: 'Legal' },
+      { cod: 'DOC05', nome: 'Política Prevenção ao Assédio', tipo: 'Legal' },
+      { cod: 'DOC06', nome: 'Procedimento Canal de Denúncias', tipo: 'Legal' },
+      { cod: 'DOC13', nome: 'Ata CIPA — Psicossociais (NR-5)', tipo: 'Legal' },
+      { cod: 'DOC07', nome: 'Registro de Participação', tipo: 'Evidência' },
+      { cod: 'DOC09', nome: 'Comunicado Interno NR-1', tipo: 'Evidência' },
+      { cod: 'DOC11', nome: 'Evidência Capacitação de Líderes', tipo: 'Evidência' },
+      { cod: 'DOC12', nome: 'Lista de Presença — Treinamento', tipo: 'Evidência' },
+      { cod: 'DOC16', nome: 'Termo de Ciência e Comprometimento', tipo: 'Evidência' },
+      { cod: 'DOC10', nome: 'Checklist de Conformidade', tipo: 'Auditoria' },
+      { cod: 'DOC15', nome: 'Cronograma de Implantação', tipo: 'Gestão' }
+    ]
+  },
+  diagnostico: {
+    label: 'Pacote Diagnóstico — 15 dias',
+    servicos: [
+      'RPS-1 — Diagnóstico Psicossocial (Questionário HSE-IT validado, 7 dimensões)',
+      'Canal de Denúncias — anônimo, criptografado, Lei 14.457/22'
+    ],
+    documentos: [
+      { cod: 'DOC01', nome: 'Ficha de Identificação + Critérios GRO', tipo: 'Obrigatório' },
+      { cod: 'DOC02', nome: 'Inventário de Riscos (IRO)', tipo: 'Obrigatório' },
+      { cod: 'DOC03', nome: 'Plano de Ação GRO (SW2H)', tipo: 'Obrigatório' },
+      { cod: 'DOC06', nome: 'Procedimento Canal de Denúncias', tipo: 'Legal' },
+      { cod: 'DOC07', nome: 'Registro de Participação', tipo: 'Evidência' },
+      { cod: 'DOC09', nome: 'Comunicado Interno NR-1', tipo: 'Evidência' }
+    ]
+  },
+  essencial: {
+    label: 'Pacote Essencial — 15 dias',
+    servicos: [
+      'RPS-1 — Diagnóstico Psicossocial (Questionário HSE-IT validado, 7 dimensões)',
+      'Canal de Denúncias — anônimo, criptografado, Lei 14.457/22',
+      'Flex ON Edu — microlearning, palestras mensais, trilhas de capacitação de líderes'
+    ],
+    documentos: [
+      { cod: 'DOC01', nome: 'Ficha de Identificação + Critérios GRO', tipo: 'Obrigatório' },
+      { cod: 'DOC02', nome: 'Inventário de Riscos (IRO)', tipo: 'Obrigatório' },
+      { cod: 'DOC03', nome: 'Plano de Ação GRO (SW2H)', tipo: 'Obrigatório' },
+      { cod: 'DOC06', nome: 'Procedimento Canal de Denúncias', tipo: 'Legal' },
+      { cod: 'DOC07', nome: 'Registro de Participação', tipo: 'Evidência' },
+      { cod: 'DOC09', nome: 'Comunicado Interno NR-1', tipo: 'Evidência' },
+      { cod: 'DOC11', nome: 'Evidência Capacitação de Líderes', tipo: 'Evidência' },
+      { cod: 'DOC12', nome: 'Lista de Presença — Treinamento', tipo: 'Evidência' }
+    ]
+  },
+  gestao: {
+    label: 'Pacote Gestão e Engajamento — 15 dias',
+    servicos: [
+      'RPS-1 — Diagnóstico Psicossocial (Questionário HSE-IT validado, 7 dimensões)',
+      'Canal de Denúncias — anônimo, criptografado, Lei 14.457/22',
+      'Flex ON Edu — microlearning, palestras mensais, trilhas de capacitação de líderes',
+      'MEV360 — programa 12 meses (app, gamificação, ranking, relatórios mensais prontos para MTE)'
+    ],
+    documentos: [
+      { cod: 'DOC01', nome: 'Ficha de Identificação + Critérios GRO', tipo: 'Obrigatório' },
+      { cod: 'DOC02', nome: 'Inventário de Riscos (IRO)', tipo: 'Obrigatório' },
+      { cod: 'DOC03', nome: 'Plano de Ação GRO (SW2H)', tipo: 'Obrigatório' },
+      { cod: 'DOC08', nome: 'Registro de Implementação e Monitoramento', tipo: 'Obrigatório' },
+      { cod: 'DOC06', nome: 'Procedimento Canal de Denúncias', tipo: 'Legal' },
+      { cod: 'DOC07', nome: 'Registro de Participação', tipo: 'Evidência' },
+      { cod: 'DOC09', nome: 'Comunicado Interno NR-1', tipo: 'Evidência' },
+      { cod: 'DOC11', nome: 'Evidência Capacitação de Líderes', tipo: 'Evidência' },
+      { cod: 'DOC12', nome: 'Lista de Presença — Treinamento', tipo: 'Evidência' }
+    ]
+  }
+};
+
+function _getTemplatePorTipo(tipo) {
+  return ONBOARDING_TEMPLATES[tipo] || ONBOARDING_TEMPLATES.diagnostico;
+}
+
+function _detectarTipoOnboarding(l) {
+  if (l.canal === 'Parceiro') return 'fecomercio';
+  const pac = (l.pacote || '').toLowerCase();
+  if (pac.includes('gestão') || pac.includes('gestao') || pac.includes('engajamento')) return 'gestao';
+  if (pac.includes('essencial')) return 'essencial';
+  return 'diagnostico';
+}
+
+function mudarTipoOnboarding(tipo) {
+  const l = leads.find(x => x.id === _onbLeadId); if (!l || !l.onboarding) return;
+  if (l.onboarding.tipo === tipo) return;
+  const feitosAtual = (l.onboarding.fases || []).reduce((s,f) => s + (f.passos||[]).filter(p=>p.feito).length, 0);
+  if (feitosAtual > 0 && !confirm('Trocar o fluxo vai resetar os passos marcados. Continuar?')) return;
+  const template = _getTemplatePorTipo(tipo);
+  l.onboarding.tipo = tipo;
+  l.onboarding.fases = template.map(f => ({ passos: f.passos.map(() => ({ feito: false, quando: '' })) }));
+  save();
+  if (sb) sb.from('leads').update({ onboarding: l.onboarding }).eq('id', l.id).then(()=>{}).catch(e=>console.warn(e));
+  renderOnboardingModal();
+}
 
 function abrirOnboarding(id) {
   const l = leads.find(x => x.id === id); if (!l) return;
   _onbLeadId = id;
   if (!l.onboarding) {
-    l.onboarding = { inicio: hojeStr(), fases: ONBOARDING_TEMPLATE.map(f => ({ passos: f.passos.map(() => ({ feito:false, quando:'' })) })) };
+    const tipo = _detectarTipoOnboarding(l);
+    const template = _getTemplatePorTipo(tipo);
+    l.onboarding = { inicio: hojeStr(), tipo, fases: template.map(f => ({ passos: f.passos.map(() => ({ feito: false, quando: '' })) })) };
     save();
-    if (sb) { sb.from('leads').update({ onboarding: l.onboarding }).eq('id', id).then(()=>{}).catch(e=>console.warn(e)); }
+    if (sb) sb.from('leads').update({ onboarding: l.onboarding }).eq('id', id).then(()=>{}).catch(e=>console.warn(e));
+  } else if (!l.onboarding.tipo) {
+    l.onboarding.tipo = 'fecomercio';
+    save();
+    if (sb) sb.from('leads').update({ onboarding: l.onboarding }).eq('id', l.id).then(()=>{}).catch(e=>console.warn(e));
   }
   document.getElementById('onbEmpresa').textContent = l.empresa || '—';
   renderOnboardingModal();
@@ -8398,7 +8631,10 @@ function abrirOnboarding(id) {
 
 async function marcarOnboardingPasso(fi, pi) {
   const l = leads.find(x => x.id === _onbLeadId); if (!l || !l.onboarding) return;
-  const passo = l.onboarding.fases[fi].passos[pi];
+  const fases = l.onboarding.fases;
+  if (!fases[fi]) fases[fi] = { passos: [] };
+  while (fases[fi].passos.length <= pi) fases[fi].passos.push({ feito: false, quando: '' });
+  const passo = fases[fi].passos[pi];
   passo.feito = !passo.feito; passo.quando = passo.feito ? hojeStr() : '';
   save(); renderOnboardingModal();
   if (document.getElementById('appview-ativos')?.classList.contains('active')) renderAtivos();
@@ -8406,39 +8642,69 @@ async function marcarOnboardingPasso(fi, pi) {
 }
 
 function renderOnboardingModal() {
-  const l = leads.find(x => x.id === _onbLeadId); const box = document.getElementById('onboardingBody'); if (!l || !box) return;
-  const fases = l.onboarding.fases;
-  const totalPassos = ONBOARDING_TEMPLATE.reduce((s,f)=>s+f.passos.length, 0);
-  const feitosPassos = fases.reduce((s,f)=>s+f.passos.filter(p=>p.feito).length, 0);
-  const pct = Math.round(feitosPassos / totalPassos * 100);
-  box.innerHTML = `
-    <div class="cad-intro" style="margin-bottom:14px">Início: ${formatBR(l.onboarding.inicio)} · Implantação NR-1 em <strong>120 dias</strong> · ${feitosPassos} de ${totalPassos} passos concluídos (${pct}%)</div>
-    <div style="position:relative;display:flex;flex-direction:column;gap:18px">
-      ${ONBOARDING_TEMPLATE.map((f, fi) => {
-        const fasePassos = fases[fi].passos;
-        const faseFeitos = fasePassos.filter(p=>p.feito).length;
-        const faseCompleta = faseFeitos === f.passos.length;
-        return `
-        <div class="cover-card" style="padding:14px 16px;${faseCompleta ? 'border-color:#2faa8655' : ''}">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:4px">
-            <div style="font-weight:800;color:${faseCompleta ? 'var(--green)' : 'var(--text)'}">${faseCompleta ? '✓ ' : ''}${f.fase}</div>
-            <div style="font-size:11px;color:var(--text3)">${f.dias} · ${f.responsavel} · ${faseFeitos}/${f.passos.length}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
-            ${f.passos.map((item, pi) => {
-              const passo = fasePassos[pi] || { feito:false, quando:'' };
-              return `<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;${passo.feito ? 'color:var(--text3);text-decoration:line-through' : ''}">
-                <input type="checkbox" style="margin-top:2px" ${passo.feito ? 'checked' : ''} onchange="marcarOnboardingPasso(${fi},${pi})">
-                <span>
-                  ${item.texto}${passo.feito && passo.quando ? ` <span style="text-decoration:none;color:var(--text3);font-size:11px">(${formatBR(passo.quando)})</span>` : ''}
-                  ${item.dica ? `<div style="text-decoration:none;color:var(--text3);font-size:11px;margin-top:2px">💡 ${item.dica}</div>` : ''}
-                </span>
-              </label>`;
-            }).join('')}
-          </div>
-        </div>${fi < ONBOARDING_TEMPLATE.length-1 ? '<div style="text-align:center;color:var(--text3);font-size:16px;margin:-8px 0">↓</div>' : ''}`;
-      }).join('')}
-    </div>`;
+  const l = leads.find(x => x.id === _onbLeadId);
+  const box = document.getElementById('onboardingBody');
+  if (!l || !box) return;
+  const tipo = l.onboarding.tipo || 'fecomercio';
+  const template = _getTemplatePorTipo(tipo);
+  const fases = l.onboarding.fases || [];
+  const totalPassos = template.reduce((s,f) => s + f.passos.length, 0);
+  const feitosPassos = template.reduce((s,f,fi) => {
+    const fd = fases[fi] || { passos:[] };
+    return s + f.passos.filter((_,pi) => (fd.passos[pi]||{}).feito).length;
+  }, 0);
+  const pct = totalPassos > 0 ? Math.round(feitosPassos / totalPassos * 100) : 0;
+  const resumo = ONBOARDING_RESUMO[tipo];
+  const DOC_COR = { 'Obrigatório':'#c2540f', 'Legal':'#7a5cff', 'Evidência':'#1f9d6b', 'Auditoria':'#d97706', 'Gestão':'#5b8fd0' };
+
+  const tipoSel = `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;background:rgba(0,0,0,0.03);border-radius:10px;border:1px solid var(--border)">
+    <span style="font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;margin-right:2px">Fluxo:</span>
+    ${Object.entries(ONBOARDING_TIPOS).map(([k,v]) => `<button onclick="mudarTipoOnboarding('${k}')" style="padding:4px 11px;font-size:11.5px;border-radius:20px;border:1.5px solid ${tipo===k?'var(--primary)':'var(--border)'};background:${tipo===k?'var(--primary)':'transparent'};color:${tipo===k?'#fff':'var(--text2)'};cursor:pointer;font-weight:${tipo===k?'700':'400'}">${v}</button>`).join('')}
+  </div>`;
+
+  const fasesHTML = template.map((f,fi) => {
+    const fd = fases[fi] || { passos:[] };
+    const fp = f.passos.map((_,pi) => fd.passos[pi] || { feito:false, quando:'' });
+    const ff = fp.filter(p=>p.feito).length;
+    const ok = ff === f.passos.length;
+    return `<div class="cover-card" style="padding:14px 16px;${ok?'border-color:#2faa8655;background:rgba(47,170,134,0.03)':''}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+        <div style="font-weight:800;color:${ok?'var(--green)':'var(--text)'}">${ok?'✓ ':''}${f.fase}</div>
+        <div style="font-size:11px;color:var(--text3)">${f.dias} · ${f.responsavel} · ${ff}/${f.passos.length}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+        ${f.passos.map((item,pi) => {
+          const p = fp[pi];
+          return `<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;${p.feito?'color:var(--text3);text-decoration:line-through':''}">
+            <input type="checkbox" style="margin-top:2px;flex-shrink:0" ${p.feito?'checked':''} onchange="marcarOnboardingPasso(${fi},${pi})">
+            <span>
+              ${item.texto}${item.prazo?` <span style="text-decoration:none;font-size:10px;font-weight:700;color:var(--primary);background:rgba(25,182,232,0.10);padding:1px 7px;border-radius:10px;margin-left:2px">${item.prazo}</span>`:''}${p.feito&&p.quando?` <span style="text-decoration:none;color:var(--text3);font-size:11px">(${formatBR(p.quando)})</span>`:''}
+              ${item.dica?`<div style="text-decoration:none;color:var(--text3);font-size:11px;margin-top:3px;line-height:1.5">Dica: ${item.dica}</div>`:''}
+            </span>
+          </label>`;
+        }).join('')}
+      </div>
+    </div>${fi<template.length-1?'<div style="text-align:center;color:var(--text3);font-size:16px;margin:-8px 0">↓</div>':''}`;
+  }).join('');
+
+  const resumoHTML = resumo ? `<div style="margin-top:22px;padding:16px 18px;background:rgba(0,0,0,0.025);border-radius:12px;border:1.5px solid var(--border)">
+    <div style="font-weight:800;font-size:13px;color:var(--text);margin-bottom:14px">Resumo de Entregáveis — ${resumo.label}</div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px">Servicos Ativados</div>
+      ${resumo.servicos.map(s=>`<div style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text2);margin-bottom:5px"><span style="color:var(--green);font-weight:800;flex-shrink:0">✓</span><span>${s}</span></div>`).join('')}
+    </div>
+    <div>
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:8px">Documentos a Entregar (${resumo.documentos.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        ${resumo.documentos.map(d=>{const c=DOC_COR[d.tipo]||'#888';return`<div style="display:flex;align-items:center;gap:5px;padding:4px 9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:11.5px"><span style="font-weight:800;color:var(--primary);font-size:11px">${d.cod}</span><span style="color:var(--text2)">${d.nome}</span><span style="font-size:9px;font-weight:700;color:${c};background:${c}18;padding:1px 6px;border-radius:8px;white-space:nowrap">${d.tipo}</span></div>`;}).join('')}
+      </div>
+    </div>
+  </div>` : '';
+
+  box.innerHTML = `${tipoSel}
+    <div class="cad-intro" style="margin-bottom:14px">Início: ${formatBR(l.onboarding.inicio)} · ${tipo==='fecomercio'?'Implantação NR-1 em <strong>120 dias</strong>':'Em funcionamento em <strong>15 dias úteis</strong>'} · ${feitosPassos} de ${totalPassos} passos concluídos (${pct}%)</div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:18px">${fasesHTML}</div>
+    ${resumoHTML}`;
 }
 
 let _equipeCache = { perfis: [], leadsAll: [], parceirosAll: [] };
