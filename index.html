@@ -10472,21 +10472,27 @@ const REPO_TIPO_ICONE = {
 };
 
 async function carregarRepositorio() {
-  if (!sb) return;
+  const sub = document.querySelector('#appview-repositorio .section-sub');
+  if (!sb) { if (sub) sub.textContent = 'Erro: cliente Supabase não iniciado.'; return; }
+  if (sub) sub.textContent = 'Carregando...';
   try {
     const { data, error } = await sb.from('repositorio').select('*').order('criado_em', { ascending: false });
     const semTab = document.getElementById('repoSemTabela');
     const grid   = document.getElementById('repoGrid');
     if (error) {
+      if (sub) sub.textContent = 'Erro: ' + error.message;
       semTab.style.display = ''; grid.style.display = 'none';
       REPOSITORIO_DOCS = []; return;
     }
-    semTab.style.display = 'none'; grid.style.display = 'grid';
     REPOSITORIO_DOCS = data || [];
-  } catch(e) { REPOSITORIO_DOCS = []; }
+    if (sub) sub.textContent = REPOSITORIO_DOCS.length + ' documento(s) · clique para abrir';
+    semTab.style.display = 'none'; grid.style.display = 'grid';
+  } catch(e) { if (sub) sub.textContent = 'Erro inesperado: ' + e.message; REPOSITORIO_DOCS = []; }
 }
 
 function renderRepositorio() {
+  const grid = document.getElementById('repoGrid');
+  if (grid) grid.style.display = 'grid';
   const busca = (document.getElementById('repoBusca')?.value || '').toLowerCase();
   const cat   = document.getElementById('repoCategoria')?.value || '';
   const isMaster = window.CAPTURA.user && (window.CAPTURA.user.papel === 'master' || window.CAPTURA.user.papel === 'admin');
