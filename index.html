@@ -10639,7 +10639,6 @@ async function salvarDoc() {
   if (url) payload.url = url;
   if (arquivo_nome) payload.arquivo_nome = arquivo_nome;
 
-  btn.disabled = false; btn.textContent = 'Salvar';
   let dbError;
   if (id) {
     const { error } = await sb.from('repositorio').update(payload).eq('id', id);
@@ -10648,10 +10647,11 @@ async function salvarDoc() {
     const { error } = await sb.from('repositorio').insert(payload);
     dbError = error;
   }
+  btn.disabled = false; btn.textContent = 'Salvar';
   if (dbError) { alert('Erro ao salvar: ' + dbError.message); return; }
   fecharModalDoc();
-  await carregarRepositorio();
-  renderRepositorio();
+  showToast('Documento salvo!');
+  switchAppView('repositorio');
 }
 
 function abrirModalSenha() {
