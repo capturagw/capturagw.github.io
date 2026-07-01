@@ -10491,8 +10491,6 @@ async function carregarRepositorio() {
 }
 
 function renderRepositorio() {
-  const grid = document.getElementById('repoGrid');
-  if (grid) grid.style.display = 'grid';
   const busca = (document.getElementById('repoBusca')?.value || '').toLowerCase();
   const cat   = document.getElementById('repoCategoria')?.value || '';
   const isMaster = window.CAPTURA.user && (window.CAPTURA.user.papel === 'master' || window.CAPTURA.user.papel === 'admin');
@@ -10502,6 +10500,7 @@ function renderRepositorio() {
   if (busca) docs = docs.filter(d => (d.titulo||'').toLowerCase().includes(busca) || (d.descricao||'').toLowerCase().includes(busca) || (d.assunto||'').toLowerCase().includes(busca));
   const grid = document.getElementById('repoGrid');
   const empty = document.getElementById('repoEmpty');
+  if (grid) grid.style.display = 'grid';
   if (!docs.length && document.getElementById('repoSemTabela').style.display === 'none') {
     grid.innerHTML = ''; empty.style.display = ''; return;
   }
