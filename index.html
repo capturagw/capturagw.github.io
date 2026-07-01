@@ -5777,7 +5777,7 @@ window.PARCEIROS_DATA = {
     </div>
     <div id="repoGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
     <div id="repoEmpty" style="display:none;padding:40px;text-align:center;color:var(--muted);font-size:14px">Nenhum documento encontrado.</div>
-    <div id="repoSemTabela" style="display:none" class="cover-card" style="margin-top:20px;padding:24px;text-align:center">
+    <div id="repoSemTabela" style="display:none;margin-top:20px;padding:24px;text-align:center" class="cover-card">
       <div style="font-weight:600;margin-bottom:8px">Tabela não encontrada</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Execute o SQL abaixo no Supabase Dashboard → SQL Editor para ativar o repositório:</div>
       <pre style="text-align:left;background:var(--glass-bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:11.5px;overflow-x:auto;white-space:pre-wrap">-- 1. Criar tabela
@@ -10505,33 +10505,42 @@ function renderRepositorio() {
     grid.innerHTML = ''; empty.style.display = ''; return;
   }
   empty.style.display = 'none';
-  grid.innerHTML = docs.map(d => {
-    const cor = REPO_CAT_CORES[d.categoria] || '#9ca3af';
-    const icone = REPO_TIPO_ICONE[d.tipo] || '📄';
-    const masterBtns = isMaster ? `
-      <button onclick="event.stopPropagation();abrirModalDoc(${JSON.stringify(d).replace(/"/g,'&quot;')})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 5px" title="Editar">✏️</button>
-      <button onclick="event.stopPropagation();excluirDoc('${d.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 5px" title="Excluir">🗑</button>` : '';
-    return `<div class="cover-card" style="cursor:pointer;transition:box-shadow .15s" onclick="window.open(${JSON.stringify(d.url||'#')},'_blank')" onmouseenter="this.style.boxShadow='0 4px 20px rgba(0,0,0,.18)'" onmouseleave="this.style.boxShadow=''">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <span style="font-size:22px;line-height:1">${icone}</span>
-        <div style="display:flex;gap:4px;align-items:center">
-          ${masterBtns}
-          <span style="font-size:11px;font-weight:600;color:#fff;background:${cor};border-radius:20px;padding:2px 9px">${d.categoria||'Geral'}</span>
+  try {
+    grid.innerHTML = docs.map(d => {
+      const cor = REPO_CAT_CORES[d.categoria] || '#9ca3af';
+      const icone = REPO_TIPO_ICONE[d.tipo] || '📄';
+      const masterBtns = isMaster ? `
+        <button onclick="event.stopPropagation();abrirModalDoc(${JSON.stringify(d).replace(/"/g,'&quot;')})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 5px" title="Editar">✏️</button>
+        <button onclick="event.stopPropagation();excluirDoc('${d.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 5px" title="Excluir">🗑</button>` : '';
+      return `<div class="cover-card" style="cursor:pointer;transition:box-shadow .15s" data-url="${(d.url||'').replace(/"/g,'&quot;')}" onclick="repoAbrirDocUrl(this)" onmouseenter="this.style.boxShadow='0 4px 20px rgba(0,0,0,.18)'" onmouseleave="this.style.boxShadow=''">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <span style="font-size:22px;line-height:1">${icone}</span>
+          <div style="display:flex;gap:4px;align-items:center">
+            ${masterBtns}
+            <span style="font-size:11px;font-weight:600;color:#fff;background:${cor};border-radius:20px;padding:2px 9px">${d.categoria||'Geral'}</span>
+          </div>
         </div>
-      </div>
-      <div style="font-weight:600;font-size:14px;margin-bottom:3px;line-height:1.3">${d.titulo||''}</div>
-      ${d.assunto ? `<div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:4px;line-height:1.3">${d.assunto}</div>` : ''}
-      ${d.descricao ? `<div style="font-size:12px;color:var(--muted);line-height:1.4;margin-bottom:6px">${d.descricao}</div>` : ''}
-      <div style="font-size:11px;color:var(--muted);margin-top:auto;display:flex;gap:8px;flex-wrap:wrap">
-        <span>${d.tipo||'PDF'}</span>
-        ${d.data_documento ? `<span>· ${d.data_documento.slice(0,10).split('-').reverse().join('/')}</span>` : ''}
-        ${d.arquivo_nome ? `<span style="color:var(--accent)">· ${d.arquivo_nome.length>28?d.arquivo_nome.slice(0,25)+'…':d.arquivo_nome}</span>` : ''}
-        <span style="margin-left:auto">adicionado ${fmtDataBR(d.criado_em)}</span>
-      </div>
-    </div>`;
-  }).join('');
+        <div style="font-weight:600;font-size:14px;margin-bottom:3px;line-height:1.3">${d.titulo||''}</div>
+        ${d.assunto ? `<div style="font-size:12px;color:var(--text2);font-weight:500;margin-bottom:4px;line-height:1.3">${d.assunto}</div>` : ''}
+        ${d.descricao ? `<div style="font-size:12px;color:var(--muted);line-height:1.4;margin-bottom:6px">${d.descricao}</div>` : ''}
+        <div style="font-size:11px;color:var(--muted);margin-top:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <span>${d.tipo||'PDF'}</span>
+          ${d.data_documento ? `<span>· ${d.data_documento.slice(0,10).split('-').reverse().join('/')}</span>` : ''}
+          ${d.arquivo_nome ? `<span style="color:var(--accent)">· ${d.arquivo_nome.length>28?d.arquivo_nome.slice(0,25)+'…':d.arquivo_nome}</span>` : ''}
+          <span style="margin-left:auto">adicionado ${fmtDataBR(d.criado_em)}</span>
+        </div>
+      </div>`;
+    }).join('');
+    if (grid.children.length === 0 && docs.length > 0) {
+      grid.innerHTML = '<div style="padding:16px;border:2px solid orange;border-radius:8px;background:#fffbe6;font-size:13px"><b>Dados recebidos (' + docs.length + ' docs) mas HTML ficou vazio.</b><br>Primeiro doc: ' + JSON.stringify(docs[0]).slice(0,300) + '</div>';
+    }
+  } catch(e) {
+    grid.innerHTML = '<div style="padding:16px;border:2px solid red;border-radius:8px;background:#fff2f2;color:red;font-size:13px"><b>Erro ao gerar cards:</b> ' + e.message + '</div>';
+  }
   if (!docs.length) { grid.innerHTML = ''; empty.style.display = ''; }
 }
+
+function repoAbrirDocUrl(el) { var u = el.dataset.url; if (u) window.open(u, '_blank'); }
 
 let _repoTabAtual = 'anexar';
 
