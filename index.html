@@ -10526,7 +10526,7 @@ function renderRepositorio() {
         <span>${d.tipo||'PDF'}</span>
         ${d.data_documento ? `<span>· ${d.data_documento.slice(0,10).split('-').reverse().join('/')}</span>` : ''}
         ${d.arquivo_nome ? `<span style="color:var(--accent)">· ${d.arquivo_nome.length>28?d.arquivo_nome.slice(0,25)+'…':d.arquivo_nome}</span>` : ''}
-        <span style="margin-left:auto">adicionado ${fmtData(d.criado_em)}</span>
+        <span style="margin-left:auto">adicionado ${fmtDataBR(d.criado_em)}</span>
       </div>
     </div>`;
   }).join('');
