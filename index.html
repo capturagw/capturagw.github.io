@@ -5899,6 +5899,38 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
   </div>
 </div>
 
+<!-- MODAL ALTERAR SENHA -->
+<div class="modal-overlay" id="senhaModal" onclick="if(event.target===this)fecharModalSenha()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">Alterar senha</span>
+      <button class="modal-close" onclick="fecharModalSenha()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:12.5px;color:var(--muted)">Conta: <b id="senhaEmail"></b></div>
+      <div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Nova senha *</label>
+        <div style="position:relative">
+          <input class="filter" id="senhaNova" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;padding-right:38px">
+          <button onclick="toggleSenhaVis('senhaNova',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px">👁</button>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Confirmar nova senha *</label>
+        <div style="position:relative">
+          <input class="filter" id="senhaConfirm" type="password" placeholder="Repita a nova senha" style="width:100%;padding-right:38px">
+          <button onclick="toggleSenhaVis('senhaConfirm',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px">👁</button>
+        </div>
+      </div>
+      <div id="senhaMsg" style="font-size:12px;min-height:18px;text-align:center"></div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:10px;justify-content:flex-end;padding:16px 20px">
+      <button class="btn-secondary" onclick="fecharModalSenha()">Cancelar</button>
+      <button class="btn-primary" id="senhaBtnSalvar" onclick="salvarSenha()">Salvar senha</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DETALHE/EDIÇÃO -->
 <div class="modal-overlay" id="detailModal">
   <div class="modal" style="max-width:700px">
@@ -8160,7 +8192,7 @@ function switchAppView(view) {
   if (view === 'ativos') renderAtivos();
   if (view === 'financeiro') abrirContasReceber();
   if (view === 'pipeline') setTimeout(animateKPIs, 60);
-  if (view === 'repositorio') renderRepositorio();
+  if (view === 'repositorio') carregarRepositorio().then(renderRepositorio);
 }
 
 function abrirContrato() {
@@ -10279,6 +10311,9 @@ function atualizarHeaderUser() {
   if (bDed) bDed.style.display = souGiovanna() ? '' : 'none';
   const hr = document.querySelector('.header-right');
   if (hr && !document.getElementById('btnSair')) {
+    const bs = document.createElement('button'); bs.id = 'btnSenhaHeader'; bs.className = 'btn-sair'; bs.textContent = 'Senha';
+    bs.onclick = abrirModalSenha;
+    hr.appendChild(bs);
     const b = document.createElement('button'); b.id = 'btnSair'; b.className = 'btn-sair'; b.textContent = 'Sair';
     b.onclick = async () => { await sb.auth.signOut(); location.reload(); };
     hr.appendChild(b);
@@ -10437,13 +10472,15 @@ const REPO_TIPO_ICONE = {
 };
 
 async function carregarRepositorio() {
+  const BASE = window.CAPTURA.url;
+  const KEY  = window.CAPTURA.key;
   try {
-    const r = await fetch(SUPABASE_URL + '/rest/v1/repositorio?order=criado_em.desc', {
-      headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
+    const r = await fetch(BASE + '/rest/v1/repositorio?order=criado_em.desc', {
+      headers: { apikey: KEY, Authorization: 'Bearer ' + KEY }
     });
-    if (r.status === 404 || r.status === 400) {
-      const j = await r.json();
-      if (j && (j.code === 'PGRST205' || (j.message || '').includes('repositorio'))) {
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      if (j && (j.code === 'PGRST205' || (j.message || '').toLowerCase().includes('repositorio') || r.status === 404)) {
         document.getElementById('repoSemTabela').style.display = '';
         document.getElementById('repoGrid').style.display = 'none';
         REPOSITORIO_DOCS = [];
@@ -10572,9 +10609,9 @@ async function salvarDoc() {
       const ts   = Date.now();
       const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `${ts}_${safe}`;
-      const up   = await fetch(`${SUPABASE_URL}/storage/v1/object/repositorio-docs/${path}`, {
+      const up   = await fetch(`${window.CAPTURA.url}/storage/v1/object/repositorio-docs/${path}`, {
         method: 'POST',
-        headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+        headers: { apikey: window.CAPTURA.key, Authorization: 'Bearer ' + window.CAPTURA.key, 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
         body: file
       });
       if (!up.ok) {
@@ -10582,7 +10619,7 @@ async function salvarDoc() {
         status.textContent = 'Erro no upload: ' + (err.message || 'Crie o bucket "repositorio-docs" público no Supabase Storage.');
         btn.disabled = false; btn.textContent = 'Salvar'; return;
       }
-      url          = `${SUPABASE_URL}/storage/v1/object/public/repositorio-docs/${path}`;
+      url          = `${window.CAPTURA.url}/storage/v1/object/public/repositorio-docs/${path}`;
       arquivo_nome = file.name;
       status.textContent = 'Upload concluído.';
     } else if (!id) {
@@ -10606,10 +10643,10 @@ async function salvarDoc() {
   if (!arquivo_nome && id) delete payload.arquivo_nome;
 
   const method   = id ? 'PATCH' : 'POST';
-  const endpoint = SUPABASE_URL + '/rest/v1/repositorio' + (id ? `?id=eq.${id}` : '');
+  const endpoint = window.CAPTURA.url + '/rest/v1/repositorio' + (id ? `?id=eq.${id}` : '');
   const r = await fetch(endpoint, {
     method,
-    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    headers: { apikey: window.CAPTURA.key, Authorization: 'Bearer ' + window.CAPTURA.key, 'Content-Type': 'application/json', Prefer: 'return=representation' },
     body: JSON.stringify(payload)
   });
   btn.disabled = false; btn.textContent = 'Salvar';
@@ -10619,20 +10656,53 @@ async function salvarDoc() {
   renderRepositorio();
 }
 
+function abrirModalSenha() {
+  const u = window.CAPTURA.user;
+  document.getElementById('senhaEmail').textContent = u?.email || '';
+  document.getElementById('senhaNova').value = '';
+  document.getElementById('senhaConfirm').value = '';
+  document.getElementById('senhaMsg').style.color = 'var(--muted)';
+  document.getElementById('senhaMsg').textContent = '';
+  document.getElementById('senhaModal').classList.add('active');
+  setTimeout(() => document.getElementById('senhaNova').focus(), 100);
+}
+
+function fecharModalSenha() {
+  document.getElementById('senhaModal').classList.remove('active');
+}
+
+function toggleSenhaVis(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+async function salvarSenha() {
+  const nova    = document.getElementById('senhaNova').value;
+  const confirm = document.getElementById('senhaConfirm').value;
+  const msg     = document.getElementById('senhaMsg');
+  const btn     = document.getElementById('senhaBtnSalvar');
+  msg.style.color = '#e53e3e';
+  if (nova.length < 6)       { msg.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
+  if (nova !== confirm)      { msg.textContent = 'As senhas não coincidem.'; return; }
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  const { error } = await sb.auth.updateUser({ password: nova });
+  btn.disabled = false; btn.textContent = 'Salvar senha';
+  if (error) { msg.textContent = 'Erro: ' + error.message; return; }
+  msg.style.color = 'var(--green)';
+  msg.textContent = 'Senha alterada com sucesso!';
+  setTimeout(fecharModalSenha, 1500);
+}
+
 async function excluirDoc(id) {
   if (!confirm('Remover este documento do repositório?')) return;
-  await fetch(SUPABASE_URL + '/rest/v1/repositorio?id=eq.' + id, {
+  await fetch(window.CAPTURA.url + '/rest/v1/repositorio?id=eq.' + id, {
     method: 'DELETE',
-    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY }
+    headers: { apikey: window.CAPTURA.key, Authorization: 'Bearer ' + window.CAPTURA.key }
   });
   await carregarRepositorio();
   renderRepositorio();
 }
-
-async function _initRepositorio() {
-  await carregarRepositorio();
-}
-_initRepositorio();
 </script>
 </body>
 </html>
