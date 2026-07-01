@@ -10472,31 +10472,24 @@ const REPO_TIPO_ICONE = {
 };
 
 async function carregarRepositorio() {
-  const BASE = window.CAPTURA.url;
-  const KEY  = window.CAPTURA.key;
+  if (!sb) return;
   try {
-    const r = await fetch(BASE + '/rest/v1/repositorio?order=criado_em.desc', {
-      headers: { apikey: KEY, Authorization: 'Bearer ' + KEY }
-    });
-    if (!r.ok) {
-      const j = await r.json().catch(() => ({}));
-      if (j && (j.code === 'PGRST205' || (j.message || '').toLowerCase().includes('repositorio') || r.status === 404)) {
-        document.getElementById('repoSemTabela').style.display = '';
-        document.getElementById('repoGrid').style.display = 'none';
-        REPOSITORIO_DOCS = [];
-        return;
-      }
+    const { data, error } = await sb.from('repositorio').select('*').order('criado_em', { ascending: false });
+    const semTab = document.getElementById('repoSemTabela');
+    const grid   = document.getElementById('repoGrid');
+    if (error) {
+      semTab.style.display = ''; grid.style.display = 'none';
+      REPOSITORIO_DOCS = []; return;
     }
-    document.getElementById('repoSemTabela').style.display = 'none';
-    document.getElementById('repoGrid').style.display = '';
-    REPOSITORIO_DOCS = await r.json();
+    semTab.style.display = 'none'; grid.style.display = '';
+    REPOSITORIO_DOCS = data || [];
   } catch(e) { REPOSITORIO_DOCS = []; }
 }
 
 function renderRepositorio() {
   const busca = (document.getElementById('repoBusca')?.value || '').toLowerCase();
   const cat   = document.getElementById('repoCategoria')?.value || '';
-  const isMaster = usuarioAtual && (usuarioAtual.papel === 'master' || usuarioAtual.papel === 'admin');
+  const isMaster = window.CAPTURA.user && (window.CAPTURA.user.papel === 'master' || window.CAPTURA.user.papel === 'admin');
   document.querySelectorAll('.repo-master-only').forEach(el => el.style.display = isMaster ? '' : 'none');
   let docs = REPOSITORIO_DOCS;
   if (cat) docs = docs.filter(d => d.categoria === cat);
@@ -10609,9 +10602,11 @@ async function salvarDoc() {
       const ts   = Date.now();
       const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const path = `${ts}_${safe}`;
+      const { data: { session: _sess } } = await sb.auth.getSession();
+      const _jwt = _sess?.access_token || window.CAPTURA.key;
       const up   = await fetch(`${window.CAPTURA.url}/storage/v1/object/repositorio-docs/${path}`, {
         method: 'POST',
-        headers: { apikey: window.CAPTURA.key, Authorization: 'Bearer ' + window.CAPTURA.key, 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+        headers: { apikey: window.CAPTURA.key, Authorization: 'Bearer ' + _jwt, 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
         body: file
       });
       if (!up.ok) {
@@ -10638,19 +10633,20 @@ async function salvarDoc() {
     descricao:      document.getElementById('repoDocDesc').value.trim() || null,
     url:            url || null,
     arquivo_nome:   arquivo_nome,
-    adicionado_por: usuarioAtual?.email || null,
+    adicionado_por: window.CAPTURA.user?.email || null,
   };
   if (!arquivo_nome && id) delete payload.arquivo_nome;
 
-  const method   = id ? 'PATCH' : 'POST';
-  const endpoint = window.CAPTURA.url + '/rest/v1/repositorio' + (id ? `?id=eq.${id}` : '');
-  const r = await fetch(endpoint, {
-    method,
-    headers: { apikey: window.CAPTURA.key, Authorization: 'Bearer ' + window.CAPTURA.key, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-    body: JSON.stringify(payload)
-  });
   btn.disabled = false; btn.textContent = 'Salvar';
-  if (!r.ok) { alert('Erro ao salvar. Verifique o console.'); console.error(await r.text()); return; }
+  let dbError;
+  if (id) {
+    const { error } = await sb.from('repositorio').update(payload).eq('id', id);
+    dbError = error;
+  } else {
+    const { error } = await sb.from('repositorio').insert(payload);
+    dbError = error;
+  }
+  if (dbError) { alert('Erro ao salvar: ' + dbError.message); return; }
   fecharModalDoc();
   await carregarRepositorio();
   renderRepositorio();
@@ -10696,10 +10692,7 @@ async function salvarSenha() {
 
 async function excluirDoc(id) {
   if (!confirm('Remover este documento do repositório?')) return;
-  await fetch(window.CAPTURA.url + '/rest/v1/repositorio?id=eq.' + id, {
-    method: 'DELETE',
-    headers: { apikey: window.CAPTURA.key, Authorization: 'Bearer ' + window.CAPTURA.key }
-  });
+  await sb.from('repositorio').delete().eq('id', id);
   await carregarRepositorio();
   renderRepositorio();
 }
