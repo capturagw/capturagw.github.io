@@ -10481,7 +10481,7 @@ async function carregarRepositorio() {
       semTab.style.display = ''; grid.style.display = 'none';
       REPOSITORIO_DOCS = []; return;
     }
-    semTab.style.display = 'none'; grid.style.display = '';
+    semTab.style.display = 'none'; grid.style.display = 'grid';
     REPOSITORIO_DOCS = data || [];
   } catch(e) { REPOSITORIO_DOCS = []; }
 }
