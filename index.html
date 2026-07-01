@@ -10626,16 +10626,18 @@ async function salvarDoc() {
 
   const payload = {
     titulo,
-    assunto:        document.getElementById('repoDocAssunto').value.trim() || null,
-    data_documento: document.getElementById('repoDocData').value || null,
     categoria:      document.getElementById('repoDocCategoria').value,
     tipo:           document.getElementById('repoDocTipo').value,
-    descricao:      document.getElementById('repoDocDesc').value.trim() || null,
-    url:            url || null,
-    arquivo_nome:   arquivo_nome,
     adicionado_por: window.CAPTURA.user?.email || null,
   };
-  if (!arquivo_nome && id) delete payload.arquivo_nome;
+  const assunto = document.getElementById('repoDocAssunto').value.trim();
+  if (assunto) payload.assunto = assunto;
+  const dataDoc = document.getElementById('repoDocData').value;
+  if (dataDoc) payload.data_documento = dataDoc;
+  const descricao = document.getElementById('repoDocDesc').value.trim();
+  if (descricao) payload.descricao = descricao;
+  if (url) payload.url = url;
+  if (arquivo_nome) payload.arquivo_nome = arquivo_nome;
 
   btn.disabled = false; btn.textContent = 'Salvar';
   let dbError;
