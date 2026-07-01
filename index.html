@@ -10576,11 +10576,11 @@ function abrirModalDoc(doc) {
   document.getElementById('repoUploadStatus').style.display = 'none';
   document.getElementById('repoModalTitulo').textContent = doc ? 'Editar documento' : 'Novo documento';
   if (doc && doc.url && !doc.arquivo_nome) repoToggleTab('link'); else repoToggleTab('anexar');
-  document.getElementById('repoModal').classList.add('active');
+  document.getElementById('repoModal').classList.add('open');
 }
 
 function fecharModalDoc() {
-  document.getElementById('repoModal').classList.remove('active');
+  document.getElementById('repoModal').classList.remove('open');
 }
 
 async function salvarDoc() {
@@ -10659,12 +10659,12 @@ function abrirModalSenha() {
   document.getElementById('senhaConfirm').value = '';
   document.getElementById('senhaMsg').style.color = 'var(--muted)';
   document.getElementById('senhaMsg').textContent = '';
-  document.getElementById('senhaModal').classList.add('active');
+  document.getElementById('senhaModal').classList.add('open');
   setTimeout(() => document.getElementById('senhaNova').focus(), 100);
 }
 
 function fecharModalSenha() {
-  document.getElementById('senhaModal').classList.remove('active');
+  document.getElementById('senhaModal').classList.remove('open');
 }
 
 function toggleSenhaVis(id, btn) {
