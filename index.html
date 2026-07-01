@@ -5394,10 +5394,11 @@ window.PARCEIROS_DATA = {
     </div>
   </div>
   <div class="header-right">
-    <span class="last-update" id="lastUpdate">Carregando...</span>
+    <button class="btn-secondary" onclick="switchAppView('repositorio')" title="Repositório de Processos"><svg class="ic"><use href="#i-inbox"/></svg> Repositório</button>
     <button class="btn-reload" id="btnReload" onclick="location.reload()" title="Recarregar agora para buscar novos leads">
       <svg class="ic"><use href="#i-refresh"/></svg> <span id="reloadCountdown">15:00</span>
     </button>
+    <span class="last-update" id="lastUpdate" style="display:none"></span>
     <div style="position:relative">
       <button class="btn-secondary" onclick="openInbox()"><svg class="ic"><use href="#i-inbox"/></svg> Novos Leads</button>
       <div class="inbox-badge" id="inboxBadge" style="display:none">0</div>
@@ -5423,7 +5424,6 @@ window.PARCEIROS_DATA = {
   <button class="app-tab" id="apptab-b2g" onclick="switchAppView('b2g')"><svg class="ic"><use href="#i-building"/></svg> B2G <span class="kanban-count" id="b2gCount">0</span></button>
   <button class="app-tab apptab-vip" id="apptab-financeiro" onclick="switchAppView('financeiro')" style="display:none"><svg class="ic"><use href="#i-money"/></svg> ★ Financeiro</button>
   <button class="app-tab" id="apptab-desq" onclick="switchAppView('desq')"><svg class="ic"><use href="#i-trash"/></svg> Desqualificados <span class="kanban-count" id="desqCount">0</span></button>
-  <button class="app-tab" id="apptab-repositorio" onclick="switchAppView('repositorio')"><svg class="ic"><use href="#i-inbox"/></svg> Repositório</button>
 </nav>
 
 <!-- ═══ VIEW: PIPELINE ═══ -->
