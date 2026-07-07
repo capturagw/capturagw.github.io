@@ -6005,6 +6005,18 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
           <div class="form-value" id="modalCidade">—</div>
         </div>
         <div class="form-group">
+          <div class="form-label">Bairro</div>
+          <div class="form-value" id="modalBairro">—</div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Logradouro</div>
+          <div class="form-value" id="modalLogradouro">—</div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">CEP</div>
+          <div class="form-value" id="modalCep">—</div>
+        </div>
+        <div class="form-group">
           <div class="form-label">Faturamento Est.</div>
           <div class="form-value" id="modalFaturamento">—</div>
         </div>
@@ -6108,6 +6120,9 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
         <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="editEmail" type="email" placeholder="contato@empresa.com"></div>
         <div class="form-group"><label class="form-label">Telefone / WhatsApp</label><input class="form-input" id="editTelefone" placeholder="(62) 9...."></div>
         <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" id="editCidade"></div>
+        <div class="form-group"><label class="form-label">Bairro</label><input class="form-input" id="editBairro" placeholder="Bairro"></div>
+        <div class="form-group"><label class="form-label">Logradouro</label><input class="form-input" id="editLogradouro" placeholder="Rua, Av., número..."></div>
+        <div class="form-group"><label class="form-label">CEP</label><input class="form-input" id="editCep" placeholder="00000-000" maxlength="9"></div>
         <div class="form-group"><label class="form-label">Setor</label><input class="form-input" id="editSetor" placeholder="Ex: Indústria, Varejo, Saúde..."></div>
         <div class="form-group"><label class="form-label">Site</label><input class="form-input" id="editSite" placeholder="empresa.com.br"></div>
         <div class="form-group"><label class="form-label">Vidas (RPS — nº colaboradores)</label><input class="form-input" id="editVidas" type="number"></div>
@@ -6239,6 +6254,9 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
         </select>
       </div>
       <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" id="peCidade"></div>
+      <div class="form-group"><label class="form-label">Bairro</label><input class="form-input" id="peBairro"></div>
+      <div class="form-group"><label class="form-label">Logradouro</label><input class="form-input" id="peLogradouro" placeholder="Rua, Av., número..."></div>
+      <div class="form-group"><label class="form-label">CEP</label><input class="form-input" id="peCep" placeholder="00000-000"></div>
       <div class="form-group"><label class="form-label">Site</label><input class="form-input" id="peSite"></div>
       <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="peTel"></div>
       <div class="form-group"><label class="form-label">WhatsApp (só números)</label><input class="form-input" id="peZap"></div>
@@ -6354,6 +6372,9 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
         </select>
       </div>
       <div class="form-group"><label class="form-label">Cidade</label><input class="form-input" id="npCidade" placeholder="Cidade - UF"></div>
+      <div class="form-group"><label class="form-label">Bairro</label><input class="form-input" id="npBairro" placeholder="Bairro"></div>
+      <div class="form-group"><label class="form-label">Logradouro</label><input class="form-input" id="npLogradouro" placeholder="Rua, Av., número..."></div>
+      <div class="form-group"><label class="form-label">CEP</label><input class="form-input" id="npCep" placeholder="00000-000" maxlength="9"></div>
       <div class="form-group"><label class="form-label">Telefone</label><input class="form-input" id="npTel" placeholder="(11) 0000-0000"></div>
       <div class="form-group"><label class="form-label">WhatsApp</label><input class="form-input" id="npZap" placeholder="só números com 55"></div>
       <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" id="npEmail" placeholder="contato@..."></div>
@@ -6434,6 +6455,9 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
       <div class="form-group"><label class="form-label">Cidade</label>
         <input class="form-input" id="addCidade" placeholder="Goiânia" value="Goiânia">
       </div>
+      <div class="form-group"><label class="form-label">Bairro</label><input class="form-input" id="addBairro" placeholder="Bairro"></div>
+      <div class="form-group"><label class="form-label">Logradouro</label><input class="form-input" id="addLogradouro" placeholder="Rua, Av., número..."></div>
+      <div class="form-group"><label class="form-label">CEP</label><input class="form-input" id="addCep" placeholder="00000-000" maxlength="9"></div>
       <div class="form-group full"><label class="form-label">Notas</label>
         <textarea class="form-textarea" id="addNotas" placeholder="Observações iniciais..."></textarea>
       </div>
@@ -7533,6 +7557,9 @@ function openDetail(id) {
   document.getElementById('modalSetor').textContent = l.setor||'—';
   document.getElementById('modalFuncionarios').textContent = l.funcionarios||'—';
   document.getElementById('modalCidade').textContent = l.cidade||'—';
+  document.getElementById('modalBairro').textContent = l.bairro||'—';
+  document.getElementById('modalLogradouro').textContent = l.logradouro||'—';
+  document.getElementById('modalCep').textContent = l.cep||'—';
   document.getElementById('modalFaturamento').textContent = l.faturamento||'—';
   if (l.linkedin_empresa) {
     document.getElementById('modalLinkedin').innerHTML =
@@ -7590,6 +7617,9 @@ function openDetail(id) {
   document.getElementById('editEmail').value = l.email||'';
   document.getElementById('editTelefone').value = l.telefone||'';
   document.getElementById('editCidade').value = l.cidade||'';
+  document.getElementById('editBairro').value = l.bairro||'';
+  document.getElementById('editLogradouro').value = l.logradouro||'';
+  document.getElementById('editCep').value = l.cep||'';
   document.getElementById('editSetor').value = l.setor||'';
   document.getElementById('editSite').value = l.site||'';
   document.getElementById('editVidas').value = l.vidas||'';
@@ -7697,6 +7727,9 @@ function saveLead() {
   l.email = document.getElementById('editEmail').value.trim();
   l.telefone = document.getElementById('editTelefone').value.trim();
   l.cidade = document.getElementById('editCidade').value.trim();
+  l.bairro = document.getElementById('editBairro').value.trim();
+  l.logradouro = document.getElementById('editLogradouro').value.trim();
+  l.cep = document.getElementById('editCep').value.trim();
   l.setor = document.getElementById('editSetor').value.trim();
   l.site = document.getElementById('editSite').value.trim();
   const _v = document.getElementById('editVidas').value; l.vidas = _v ? parseInt(_v) : null;
@@ -8005,6 +8038,9 @@ function saveNewLead() {
     prioridade: document.getElementById('addPrioridade').value,
     valor_estimado: document.getElementById('addValor').value || 1800,
     cidade: document.getElementById('addCidade').value || 'Goiânia',
+    bairro: document.getElementById('addBairro').value.trim() || '',
+    logradouro: document.getElementById('addLogradouro').value.trim() || '',
+    cep: document.getElementById('addCep').value.trim() || '',
     notas: document.getElementById('addNotas').value,
     status: 'Novo Lead',
     data_adicao: new Date().toISOString().slice(0,10),
@@ -8033,6 +8069,9 @@ async function saveNewParceiro() {
     dono: window.CAPTURA.user ? window.CAPTURA.user.id : null,
     nome, tipo: document.getElementById('npTipo').value,
     cidade: document.getElementById('npCidade').value || null,
+    bairro: document.getElementById('npBairro').value.trim() || null,
+    logradouro: document.getElementById('npLogradouro').value.trim() || null,
+    cep: document.getElementById('npCep').value.trim() || null,
     telefone: document.getElementById('npTel').value || null,
     whatsapp: (document.getElementById('npZap').value || '').replace(/\D/g, '') || null,
     email: document.getElementById('npEmail').value || null,
@@ -8047,7 +8086,7 @@ async function saveNewParceiro() {
   renderParceiros();
   closeModal('addParceiroModal');
   showToast('✓ Parceiro cadastrado');
-  ['npNome','npCidade','npTel','npZap','npEmail','npSite','npNota'].forEach(id => document.getElementById(id).value = '');
+  ['npNome','npCidade','npBairro','npLogradouro','npCep','npTel','npZap','npEmail','npSite','npNota'].forEach(id => document.getElementById(id).value = '');
 }
 
 function openAddLicitacao() { document.getElementById('addLicitacaoModal').classList.add('open'); }
@@ -9898,6 +9937,7 @@ function abrirParceiroEdit(id) {
   _parcEditId = id;
   const v = (k, val) => { const el = document.getElementById(k); if (el) el.value = val || ''; };
   v('peId', p.id); v('peNome', p.nome); v('peTipo', p.tipo || 'outro'); v('peCidade', p.cidade);
+  v('peBairro', p.bairro); v('peLogradouro', p.logradouro); v('peCep', p.cep);
   v('peSite', p.site); v('peTel', p.telefone); v('peZap', p.whatsapp); v('peEmail', p.email);
   v('peLinkedin', p.linkedin); v('peEndereco', p.endereco); v('peNota', p.nota);
   // opções de clientes a indicar = todos os leads (empresa)
@@ -9917,7 +9957,12 @@ function abrirParceiroEdit(id) {
 function renderParcDocs() {
   const p = _parcAtual(); const box = document.getElementById('peDocs'); if (!p || !box) return;
   const docs = (p.documentos || []).slice().reverse();
-  box.innerHTML = docs.length ? docs.map(doc => `
+  const cartilhaBtn = `<div style="margin-bottom:12px">
+    <button class="stage-btn fechar" onclick="window.open('./cartilha-parceiro.html','_blank')" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:8px 14px">
+      <svg class="ic" style="stroke:#fff"><use href="#i-id"/></svg> Gerar Cartilha de Parceiro
+    </button>
+  </div>`;
+  box.innerHTML = cartilhaBtn + (docs.length ? docs.map(doc => `
     <div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
       <div><div style="font-weight:600">${doc.titulo || doc.tipo}</div>
         <div style="color:var(--text3);font-size:12px">${doc.tipo} · gerado em ${fmtDataHora(doc.criado_em)}</div></div>
@@ -9926,7 +9971,7 @@ function renderParcDocs() {
         <button class="stage-btn lose" onclick="excluirDocParc('${doc.id}')">Excluir</button>
       </div>
     </div>`).join('')
-    : '<div style="color:var(--text3);font-size:12.5px;padding:10px 0">Nenhum documento salvo ainda. Clique em "Gerar contrato de parceria".</div>';
+    : '<div style="color:var(--text3);font-size:12.5px;padding:10px 0">Nenhum documento salvo ainda. Clique em "Gerar contrato de parceria".</div>');
 }
 function reabrirDocParc(docId) {
   const p = _parcAtual(); if (!p) return;
@@ -9964,9 +10009,11 @@ function removeIndicado(id) {
 async function salvarParceiroEdit() {
   const p = (PARCEIROS_CLOUD || []).find(x => String(x.id) === String(_parcEditId)); if (!p) return;
   const g = k => (document.getElementById(k).value || '').trim();
-  const patch = { nome: g('peNome'), tipo: g('peTipo'), cidade: g('peCidade'), site: g('peSite'),
-    telefone: g('peTel'), whatsapp: g('peZap'), email: g('peEmail'), linkedin: g('peLinkedin'),
-    endereco: g('peEndereco'), nota: g('peNota'), clientes_indicados: p.clientes_indicados || [] };
+  const patch = { nome: g('peNome'), tipo: g('peTipo'), cidade: g('peCidade'),
+    bairro: g('peBairro'), logradouro: g('peLogradouro'), cep: g('peCep'),
+    site: g('peSite'), telefone: g('peTel'), whatsapp: g('peZap'), email: g('peEmail'),
+    linkedin: g('peLinkedin'), endereco: g('peEndereco'), nota: g('peNota'),
+    clientes_indicados: p.clientes_indicados || [] };
   Object.assign(p, patch);
   if (sb) { try { await sb.from('parceiros').update(patch).eq('id', p.id); } catch (e) { console.warn(e); } }
   closeModal('parcEditModal'); renderParceiros(); showToast('✓ Parceiro atualizado');
