@@ -7491,14 +7491,24 @@ function ownerControlHTML(l) {
 }
 async function assumirLead(id) {
   const l = leads.find(x => x.id === id); if (!l || !window.CAPTURA.user) return;
+  const donoAnterior = l.dono;
   l.dono = window.CAPTURA.user.id;
   save();
   if (sb) {
     try {
       const { data, error } = await sb.from('leads').update({ dono: l.dono }).eq('id', id).select('id,dono');
-      if (error) { showToast('⚠ Erro ao gravar: ' + error.message); console.warn('assumir erro', error); return; }
-      if (!data || !data.length) { showToast('⚠ Gravou 0 linhas (sem permissão/RLS). Avise a Giovanna.'); console.warn('assumir 0 linhas — RLS?'); return; }
-    } catch (e) { showToast('⚠ Falha: ' + (e.message||e)); console.warn(e); return; }
+      if (error) {
+        l.dono = donoAnterior; save();
+        showToast('⚠ Erro ao gravar: ' + error.message); console.warn('assumir erro', error); return;
+      }
+      if (!data || !data.length) {
+        l.dono = donoAnterior; save();
+        showToast('⚠ Sem permissão para assumir este lead. Contate a Giovanna.'); console.warn('assumir 0 linhas — RLS?'); return;
+      }
+    } catch (e) {
+      l.dono = donoAnterior; save();
+      showToast('⚠ Falha: ' + (e.message||e)); console.warn(e); return;
+    }
   }
   if (document.getElementById('detailModal').classList.contains('open')) openDetail(id);
   renderLeads(); updateKPIs(); showToast('✓ Lead assumido — agora está no seu nome');
@@ -7506,9 +7516,15 @@ async function assumirLead(id) {
 async function liberarLead(id) {
   const l = leads.find(x => x.id === id); if (!l) return;
   if (!confirm('Liberar este lead para o pool? Ele deixa de estar no seu nome e qualquer vendedor pode assumir.')) return;
+  const donoAnterior = l.dono;
   l.dono = null;
   save();
-  if (sb) { try { await sb.from('leads').update({ dono: null }).eq('id', id); } catch (e) { console.warn(e); } }
+  if (sb) {
+    try {
+      const { data, error } = await sb.from('leads').update({ dono: null }).eq('id', id).select('id');
+      if (error) { l.dono = donoAnterior; save(); showToast('⚠ Erro ao liberar: ' + error.message); return; }
+    } catch (e) { l.dono = donoAnterior; save(); showToast('⚠ Falha ao liberar: ' + (e.message||e)); return; }
+  }
   if (document.getElementById('detailModal').classList.contains('open')) openDetail(id);
   renderLeads(); updateKPIs(); showToast('Lead devolvido ao pool');
 }
