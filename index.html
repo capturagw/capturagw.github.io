@@ -10372,8 +10372,18 @@ async function pushLeads(arr) {
 let _pushT;
 // MULTIUSUÁRIO: cada sessão só grava os leads QUE SÃO DELA — nunca sobrescreve pool/outros vendedores.
 function cloudSyncLeads() { if (!sb || !window.CAPTURA.user) return; clearTimeout(_pushT); _pushT = setTimeout(() => pushLeads(leads.filter(l => l.dono && l.dono === meuId())), 1200); }
-// Grava UM lead específico via UPDATE (não upsert) — evita conflito com INSERT RLS quando dono ≠ auth.uid().
-async function pushLead(l) { if (!sb || !window.CAPTURA.user || !l || !l.id) return; try { const { error } = await sb.from('leads').update(paraCloud(l)).eq('id', l.id); if (error) console.warn('pushLead:', error.message); } catch (e) { console.warn(e); } }
+// Grava UM lead específico via UPDATE — exclui id do payload (PostgREST rejeita pk no SET).
+async function pushLead(l) {
+  if (!sb || !window.CAPTURA.user || !l || !l.id) return;
+  try {
+    const payload = paraCloud(l);
+    delete payload.id; // pk não entra no SET
+    const { data, error } = await sb.from('leads').update(payload).eq('id', l.id).select('id');
+    if (error) { showToast('⚠ Erro ao salvar na nuvem: ' + error.message); console.warn('pushLead:', error); return false; }
+    if (!data || !data.length) { showToast('⚠ Lead não encontrado na nuvem (id: ' + l.id + ')'); console.warn('pushLead: 0 linhas atualizadas'); return false; }
+    return true;
+  } catch (e) { showToast('⚠ Falha de rede ao salvar: ' + (e.message||e)); console.warn(e); return false; }
+}
 
 function atualizarHeaderUser() {
   const u = window.CAPTURA.user; if (!u) return;
@@ -10519,7 +10529,7 @@ async function bootCaptura() {
   if (typeof supabase === 'undefined') { console.warn('Captura: Supabase indisponível, modo local.'); init(); return; }
   sb = supabase.createClient(window.CAPTURA.url, window.CAPTURA.key);
   // hook de salvamento → empurra pra nuvem (debounce)
-  const _save = save; save = function () { _save(); cloudSyncLeads(); if (typeof currentLeadId !== 'undefined' && currentLeadId) { const _l = leads.find(x => x.id === currentLeadId); if (_l) pushLead(_l); } };
+  const _save = save; save = function () { _save(); cloudSyncLeads(); if (typeof currentLeadId !== 'undefined' && currentLeadId) { const _l = leads.find(x => x.id === currentLeadId); if (_l) pushLead(_l); } }; // pushLead é fire-and-forget aqui; ações explícitas (saveLead, marcarToque) aguardam diretamente
   document.getElementById('loginBtn').addEventListener('click', fazerLogin);
   document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
   const { data: { session } } = await sb.auth.getSession();
