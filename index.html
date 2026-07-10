@@ -9914,13 +9914,13 @@ async function persistParcCadencia(p){
 async function iniciarCadenciaParc(){
   const p = _parcAtual(); if (!p) return;
   p.cadencia = { inicio: hojeStr(), passos: PARC_CADENCIA_TEMPLATE.map(()=>({ feito:false, quando:'' })) };
-  if (p.status === 'novo') setParcStatus(p.nome, 'contatado');
+  if (p.status === 'novo') await setParcStatus(p.nome, 'contatado');
   await persistParcCadencia(p); renderParcCadencia(); showToast('Cadência de prospecção iniciada');
 }
 async function iniciarCadenciaParcCard(id) {
   const p = (PARCEIROS_CLOUD || []).find(x => String(x.id) === String(id)); if (!p || p.cadencia) return;
   p.cadencia = { inicio: hojeStr(), passos: PARC_CADENCIA_TEMPLATE.map(()=>({ feito:false, quando:'' })) };
-  if (p.status === 'novo') setParcStatus(p.nome, 'contatado');
+  if (p.status === 'novo') await setParcStatus(p.nome, 'contatado');
   await persistParcCadencia(p); showToast('Cadência de prospecção iniciada');
 }
 async function marcarToqueParc(idx){
