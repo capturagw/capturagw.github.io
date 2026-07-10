@@ -6897,7 +6897,7 @@ function toggleCadScript(idx) {
   if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
 }
 
-function marcarToque(idx) {
+async function marcarToque(idx) {
   const l = leads.find(x => x.id === currentLeadId);
   if (!l || !l.cadencia) return;
   const p = l.cadencia.passos[idx];
@@ -6905,6 +6905,7 @@ function marcarToque(idx) {
   p.quando = p.feito ? hojeStr() : '';
   if (p.feito) l.ultima_interacao = hojeStr();
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderCadenciaModal();
   renderLeads();
 }
@@ -6949,11 +6950,12 @@ function renderCadenciaModal() {
     ${!prox ? `<div class="cad-fim">Sequência esgotada sem fechamento. Hora de decidir: avance para proposta ou desqualifique.<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-save" onclick="showModalTab('perfil')">Avançar etapa</button><button class="btn-secondary" onclick="abrirDesqualificar()">Desqualificar (não respondeu)</button></div></div>` : ''}`;
 }
 
-function iniciarCadenciaModal() {
+async function iniciarCadenciaModal() {
   const l = leads.find(x => x.id === currentLeadId);
   if (!l) return;
   iniciarCadencia(l, false);
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderCadenciaModal();
   renderLeads();
   showToast('Cadência iniciada');
@@ -7756,7 +7758,7 @@ function openDetail(id) {
   document.getElementById('detailModal').classList.add('open');
 }
 
-function saveLead() {
+async function saveLead() {
   const l = leads.find(x => x.id === currentLeadId);
   if (!l) return;
   const statusAntigo = l.status;
@@ -7803,6 +7805,7 @@ function saveLead() {
   }
 
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderLeads();
   closeModal('detailModal');
   showToast('✓ Lead salvo com sucesso');
@@ -10369,8 +10372,8 @@ async function pushLeads(arr) {
 let _pushT;
 // MULTIUSUÁRIO: cada sessão só grava os leads QUE SÃO DELA — nunca sobrescreve pool/outros vendedores.
 function cloudSyncLeads() { if (!sb || !window.CAPTURA.user) return; clearTimeout(_pushT); _pushT = setTimeout(() => pushLeads(leads.filter(l => l.dono && l.dono === meuId())), 1200); }
-// Grava UM lead específico na nuvem (targeted), independente de dono — usado em ações pontuais.
-async function pushLead(l) { if (!sb || !window.CAPTURA.user || !l) return; try { const { error } = await sb.from('leads').upsert([paraCloud(l)], { onConflict: 'id' }); if (error) console.warn('pushLead:', error.message); } catch (e) { console.warn(e); } }
+// Grava UM lead específico via UPDATE (não upsert) — evita conflito com INSERT RLS quando dono ≠ auth.uid().
+async function pushLead(l) { if (!sb || !window.CAPTURA.user || !l || !l.id) return; try { const { error } = await sb.from('leads').update(paraCloud(l)).eq('id', l.id); if (error) console.warn('pushLead:', error.message); } catch (e) { console.warn(e); } }
 
 function atualizarHeaderUser() {
   const u = window.CAPTURA.user; if (!u) return;
