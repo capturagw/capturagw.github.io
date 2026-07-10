@@ -6811,14 +6811,15 @@ function copyScript(boxId, btn) {
 }
 
 // ── MARK AS CONTACTED ─────────────────────────────────────────────────────────
-function markAsContacted() {
+async function markAsContacted() {
   const l = leads.find(x => x.id === currentLeadId);
   if (!l) return;
   l.status = 'Contatado';
   l.ultima_interacao = new Date().toISOString().slice(0, 10);
   logEvento(l, 'Contatado');
-  if (!l.cadencia) iniciarCadencia(l, true); // inicia a cadência marcando o 1º toque (e-mail) como feito
+  if (!l.cadencia) iniciarCadencia(l, true);
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderLeads();
   closeModal('detailModal');
   showToast('✓ Contatado! Cadência de follow-up iniciada.');
@@ -7878,7 +7879,7 @@ function gerarFaturasIniciais(valorMensal) {
   }
   return arr;
 }
-function confirmarPacote() {
+async function confirmarPacote() {
   const l = leads.find(x => x.id === currentLeadId); if (!l) return;
   const pac = document.getElementById('pacoteSel').value;
   let val;
@@ -7900,6 +7901,7 @@ function confirmarPacote() {
     logEvento(l, 'Proposta: ' + detalhe);
   }
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderLeads();
   closeModal('pacoteModal');
   openDetail(l.id);
@@ -7907,7 +7909,7 @@ function confirmarPacote() {
   else showToast('Proposta registrada: ' + pac + ' · ' + fmt);
 }
 
-function avancarStatus(status) {
+async function avancarStatus(status) {
   const l = leads.find(x => x.id === currentLeadId);
   if (!l) return;
   if (status === 'Proposta Enviada') { abrirPacoteModal('proposta'); return; }
@@ -7917,12 +7919,13 @@ function avancarStatus(status) {
   logEvento(l, status);
   l.ultima_interacao = hojeStr();
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderLeads();
   openDetail(l.id);
   showToast('✓ ' + l.empresa + ' → ' + status);
 }
 
-function salvarReuniao() {
+async function salvarReuniao() {
   const l = leads.find(x => x.id === currentLeadId);
   if (!l) return;
   const link = document.getElementById('editReuniaoLink').value.trim();
@@ -7930,6 +7933,7 @@ function salvarReuniao() {
   if (link && link !== l.reuniao_link) { l.reuniao_link = link; l.reuniao_data = rdata; logEvento(l, 'Reunião agendada'); }
   else if (rdata) { l.reuniao_data = rdata; }
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderLeads();
   openDetail(l.id);
   showToast('✓ Reunião salva');
@@ -7964,18 +7968,20 @@ async function confirmarDesqualificar() {
   if (nota) l.notas = (l.notas ? l.notas + ' · ' : '') + nota;
   logEvento(l, 'Desqualificado: ' + motivo);
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderLeads();
   closeModal('desqModal');
   closeModal('detailModal');
   showToast('Lead desqualificado · ' + motivo);
 }
 
-function reativarLead(id) {
+async function reativarLead(id) {
   const l = leads.find(x => x.id === id);
   if (!l) return;
   l.status = 'Novo Lead';
   logEvento(l, 'Reativado');
   save();
+  if (sb && window.CAPTURA.user) await pushLead(l);
   renderLeads();
   showToast('✓ Lead reativado no pipeline');
 }
