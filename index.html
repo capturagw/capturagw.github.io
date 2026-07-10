@@ -6974,26 +6974,46 @@ const CANAL_ICON = { email: '', linkedin: '', whatsapp: '', ligacao: '' };
 function renderHoje() {
   const hoje = hojeStr();
   const itens = [];
+
+  // Leads com cadência ou próximo passo vencendo
   leads.forEach(l => {
-    if (!souDono(l)) return; // só ações dos leads que EU assumi
+    if (!souDono(l)) return;
     if (l.status === 'Fechado' || l.status === 'Perdido') return;
     const prox = proximoToque(l);
     if (prox && prox.vencimento <= hoje) {
-      itens.push({ lead: l, tipo: 'cadencia', toque: prox,
+      itens.push({ tipo: 'cadencia', lead: l, toque: prox,
         prazo: prox.atrasado ? 'overdue' : 'today',
         dias: Math.round((new Date(hoje) - new Date(prox.vencimento)) / 86400000) });
     } else if (!l.cadencia && l.proximo_passo && l.data_proximo && l.data_proximo <= hoje) {
-      itens.push({ lead: l, tipo: 'manual', prazo: l.data_proximo < hoje ? 'overdue' : 'today',
+      itens.push({ tipo: 'manual', lead: l, prazo: l.data_proximo < hoje ? 'overdue' : 'today',
         dias: Math.round((new Date(hoje) - new Date(l.data_proximo)) / 86400000) });
     }
   });
-  // Atrasados primeiro, depois por score
-  itens.sort((a, b) => (b.prazo === 'overdue') - (a.prazo === 'overdue') || calcScore(b.lead) - calcScore(a.lead));
+
+  // Parceiros com cadência vencendo
+  (PARCEIROS_CLOUD || []).forEach(p => {
+    if (p.dono !== meuId()) return;
+    if (p.status === 'parceiro_ativo' || p.status === 'descartado') return;
+    const prox = proximoToqueParc(p);
+    if (prox && prox.vencimento <= hoje) {
+      itens.push({ tipo: 'cadencia_parc', parceiro: p, toque: prox,
+        prazo: prox.atrasado ? 'overdue' : 'today',
+        dias: Math.round((new Date(hoje) - new Date(prox.vencimento)) / 86400000) });
+    }
+  });
+
+  // Atrasados primeiro; leads por score, parceiros por nome
+  itens.sort((a, b) => {
+    if (b.prazo === 'overdue' && a.prazo !== 'overdue') return 1;
+    if (a.prazo === 'overdue' && b.prazo !== 'overdue') return -1;
+    const sa = a.lead ? calcScore(a.lead) : 0;
+    const sb = b.lead ? calcScore(b.lead) : 0;
+    return sb - sa;
+  });
 
   const overdue = itens.filter(i => i.prazo === 'overdue').length;
-  const today = itens.filter(i => i.prazo === 'today').length;
+  const today  = itens.filter(i => i.prazo === 'today').length;
   document.getElementById('hojeCount').textContent = itens.length;
-
   document.getElementById('hojeStats').innerHTML = `
     <div class="hoje-stat"><div class="n" style="color:var(--red)">${overdue}</div><div class="l">Atrasados</div></div>
     <div class="hoje-stat"><div class="n" style="color:var(--yellow)">${today}</div><div class="l">Para hoje</div></div>
@@ -7004,10 +7024,17 @@ function renderHoje() {
     list.innerHTML = `<div class="hoje-vazio"><div class="big"><svg class="ic" style="width:36px;height:36px;stroke-width:1.4"><use href="#i-party"/></svg></div><div style="font-weight:700;font-size:15px;color:var(--text2)">Tudo em dia!</div><div style="font-size:13px;margin-top:4px">Nenhuma ação pendente. Trabalhe novos leads na aba Pipeline ou aguarde a cadência avançar.</div></div>`;
     return;
   }
-  list.innerHTML = itens.map(it => {
-    const l = it.lead;
+
+  // Paginação
+  const PER_PAGE = 15;
+  const totalPag = Math.max(1, Math.ceil(itens.length / PER_PAGE));
+  if (_hojePagina > totalPag) _hojePagina = totalPag;
+  if (_hojePagina < 1) _hojePagina = 1;
+  const pagina = itens.slice((_hojePagina - 1) * PER_PAGE, _hojePagina * PER_PAGE);
+
+  const rows = pagina.map(it => {
     if (it.tipo === 'cadencia') {
-      const t = it.toque;
+      const l = it.lead, t = it.toque;
       const prazoTxt = it.prazo === 'overdue' ? `${it.dias}d atrasado` : 'Hoje';
       return `
       <div class="hoje-item ${it.prazo}" onclick="openDetail('${l.id}');showModalTab('cadencia')">
@@ -7018,7 +7045,20 @@ function renderHoje() {
         </div>
         <span class="hoje-prazo prazo-${it.prazo}">${prazoTxt}</span>
       </div>`;
+    } else if (it.tipo === 'cadencia_parc') {
+      const p = it.parceiro, t = it.toque;
+      const prazoTxt = it.prazo === 'overdue' ? `${it.dias}d atrasado` : 'Hoje';
+      return `
+      <div class="hoje-item ${it.prazo}" onclick="abrirParceiroEdit('${p.id}')">
+        <div class="hoje-icon"><svg class="ic"><use href="#i-hands"/></svg></div>
+        <div class="hoje-main">
+          <div class="hoje-empresa">${p.nome} <span style="background:var(--primary-10,#e8f4fd);color:var(--primary);font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-left:4px">Parceiro</span></div>
+          <div class="hoje-acao">${t.tipo}</div>
+        </div>
+        <span class="hoje-prazo prazo-${it.prazo}">${prazoTxt}</span>
+      </div>`;
     } else {
+      const l = it.lead;
       return `
       <div class="hoje-item ${it.prazo}" onclick="openDetail('${l.id}')">
         <div class="hoje-icon"><svg class="ic"><use href="#i-flag"/></svg></div>
@@ -7030,6 +7070,15 @@ function renderHoje() {
       </div>`;
     }
   }).join('');
+
+  const paginacaoHTML = totalPag > 1 ? `
+    <div style="display:flex;gap:6px;align-items:center;justify-content:center;padding:14px 0">
+      <button class="btn-secondary" style="padding:5px 10px" ${_hojePagina<=1?'disabled':''} onclick="setHojePage(${_hojePagina-1})">‹</button>
+      ${Array.from({length:totalPag},(_,i)=>i+1).map(n=>`<button class="btn-secondary" style="padding:5px 10px;${n===_hojePagina?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="setHojePage(${n})">${n}</button>`).join('')}
+      <button class="btn-secondary" style="padding:5px 10px" ${_hojePagina>=totalPag?'disabled':''} onclick="setHojePage(${_hojePagina+1})">›</button>
+    </div>` : '';
+
+  list.innerHTML = rows + paginacaoHTML;
 }
 
 // ══ ABA FUNIL ═════════════════════════════════════════════════════════════════
@@ -7412,6 +7461,8 @@ function quenteCard(l) {
 let _pipelinePage = 1;
 const PIPELINE_PAGE_SIZE = 20;
 function setPipelinePage(n) { _pipelinePage = n; renderLeads(); }
+let _hojePagina = 1;
+function setHojePage(n) { _hojePagina = n; renderHoje(); }
 function renderTable(data) {
   const tbody = document.getElementById('tableBody');
   const pagBox = document.getElementById('tablePag');
