@@ -423,6 +423,18 @@
     font-weight: 600;
     box-shadow: var(--shadow-sm);
   }
+  .btn-meus-leads {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 13px; border: 1.5px solid var(--border); border-radius: 20px;
+    font-size: 12px; font-family: inherit; font-weight: 500;
+    background: var(--surface2); color: var(--text2);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-meus-leads:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-meus-leads.active {
+    background: var(--primary); border-color: var(--primary);
+    color: #fff; font-weight: 600;
+  }
 
   /* ─── MAIN ───────────────────────────────────────── */
   main { padding: 20px 28px; }
@@ -5512,6 +5524,7 @@ window.PARCEIROS_DATA = {
     <option value="Alta">Alta</option>
     <option value="Média">Média</option>
   </select>
+  <button class="btn-meus-leads" id="btnMeusLeads" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Meus leads</button>
   <div class="view-toggle">
     <button class="view-btn active" id="btnTable" onclick="setView('table')"><svg class="ic"><use href="#i-table"/></svg> Tabela</button>
     <button class="view-btn" id="btnKanban" onclick="setView('kanban')"><svg class="ic"><use href="#i-grid"/></svg> Kanban</button>
@@ -5631,6 +5644,7 @@ window.PARCEIROS_DATA = {
           <option value="parceiro_ativo">Parceiro ativo (fechado)</option>
           <option value="descartado">Descartado</option>
         </select>
+        <button class="btn-meus-leads" id="btnMeusLeadsParc" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Meus parceiros</button>
       </div>
     </div>
     <div id="parcChart" class="desq-chart" style="display:none;margin-top:16px"></div>
@@ -5681,6 +5695,7 @@ window.PARCEIROS_DATA = {
         <button class="btn-primary" style="margin-top:10px" onclick="openAddResidencial()">+ Novo residencial</button>
       </div>
       <input class="filter filter-search" id="resBusca" type="text" placeholder="Buscar residencial..." oninput="_resPagina=1;renderResidenciais()" style="min-width:180px">
+      <button class="btn-meus-leads" id="btnMeusLeadsRes" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Meus residenciais</button>
     </div>
     <div class="hoje-stats" id="resStats" style="margin-top:14px"></div>
     <div class="table-wrap" style="margin-top:8px">
@@ -7289,6 +7304,14 @@ function populateSetorFilter() {
     setores.map(s => `<option>${s}</option>`).join('');
 }
 
+let _soMeusLeads = false;
+function toggleMeusLeads() {
+  _soMeusLeads = !_soMeusLeads;
+  document.querySelectorAll('.btn-meus-leads').forEach(b => b.classList.toggle('active', _soMeusLeads));
+  _pipelinePage = 1; _resPagina = 1;
+  renderLeads(); renderParceiros();
+}
+
 function getFiltered() {
   const q = document.getElementById('searchBox').value.toLowerCase();
   const st = document.getElementById('filterStatus').value;
@@ -7298,6 +7321,7 @@ function getFiltered() {
   return leads.filter(l => {
     if (isQuente(l)) return false; // leads quentes ficam na aba 🔥 Quentes
     if (l.status === 'Desqualificado') return false; // ficam na aba Desqualificados
+    if (_soMeusLeads && !souDono(l)) return false;
     if (q && !`${l.empresa} ${l.nome_contato} ${l.email} ${l.cargo}`.toLowerCase().includes(q)) return false;
     if (st && l.status !== st) return false;
     if (se && l.setor !== se) return false;
@@ -8510,6 +8534,7 @@ function CONTRATO_HTML(d) {
 function renderResidenciais() {
   const bq = (document.getElementById('resBusca')?.value || '').trim().toLowerCase();
   const res = leads.filter(l => l.canal === 'Residencial' && l.status !== 'Desqualificado'
+    && (!_soMeusLeads || souDono(l))
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq) || (l.cidade||'').toLowerCase().includes(bq)));
   const cnt = document.getElementById('resCount'); if (cnt) cnt.textContent = res.length;
   const st = document.getElementById('resStats');
@@ -10078,6 +10103,7 @@ function renderParceiros() {
   const todos = getParceiros();
   const parceiros = todos.filter(p =>
     (!ft || p.tipo === ft) && (!fs || p.status === fs) &&
+    (!_soMeusLeads || p.dono === meuId()) &&
     (!bq || (p.nome||'').toLowerCase().includes(bq) || (p.cidade||'').toLowerCase().includes(bq)));
 
   // Contabilização real: quantos já receberam contato (qualquer estágio além de novo/draft)
