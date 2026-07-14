@@ -1933,15 +1933,17 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
 <!-- ═══ VIEW: DESQUALIFICADOS ═══ -->
 <div class="app-view" id="appview-desq">
   <div class="parceiros-wrap">
-    <div class="section-title"><svg class="ic"><use href="#i-trash"/></svg> Leads desqualificados</div>
-    <div class="section-sub">Tirados do pipeline ativo. Você pode reativar ou excluir de vez.</div>
+    <div class="section-title"><svg class="ic"><use href="#i-trash"/></svg> Desqualificados</div>
+    <div class="section-sub">Leads e parceiros tirados do pipeline ativo. Você pode reativar ou excluir de vez.</div>
     <div id="desqChart" class="desq-chart" style="display:none"></div>
     <div class="table-wrap" style="margin-top:16px">
+      <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Leads</div>
       <table>
         <thead><tr><th>Empresa</th><th>Contato</th><th>Setor</th><th>Motivo</th><th>Desde</th><th></th></tr></thead>
         <tbody id="desqBody"></tbody>
       </table>
     </div>
+    <div id="desqParcsSection" style="margin-top:24px"></div>
   </div>
 </div>
 
@@ -4322,6 +4324,24 @@ function excluirDesq(id) {
   showToast('Lead excluído');
 }
 
+async function reativarParcDesq(id) {
+  const p = (PARCEIROS_CLOUD || []).find(x => String(x.id) === String(id));
+  if (!p) return;
+  await setParcStatus(p.nome, 'novo');
+  renderDesq();
+  renderParceiros();
+  showToast('✓ Parceiro reativado como Novo');
+}
+
+async function excluirParcDesq(id) {
+  if (!confirm('Excluir este parceiro definitivamente?')) return;
+  PARCEIROS_CLOUD = (PARCEIROS_CLOUD || []).filter(x => String(x.id) !== String(id));
+  if (sb) { try { await sb.from('parceiros').delete().eq('id', id); } catch (e) { console.warn(e); } }
+  renderDesq();
+  renderParceiros();
+  showToast('Parceiro excluído');
+}
+
 function prepararMeet() {
   showToast('Sala aberta numa nova aba. Copie o link e cole no campo abaixo, depois Salvar.');
 }
@@ -4336,9 +4356,42 @@ function motivoDesqDe(l) {
 }
 function renderDesq() {
   const desq = leads.filter(l => l.status === 'Desqualificado');
-  const el = document.getElementById('desqCount'); if (el) el.textContent = desq.length;
+  const descartados = (PARCEIROS_CLOUD || []).filter(p => p.status === 'descartado');
+  const el = document.getElementById('desqCount'); if (el) el.textContent = desq.length + descartados.length;
   const chart = document.getElementById('desqChart');
   const body = document.getElementById('desqBody'); if (!body) return;
+
+  // ── Parceiros descartados ──
+  const parcsEl = document.getElementById('desqParcsSection');
+  if (parcsEl) {
+    if (!descartados.length) {
+      parcsEl.innerHTML = '';
+    } else {
+      parcsEl.innerHTML = `
+        <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Parceiros descartados</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Parceiro</th><th>Tipo</th><th>Descartado em</th><th></th></tr></thead>
+            <tbody>
+              ${descartados.map(p => {
+                const quando = (p.historico||[]).filter(h => (h.tipo||'').toLowerCase().includes('descartado')).slice(-1)[0]?.quando;
+                const tipoLabel = { clinica_sst:'Clínica SST', contabilidade:'Contabilidade', corretora_beneficios:'Corretora', consultoria_rh:'Consultoria RH', outro:'Outro' }[p.tipo] || p.tipo || '—';
+                return `<tr>
+                  <td><div class="td-empresa">${p.nome}</div></td>
+                  <td>${tipoLabel}</td>
+                  <td style="font-size:12px;color:var(--text3)">${quando ? fmtDataHora(quando) : '—'}</td>
+                  <td style="white-space:nowrap">
+                    <button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="reativarParcDesq('${p.id}')"><svg class="ic" style="width:13px;height:13px"><use href="#i-refresh"/></svg> Reativar</button>
+                    <button class="btn-danger" style="padding:6px 11px;font-size:11px" onclick="excluirParcDesq('${p.id}')">Excluir</button>
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+  }
+
   if (!desq.length) {
     if (chart) chart.style.display = 'none';
     body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:34px;color:var(--text3)">Nenhum lead desqualificado.</td></tr>';
