@@ -1708,6 +1708,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   <button class="app-tab" id="apptab-hoje" onclick="switchAppView('hoje')"><svg class="ic"><use href="#i-cal"/></svg> Suas ações <span class="kanban-count" id="hojeCount">0</span></button>
   <button class="app-tab" id="apptab-quentes" onclick="switchAppView('quentes')"><svg class="ic"><use href="#i-flame"/></svg> Radar <span class="kanban-count" id="quentesCount">0</span></button>
   <button class="app-tab" id="apptab-residenciais" onclick="switchAppView('residenciais')"><svg class="ic"><use href="#i-building"/></svg> Residenciais <span class="kanban-count" id="resCount">0</span></button>
+  <button class="app-tab" id="apptab-fecomercio" onclick="switchAppView('fecomercio')"><svg class="ic"><use href="#i-briefcase"/></svg> FECOMERCIO <span class="kanban-count" id="fecCount">0</span></button>
   <button class="app-tab" id="apptab-parceiros" onclick="switchAppView('parceiros')"><svg class="ic"><use href="#i-hands"/></svg> Parceiros <span class="kanban-count" id="parcCount"></span></button>
   <button class="app-tab" id="apptab-ativos" onclick="switchAppView('ativos')"><svg class="ic"><use href="#i-flag"/></svg> Ativos <span class="kanban-count" id="ativosCount">0</span></button>
   <button class="app-tab" id="apptab-b2g" onclick="switchAppView('b2g')"><svg class="ic"><use href="#i-building"/></svg> B2G <span class="kanban-count" id="b2gCount">0</span></button>
@@ -1795,6 +1796,8 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
     <option value="B2B Privado">B2B Privado</option>
     <option value="Parceiro">Parceiro</option>
     <option value="B2G Licitação">B2G Licitação</option>
+    <option value="Residencial">Residencial</option>
+    <option value="FECOMERCIO">FECOMERCIO</option>
   </select>
   <select class="filter" id="filterPrioridade" onchange="_pipelinePage=1;renderLeads()">
     <option value="">Todas prioridades</option>
@@ -1981,6 +1984,28 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
       <table>
         <thead><tr><th>Empresa</th><th>Contato</th><th>Cidade</th><th>Telefone</th><th>Status</th><th>Próximo passo</th></tr></thead>
         <tbody id="resBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEW: FECOMERCIO (base NR-1 SESCON/FECOMERCIO) ═══ -->
+<div class="app-view" id="appview-fecomercio">
+  <div class="parceiros-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> Base FECOMERCIO</div>
+        <div class="section-sub">Contribuintes e associados da base NR-1 (SESCON, jul/2026) — empresas com funcionário CLT ativo em Goiás.</div>
+        <button class="btn-primary" style="margin-top:10px" onclick="openAddFecomercio()">+ Nova empresa FECOMERCIO</button>
+      </div>
+      <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
+      <button class="btn-meus-leads" id="btnMeusLeadsFec" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Minhas empresas</button>
+    </div>
+    <div class="hoje-stats" id="fecStats" style="margin-top:14px"></div>
+    <div class="table-wrap" style="margin-top:8px">
+      <table>
+        <thead><tr><th>Empresa</th><th>Contato</th><th>Cidade</th><th>Telefone</th><th>E-mail</th><th>Status</th><th>Próximo passo</th></tr></thead>
+        <tbody id="fecBody"></tbody>
       </table>
     </div>
   </div>
@@ -2730,7 +2755,7 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
       </div>
       <div class="form-group"><label class="form-label">Canal</label>
         <select class="form-select" id="addCanal">
-          <option>B2B Privado</option><option>Parceiro</option><option>B2G Licitação</option><option>Residencial</option>
+          <option>B2B Privado</option><option>Parceiro</option><option>B2G Licitação</option><option>Residencial</option><option>FECOMERCIO</option>
         </select>
       </div>
       <div class="form-group"><label class="form-label">Abordagem</label>
@@ -3674,6 +3699,7 @@ function renderLeads() {
   renderReunioes();
   renderAgendaSemana();
   renderResidenciais();
+  renderFecomercio();
   renderAtivos();
   renderFunil();
   renderHero();
@@ -4648,7 +4674,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 
 // ══ NAVEGAÇÃO ENTRE VIEWS ════════════════════════════════════════════════════
 function switchAppView(view) {
-  ['pipeline','hoje','quentes','residenciais','parceiros','ativos','desq','b2g','equipe','financeiro','repositorio'].forEach(v => {
+  ['pipeline','hoje','quentes','residenciais','fecomercio','parceiros','ativos','desq','b2g','equipe','financeiro','repositorio'].forEach(v => {
     const av = document.getElementById('appview-' + v); if (av) av.classList.toggle('active', v === view);
     const at = document.getElementById('apptab-' + v); if (at) at.classList.toggle('active', v === view);
   });
@@ -4658,6 +4684,7 @@ function switchAppView(view) {
   if (view === 'b2g') { carregarLicitacoes().then(renderB2G); renderB2G(); }
   if (view === 'equipe') renderEquipe();
   if (view === 'residenciais') renderResidenciais();
+  if (view === 'fecomercio') renderFecomercio();
   if (view === 'ativos') renderAtivos();
   if (view === 'financeiro') abrirContasReceber();
   if (view === 'pipeline') setTimeout(animateKPIs, 60);
@@ -4966,6 +4993,60 @@ function openAddResidencial() {
   document.getElementById('addModal').classList.add('open');
   // marca o canal padrão como Residencial (o usuário pode trocar no cadastro)
   const sel = document.getElementById('addCanal'); if (sel) sel.value = 'Residencial';
+}
+
+// ── FECOMERCIO (base NR-1 SESCON) ─────────────────────────────────────────────
+let _fecPagina = 1;
+function renderFecomercio() {
+  const bq = (document.getElementById('fecBusca')?.value || '').trim().toLowerCase();
+  const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado'
+    && (!_soMeusLeads || souDono(l))
+    && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
+             || (l.cidade||'').toLowerCase().includes(bq) || (l.email||'').toLowerCase().includes(bq)
+             || (l.notas||'').toLowerCase().includes(bq)));
+  const cnt = document.getElementById('fecCount'); if (cnt) cnt.textContent = fec.length;
+  const st = document.getElementById('fecStats');
+  if (st) {
+    const novos = fec.filter(l => l.status === 'Novo Lead').length;
+    const comTel = fec.filter(l => l.telefone).length;
+    const fech = fec.filter(l => l.status === 'Fechado').length;
+    st.innerHTML = `
+      <div class="hoje-stat"><div class="n" style="color:var(--primary)">${fec.length}</div><div class="l">Empresas</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:20px">${novos}</div><div class="l">Novos</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:20px">${comTel}</div><div class="l">Com telefone</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:20px">${fech}</div><div class="l">Fechados</div></div>`;
+  }
+  const body = document.getElementById('fecBody'); if (!body) return;
+  if (!fec.length) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; return; }
+  const FEC_PAGE_SIZE = 15;
+  const totalPaginas = Math.ceil(fec.length / FEC_PAGE_SIZE);
+  if (!_fecPagina) _fecPagina = 1;
+  if (_fecPagina > totalPaginas) _fecPagina = totalPaginas;
+  const inicio = (_fecPagina - 1) * FEC_PAGE_SIZE;
+  const visiveis = fec.slice(inicio, inicio + FEC_PAGE_SIZE);
+  // mostra o CNPJ (guardado nas notas) como subtítulo da empresa
+  const cnpjDe = l => ((l.notas||'').match(/CNPJ\s+([\d./-]+)/) || [,''])[1];
+  body.innerHTML = visiveis.map(l => `
+    <tr onclick="openDetail('${l.id}')">
+      <td><div class="td-empresa">${l.empresa}</div><div class="td-contato">${cnpjDe(l)}</div></td>
+      <td>${l.nome_contato||'—'}</td>
+      <td>${l.cidade||'—'}</td>
+      <td>${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a>`:'—'}</td>
+      <td>${l.email?`<a href="mailto:${l.email}" onclick="event.stopPropagation()">${l.email}</a>`:'—'}</td>
+      <td><span class="badge badge-${STATUS_COLORS[l.status]||'novo'}">${l.status}</span></td>
+      <td style="font-size:12px;color:var(--text3)">${proximoPassoTexto(l)}</td>
+    </tr>`).join('') + (totalPaginas > 1 ? `<tr><td colspan="7" style="padding:14px">
+      <div style="display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap">
+        <button class="btn-secondary" style="padding:6px 10px" ${_fecPagina<=1?'disabled':''} onclick="event.stopPropagation();irParaPaginaFec(${_fecPagina-1})">‹ Anterior</button>
+        ${Array.from({length: totalPaginas}, (_, i) => i+1).map(p => `<button class="btn-secondary" style="padding:6px 11px;${p===_fecPagina?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="event.stopPropagation();irParaPaginaFec(${p})">${p}</button>`).join('')}
+        <button class="btn-secondary" style="padding:6px 10px" ${_fecPagina>=totalPaginas?'disabled':''} onclick="event.stopPropagation();irParaPaginaFec(${_fecPagina+1})">Próxima ›</button>
+      </div>
+    </td></tr>` : '');
+}
+function irParaPaginaFec(p) { _fecPagina = p; renderFecomercio(); }
+function openAddFecomercio() {
+  document.getElementById('addModal').classList.add('open');
+  const sel = document.getElementById('addCanal'); if (sel) sel.value = 'FECOMERCIO';
 }
 
 function renderAtivos() {
