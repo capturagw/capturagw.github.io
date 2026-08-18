@@ -1997,13 +1997,16 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
         <div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> Base FECOMERCIO</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddFecomercio()">+ Nova empresa FECOMERCIO</button>
       </div>
-      <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
-      <button class="btn-meus-leads" id="btnMeusLeadsFec" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Minhas empresas</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
+        <select class="filter" id="fecFiltroEtapa" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as etapas</option></select>
+        <select class="filter" id="fecFiltroPlano" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os planos</option></select>
+      </div>
     </div>
     <div class="hoje-stats" id="fecStats" style="margin-top:14px"></div>
     <div class="table-wrap" style="margin-top:8px">
       <table>
-        <thead><tr><th>Empresa</th><th>Contato</th><th>Cidade</th><th>Telefone</th><th>E-mail</th><th>Status</th><th>Próximo passo</th></tr></thead>
+        <thead><tr><th>Empresa</th><th>Cidade</th><th>Contato</th><th>Plano</th><th>Etapa</th><th>Substatus</th></tr></thead>
         <tbody id="fecBody"></tbody>
       </table>
     </div>
@@ -4995,29 +4998,82 @@ function openAddResidencial() {
   const sel = document.getElementById('addCanal'); if (sel) sel.value = 'Residencial';
 }
 
-// ── FECOMERCIO (base NR-1 SESCON) ─────────────────────────────────────────────
+// ── FECOMERCIO (empresas JÁ CONTRATADAS — não passam pelo funil de vendas) ─────
+// Elas não têm etapa de fechamento: o que importa é QUAL PLANO e EM QUE ESTADO
+// da implantação cada uma está.
+const FEC_ETAPAS = ['Cadastro', 'Diagnóstico', 'Conformidade', 'Concluído'];
+const FEC_SUBETAPAS = {
+  'Cadastro':     ['Pendente cadastro na plataforma', 'Cadastro em análise'],
+  'Diagnóstico':  ['Diagnóstico iniciado', 'Diagnóstico finalizado'],
+  'Conformidade': ['Capacitação de líderes', 'Canal de denúncias', 'Flex ON Edu'],
+  'Concluído':    []
+};
+const FEC_COR_ETAPA = { 'Cadastro': '#8a877f', 'Diagnóstico': '#e8675b', 'Conformidade': '#d99a2b', 'Concluído': '#1f9d6b' };
+const FEC_PLANOS = ['A definir', 'Pacote Diagnóstico', 'Pacote Essencial', 'Gestão e Engajamento', 'FeComércio 120 dias'];
+
+// plano fica na coluna `pacote`; etapa/subetapa moram no jsonb `onboarding`
+// (mesmo objeto do checklist de 120 dias, sem conflitar com ele).
+const fecEtapa = l => (l.onboarding && l.onboarding.etapa) || 'Cadastro';
+const fecSub   = l => (l.onboarding && l.onboarding.subetapa) || '';
+const fecPlano = l => l.pacote || 'A definir';
+
+async function setFecCampo(id, campo, valor) {
+  const l = leads.find(x => x.id === id); if (!l) return;
+  try {
+    if (campo === 'plano') {
+      l.pacote = valor;
+      if (sb) { const { error } = await sb.from('leads').update({ pacote: valor }).eq('id', id); if (error) throw error; }
+    } else {
+      l.onboarding = Object.assign({}, l.onboarding);
+      if (campo === 'etapa') {
+        l.onboarding.etapa = valor;
+        const subs = FEC_SUBETAPAS[valor] || [];
+        if (!subs.includes(l.onboarding.subetapa)) l.onboarding.subetapa = subs[0] || '';
+      } else {
+        l.onboarding.subetapa = valor;
+      }
+      if (sb) { const { error } = await sb.from('leads').update({ onboarding: l.onboarding }).eq('id', id); if (error) throw error; }
+    }
+    save();
+  } catch (e) {
+    console.warn(e);
+    showToast('Não foi possível salvar na nuvem — recarregue e tente de novo');
+  }
+  renderFecomercio();
+}
+
 let _fecPagina = 1;
 function renderFecomercio() {
   const bq = (document.getElementById('fecBusca')?.value || '').trim().toLowerCase();
+  const fEt = document.getElementById('fecFiltroEtapa')?.value || '';
+  const fPl = document.getElementById('fecFiltroPlano')?.value || '';
   const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado'
     && (!_soMeusLeads || souDono(l))
+    && (!fEt || fecEtapa(l) === fEt)
+    && (!fPl || fecPlano(l) === fPl)
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
              || (l.cidade||'').toLowerCase().includes(bq) || (l.email||'').toLowerCase().includes(bq)
              || (l.notas||'').toLowerCase().includes(bq)));
   const cnt = document.getElementById('fecCount'); if (cnt) cnt.textContent = fec.length;
+
+  // popula os selects de filtro uma vez
+  const selEt = document.getElementById('fecFiltroEtapa');
+  if (selEt && selEt.options.length === 1) FEC_ETAPAS.forEach(e => selEt.add(new Option(e, e)));
+  const selPl = document.getElementById('fecFiltroPlano');
+  if (selPl && selPl.options.length === 1) FEC_PLANOS.forEach(p => selPl.add(new Option(p, p)));
+
   const st = document.getElementById('fecStats');
   if (st) {
-    const novos = fec.filter(l => l.status === 'Novo Lead').length;
-    const comTel = fec.filter(l => l.telefone).length;
-    const fech = fec.filter(l => l.status === 'Fechado').length;
+    const todas = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado');
+    const porEtapa = e => todas.filter(l => fecEtapa(l) === e).length;
+    const semPlano = todas.filter(l => fecPlano(l) === 'A definir').length;
     st.innerHTML = `
-      <div class="hoje-stat"><div class="n" style="color:var(--primary)">${fec.length}</div><div class="l">Empresas</div></div>
-      <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:20px">${novos}</div><div class="l">Novos</div></div>
-      <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:20px">${comTel}</div><div class="l">Com telefone</div></div>
-      <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:20px">${fech}</div><div class="l">Fechados</div></div>`;
+      <div class="hoje-stat"><div class="n" style="color:var(--primary)">${todas.length}</div><div class="l">Empresas</div></div>
+      ${FEC_ETAPAS.map(e => `<div class="hoje-stat"><div class="n" style="color:${FEC_COR_ETAPA[e]};font-size:20px">${porEtapa(e)}</div><div class="l">${e}</div></div>`).join('')}
+      <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:20px">${semPlano}</div><div class="l">Plano a definir</div></div>`;
   }
   const body = document.getElementById('fecBody'); if (!body) return;
-  if (!fec.length) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; return; }
+  if (!fec.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; return; }
   const FEC_PAGE_SIZE = 15;
   const totalPaginas = Math.ceil(fec.length / FEC_PAGE_SIZE);
   if (!_fecPagina) _fecPagina = 1;
@@ -5026,16 +5082,24 @@ function renderFecomercio() {
   const visiveis = fec.slice(inicio, inicio + FEC_PAGE_SIZE);
   // mostra o CNPJ (guardado nas notas) como subtítulo da empresa
   const cnpjDe = l => ((l.notas||'').match(/CNPJ\s+([\d./-]+)/) || [,''])[1];
-  body.innerHTML = visiveis.map(l => `
+  const selHTML = (id, campo, opcoes, atual, cor) => `<select onclick="event.stopPropagation()" onchange="event.stopPropagation();setFecCampo('${id}','${campo}',this.value)"
+      style="padding:5px 7px;font-size:11.5px;border-radius:7px;border:1.5px solid var(--border);background:var(--card);color:${cor||'var(--text2)'};font-weight:${cor?'700':'400'};max-width:170px">
+      ${opcoes.length ? opcoes.map(o => `<option value="${o}" ${o===atual?'selected':''}>${o}</option>`).join('') : '<option value="">—</option>'}
+    </select>`;
+  body.innerHTML = visiveis.map(l => {
+    const et = fecEtapa(l);
+    return `
     <tr onclick="openDetail('${l.id}')">
       <td><div class="td-empresa">${l.empresa}</div><div class="td-contato">${cnpjDe(l)}</div></td>
-      <td>${l.nome_contato||'—'}</td>
       <td>${l.cidade||'—'}</td>
-      <td>${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a>`:'—'}</td>
-      <td>${l.email?`<a href="mailto:${l.email}" onclick="event.stopPropagation()">${l.email}</a>`:'—'}</td>
-      <td><span class="badge badge-${STATUS_COLORS[l.status]||'novo'}">${l.status}</span></td>
-      <td style="font-size:12px;color:var(--text3)">${proximoPassoTexto(l)}</td>
-    </tr>`).join('') + (totalPaginas > 1 ? `<tr><td colspan="7" style="padding:14px">
+      <td style="font-size:12px">
+        ${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a><br>`:''}
+        ${l.email?`<a href="mailto:${l.email}" onclick="event.stopPropagation()" style="color:var(--text3)">${l.email}</a>`:(l.telefone?'':'—')}
+      </td>
+      <td>${selHTML(l.id,'plano',FEC_PLANOS,fecPlano(l), fecPlano(l)==='A definir'?'':'var(--text)')}</td>
+      <td>${selHTML(l.id,'etapa',FEC_ETAPAS,et,FEC_COR_ETAPA[et])}</td>
+      <td>${selHTML(l.id,'subetapa',FEC_SUBETAPAS[et]||[],fecSub(l))}</td>
+    </tr>`;}).join('') + (totalPaginas > 1 ? `<tr><td colspan="6" style="padding:14px">
       <div style="display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap">
         <button class="btn-secondary" style="padding:6px 10px" ${_fecPagina<=1?'disabled':''} onclick="event.stopPropagation();irParaPaginaFec(${_fecPagina-1})">‹ Anterior</button>
         ${Array.from({length: totalPaginas}, (_, i) => i+1).map(p => `<button class="btn-secondary" style="padding:6px 11px;${p===_fecPagina?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="event.stopPropagation();irParaPaginaFec(${p})">${p}</button>`).join('')}
@@ -5432,10 +5496,13 @@ function mudarTipoOnboarding(tipo) {
 function abrirOnboarding(id) {
   const l = leads.find(x => x.id === id); if (!l) return;
   _onbLeadId = id;
-  if (!l.onboarding) {
-    const tipo = _detectarTipoOnboarding(l);
+  // onboarding pode já existir só com etapa/subetapa (trilha FECOMERCIO) e sem o
+  // checklist — nesse caso criamos as fases PRESERVANDO o que já está gravado.
+  if (!l.onboarding || !l.onboarding.fases) {
+    const tipo = (l.onboarding && l.onboarding.tipo) || _detectarTipoOnboarding(l);
     const template = _getTemplatePorTipo(tipo);
-    l.onboarding = { inicio: hojeStr(), tipo, fases: template.map(f => ({ passos: f.passos.map(() => ({ feito: false, quando: '' })) })) };
+    l.onboarding = Object.assign({}, l.onboarding, { inicio: (l.onboarding && l.onboarding.inicio) || hojeStr(), tipo,
+      fases: template.map(f => ({ passos: f.passos.map(() => ({ feito: false, quando: '' })) })) });
     save();
     if (sb) sb.from('leads').update({ onboarding: l.onboarding }).eq('id', id).then(()=>{}).catch(e=>console.warn(e));
   } else if (!l.onboarding.tipo) {
