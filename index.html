@@ -5108,12 +5108,6 @@ async function carregarPerfisFec() {
     renderFecomercio();
   } catch (e) { console.warn('perfis', e); _perfisFec = []; }
 }
-const nomeDono = id => {
-  if (!id) return '';
-  const p = (_perfisFec || []).find(x => x.id === id);
-  return p ? p.nome : 'outro usuário';
-};
-
 async function setFecCampo(id, campo, valor) {
   const l = leads.find(x => x.id === id); if (!l) return;
   try {
