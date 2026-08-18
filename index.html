@@ -2349,7 +2349,7 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
           <div class="form-label">Abordagem</div>
           <div class="form-value" id="modalAbordagem">—</div>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="grpStatusDisplay">
           <div class="form-label">Status Atual</div>
           <div class="form-value" id="modalStatusDisplay">—</div>
         </div>
@@ -2414,13 +2414,13 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
         <button class="copy-btn" onclick="copyScript('scriptWhatsBox', this)">Copiar</button>
         <a class="btn-meet" id="btnAbrirWhats" style="margin-top:10px" href="#" target="_blank"><svg class="ic" style="stroke:#fff"><use href="#i-chat"/></svg> Abrir no WhatsApp</a>
       </div>
-      <div class="script-panel" style="margin-bottom:16px">
+      <div class="script-panel" style="margin-bottom:16px" id="painelLigacao">
         <div class="script-label"><svg class="ic"><use href="#i-phone"/></svg> LIGAÇÃO — roteiro</div>
         <div class="script-box" id="scriptLigaBox"></div>
         <button class="copy-btn" onclick="copyScript('scriptLigaBox', this)">Copiar</button>
         <a class="btn-meet" id="btnLigar" style="margin-top:10px;background:#444" href="#"><svg class="ic" style="stroke:#fff"><use href="#i-phone"/></svg> Ligar agora</a>
       </div>
-      <div class="script-panel">
+      <div class="script-panel" id="painelLinkedin">
         <div class="script-label"><svg class="ic"><use href="#i-briefcase"/></svg> LINKEDIN — mensagem curta</div>
         <div class="script-box" id="scriptLinkedinBox"></div>
         <button class="copy-btn" onclick="copyScript('scriptLinkedinBox', this)">Copiar</button>
@@ -2452,7 +2452,7 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
         <div class="form-group full"><label class="form-label">Indicado por parceiro?</label>
           <select class="form-select" id="editParceiroInd"><option value="">Não foi indicado</option></select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="grpEditStatus">
           <label class="form-label">Status</label>
           <select class="form-select" id="editStatus">
             <option>Novo Lead</option>
@@ -2464,7 +2464,7 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
             <option>Desqualificado</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="grpEditValor">
           <label class="form-label">Valor Estimado (R$)</label>
           <input class="form-input" id="editValor" type="number" placeholder="2500">
         </div>
@@ -2934,6 +2934,11 @@ function normAbordagem(raw) {
 
 // ── SCRIPT GENERATOR ──────────────────────────────────────────────────────────
 function generateScript(l) {
+  // FECOMERCIO: empresa já contratada — o script é de ativação do cadastro,
+  // não de venda. Só e-mail e WhatsApp.
+  if (l && l.canal === 'FECOMERCIO') {
+    return { email: FEC_EMAIL, whatsapp: fecWhats(), linkedin: '', ligacao: '' };
+  }
   const nome = (l.nome_contato || '').split(' ')[0] || 'Prezado(a)';
   const empresa = l.empresa || 'sua empresa';
   const func = l.funcionarios || 'centenas de';
@@ -3135,6 +3140,63 @@ async function markAsContacted() {
 // Funil de contato (8 toques) — estudos de vendas B2B mostram que a maioria
 // dos fechamentos acontece entre o 5º e o 8º contato. O lead só é desqualificado
 // depois de esgotar a sequência sem resposta.
+// ── FECOMERCIO: cliente JÁ CONTRATADO — a sequência só empurra o cadastro ──────
+// 2 e-mails a cada 2 dias + 2 WhatsApp (1 por dia), até a empresa se cadastrar
+// na plataforma. Quando o substatus sai de "Pendente cadastro na plataforma",
+// a sequência é considerada concluída (ver cadenciaConcluidaFec).
+const FEC_CADENCIA_TEMPLATE = [
+  { tipo: 'E-mail de boas-vindas + link de cadastro', dia: 0, fase: 'Cadastro', icon: '<svg class="ic"><use href="#i-mail"/></svg>',  canal: 'email' },
+  { tipo: 'E-mail de reforço (2º envio)',             dia: 2, fase: 'Cadastro', icon: '<svg class="ic"><use href="#i-mail"/></svg>',  canal: 'email' },
+  { tipo: 'WhatsApp — 1º toque',                      dia: 3, fase: 'Cadastro', icon: '<svg class="ic"><use href="#i-chat"/></svg>',  canal: 'whatsapp' },
+  { tipo: 'WhatsApp — 2º toque',                      dia: 4, fase: 'Cadastro', icon: '<svg class="ic"><use href="#i-chat"/></svg>',  canal: 'whatsapp' }
+];
+const ehFec = l => !!l && l.canal === 'FECOMERCIO';
+const cadTemplate = l => ehFec(l) ? FEC_CADENCIA_TEMPLATE : CADENCIA_TEMPLATE;
+// a empresa já se cadastrou? (substatus saiu de "Pendente cadastro na plataforma")
+const jaCadastrouFec = l => ehFec(l) && (l.onboarding || {}).subetapa &&
+  (l.onboarding.subetapa !== 'Pendente cadastro na plataforma');
+
+const FEC_EMAIL = `Assunto: Seja bem vindo a FLEX ON, temos orientações para você!
+
+Olá,
+
+A Flex On leva sua empresa da obrigação à transformação: trabalhamos de ponta a ponta com você na adequação à NR-1 — gestão dos riscos psicossociais —, do diagnóstico à solução de bem-estar corporativo.
+
+Na prática, nós entregamos três frentes integradas:
+
+• Diagnóstico de riscos psicossociais (RPS-1) — avaliação estatística certificada pelo HSE com os colaboradores, que identifica os riscos e gera o inventário exigido por lei.
+• Canal de Denúncias — canal confidencial e anônimo, conforme a Lei 14.457/22.
+• Flex On EDU — plataforma de educação corporativa com trilhas, palestras e conteúdos que capacitam líderes e equipes na prevenção e transformam o diagnóstico em cultura de bem-estar.
+
+Como funciona — o ciclo completo em 4 etapas:
+
+1. Onboarding — reunião de kick-off, coleta de dados e acesso à plataforma.
+2. Diagnóstico (RPS-1) — aplicação com os colaboradores e inventário de riscos.
+3. Implantação — plano de ação, políticas, canal de denúncias, treinamentos e o conjunto completo de documentos da NR-1.
+4. Monitoramento contínuo — acompanhamento dos indicadores e revisão anual, mantendo sua empresa sempre em conformidade.
+
+Você não precisa preparar nada agora. O primeiro passo leva menos de 5 minutos:
+Cadastre sua empresa no link: https://dashboard-rps1.flexon.fit/comecar
+Escolha uma data e horário para nossa sessão estratégica (kick off).
+
+Qualquer dúvida, é só responder este e-mail.
+
+Um abraço, Equipe Flex On!`;
+
+const fecWhats = () => `Olá, sou ${meuNome()} da Flex On.
+
+Através da nossa parceria com a IEB estamos entregando 3 frentes integradas:
+
+• Diagnóstico de riscos psicossociais (RPS-1) — avaliação estatística certificada pelo HSE com os colaboradores, que identifica os riscos e gera o inventário exigido por lei.
+• Canal de Denúncias — canal confidencial e anônimo, conforme a Lei 14.457/22.
+• Flex On EDU — plataforma de educação corporativa com trilhas, palestras e conteúdos que capacitam líderes e equipes na prevenção e transformam o diagnóstico em cultura de bem-estar.
+
+Enviamos um e-mail com orientações sobre cadastro na nossa plataforma, para que possamos agendar nosso primeiro encontro e definir as prioridades da sua empresa.
+
+➡️ Cadastre sua empresa no link: https://dashboard-rps1.flexon.fit/comecar
+
+Escolha uma data e horário para nossa sessão estratégica (kick off).`;
+
 const CADENCIA_TEMPLATE = [
   { tipo: 'E-mail de abertura', dia: 0,  fase: 'Abertura',   icon: '<svg class="ic"><use href="#i-mail"/></svg>',      canal: 'email' },
   { tipo: 'Conexão no LinkedIn', dia: 1, fase: 'Abertura',   icon: '<svg class="ic"><use href="#i-briefcase"/></svg>', canal: 'linkedin' },
@@ -3149,7 +3211,7 @@ const CADENCIA_TEMPLATE = [
 function iniciarCadencia(l, primeiroFeito) {
   l.cadencia = {
     inicio: new Date().toISOString().slice(0, 10),
-    passos: CADENCIA_TEMPLATE.map((_, i) => ({ feito: !!(primeiroFeito && i === 0), quando: (primeiroFeito && i === 0) ? new Date().toISOString().slice(0,10) : '' }))
+    passos: cadTemplate(l).map((_, i) => ({ feito: !!(primeiroFeito && i === 0), quando: (primeiroFeito && i === 0) ? new Date().toISOString().slice(0,10) : '' }))
   };
 }
 
@@ -3172,10 +3234,12 @@ function proximoPassoTexto(l) {
 // Retorna o próximo toque pendente de um lead com cadência ativa, ou null
 function proximoToque(l) {
   if (!l.cadencia) return null;
-  for (let i = 0; i < CADENCIA_TEMPLATE.length; i++) {
+  if (jaCadastrouFec(l)) return null; // cadastrou na plataforma: para de cobrar
+  const tpl = cadTemplate(l);
+  for (let i = 0; i < tpl.length; i++) {
     if (!(l.cadencia.passos[i] && l.cadencia.passos[i].feito)) {
-      const venc = addDias(l.cadencia.inicio, CADENCIA_TEMPLATE[i].dia);
-      return { idx: i, ...CADENCIA_TEMPLATE[i], vencimento: venc, atrasado: venc < hojeStr(), hoje: venc === hojeStr() };
+      const venc = addDias(l.cadencia.inicio, tpl[i].dia);
+      return { idx: i, ...tpl[i], vencimento: venc, atrasado: venc < hojeStr(), hoje: venc === hojeStr() };
     }
   }
   return null; // cadência concluída
@@ -3185,6 +3249,7 @@ function proximoToque(l) {
 function scriptParaToqueLead(l, idx) {
   const nome = (l.nome_contato || '').split(' ')[0] || 'Prezado(a)';
   const empresa = l.empresa || 'sua empresa';
+  if (ehFec(l)) return [FEC_EMAIL, FEC_EMAIL, fecWhats(), fecWhats()][idx] || '';
   const base = generateScript(l);
   const scripts = [
     base.email,
@@ -3221,17 +3286,21 @@ function renderCadenciaModal() {
   const l = leads.find(x => x.id === currentLeadId);
   const box = document.getElementById('cadenciaBody');
   if (!l) return;
+  const tpl = cadTemplate(l);
   if (!l.cadencia) {
-    box.innerHTML = `
+    box.innerHTML = ehFec(l) ? `
+      <div class="cad-intro">Sequência de <strong>ativação do cadastro</strong>: 2 e-mails (a cada 2 dias) e 2 WhatsApp (1 por dia). Ela para sozinha assim que a empresa se cadastrar na plataforma.</div>
+      <button class="btn-save" onclick="iniciarCadenciaModal()"><svg class="ic"><use href="#i-repeat"/></svg> Iniciar sequência de cadastro</button>` : `
       <div class="cad-intro">Funil de contato em <strong>8 toques</strong>. Estudos de vendas B2B mostram que a maioria dos fechamentos acontece entre o <strong>5º e o 8º contato</strong> — por isso o lead só é desqualificado depois de esgotar a sequência sem resposta. Cada toque tem canal e prazo certos.</div>
       <button class="btn-save" onclick="iniciarCadenciaModal()"><svg class="ic"><use href="#i-repeat"/></svg> Iniciar funil de contato para este lead</button>`;
     return;
   }
   const prox = proximoToque(l);
+  const cadastrou = jaCadastrouFec(l);
   const feitos = l.cadencia.passos.filter(p => p && p.feito).length;
   box.innerHTML = `
-    <div class="cad-intro">Início: ${formatBR(l.cadencia.inicio)} · Toque ${Math.min(feitos+ (prox?0:0), CADENCIA_TEMPLATE.length)} de ${CADENCIA_TEMPLATE.length} · ${prox ? 'Próximo: <strong>' + prox.tipo + '</strong> (' + (prox.atrasado ? 'atrasado' : prox.hoje ? 'hoje' : formatBR(prox.vencimento)) + ')' : '<strong>Sequência concluída</strong>'}</div>
-    ${CADENCIA_TEMPLATE.map((t, i) => {
+    <div class="cad-intro">Início: ${formatBR(l.cadencia.inicio)} · Toque ${Math.min(feitos+ (prox?0:0), tpl.length)} de ${tpl.length} · ${cadastrou ? '<strong>Cadastro feito — sequência encerrada</strong>' : prox ? 'Próximo: <strong>' + prox.tipo + '</strong> (' + (prox.atrasado ? 'atrasado' : prox.hoje ? 'hoje' : formatBR(prox.vencimento)) + ')' : '<strong>Sequência concluída</strong>'}</div>
+    ${tpl.map((t, i) => {
       const passo = l.cadencia.passos[i] || { feito:false, quando:'' };
       const venc = addDias(l.cadencia.inicio, t.dia);
       const isNext = prox && prox.idx === i;
@@ -3254,7 +3323,9 @@ function renderCadenciaModal() {
         <button class="btn-cad ${passo.feito ? 'undo' : 'do'}" onclick="marcarToque(${i})">${passo.feito ? 'Desfazer' : 'Marcar feito'}</button>
       </div>`;
     }).join('')}
-    ${!prox ? `<div class="cad-fim">Sequência esgotada sem fechamento. Hora de decidir: avance para proposta ou desqualifique.<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-save" onclick="showModalTab('perfil')">Avançar etapa</button><button class="btn-secondary" onclick="abrirDesqualificar()">Desqualificar (não respondeu)</button></div></div>` : ''}`;
+    ${!prox ? (ehFec(l)
+      ? `<div class="cad-fim">${cadastrou ? 'A empresa já se cadastrou na plataforma — nada mais a cobrar por aqui.' : 'Sequência esgotada e a empresa ainda não se cadastrou. Vale um contato direto por telefone.'}</div>`
+      : `<div class="cad-fim">Sequência esgotada sem fechamento. Hora de decidir: avance para proposta ou desqualifique.<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-save" onclick="showModalTab('perfil')">Avançar etapa</button><button class="btn-secondary" onclick="abrirDesqualificar()">Desqualificar (não respondeu)</button></div></div>`) : ''}`;
 }
 
 async function iniciarCadenciaModal() {
@@ -3979,6 +4050,12 @@ function openDetail(id) {
 
   // Aba Script — gerar automaticamente
   const scripts = generateScript(l);
+  // FECOMERCIO já é cliente: só e-mail e WhatsApp de ativação do cadastro.
+  // Status e Valor estimado não fazem sentido (não passam por funil de venda).
+  const fec = ehFec(l);
+  ['painelLigacao','painelLinkedin','grpStatusDisplay','grpEditStatus','grpEditValor'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = fec ? 'none' : '';
+  });
   document.getElementById('scriptEmailBox').textContent = scripts.email;
   document.getElementById('scriptLinkedinBox').textContent = scripts.linkedin;
   document.getElementById('scriptWhatsBox').textContent = scripts.whatsapp;
@@ -5009,7 +5086,7 @@ const FEC_SUBETAPAS = {
   'Concluído':    []
 };
 const FEC_COR_ETAPA = { 'Cadastro': '#8a877f', 'Diagnóstico': '#e8675b', 'Conformidade': '#d99a2b', 'Concluído': '#1f9d6b' };
-const FEC_PLANOS = ['A definir', 'Pacote Diagnóstico', 'Pacote Essencial', 'Gestão e Engajamento', 'FeComércio 120 dias'];
+const FEC_PLANOS = ['A definir', 'Pacote Diagnóstico', 'Pacote Essencial', 'Gestão e Engajamento', 'FeComércio'];
 
 // plano fica na coluna `pacote`; etapa/subetapa moram no jsonb `onboarding`
 // (mesmo objeto do checklist de 120 dias, sem conflitar com ele).
@@ -5153,7 +5230,7 @@ function renderAtivos() {
 // 2 fluxos: FeComércio (parceria, 120 dias) e por pacote (Diagnóstico / Essencial / G&E, 15 dias)
 
 const ONBOARDING_TIPOS = {
-  fecomercio: 'FeComércio (120 dias)',
+  fecomercio: 'FeComércio',
   diagnostico: 'Pacote Diagnóstico',
   essencial: 'Pacote Essencial',
   gestao: 'Gestão e Engajamento'
