@@ -1995,7 +1995,6 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
       <div>
         <div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> Base FECOMERCIO</div>
-        <div class="section-sub">Contribuintes e associados da base NR-1 (SESCON, jul/2026) — empresas com funcionário CLT ativo em Goiás.</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddFecomercio()">+ Nova empresa FECOMERCIO</button>
       </div>
       <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
@@ -3615,7 +3614,7 @@ function save() {
 
 // ── KPIs ──────────────────────────────────────────────────────────────────────
 function updateKPIs() {
-  const pipe = leads.filter(l => !isQuente(l) && l.status !== 'Desqualificado'); // KPIs refletem a pipeline ativa
+  const pipe = leads.filter(l => l.canal !== 'FECOMERCIO' && !isQuente(l) && l.status !== 'Desqualificado'); // KPIs refletem a pipeline ativa (FECOMERCIO tem aba própria)
   const st = s => pipe.filter(l => l.status === s).length;
   document.getElementById('kpiTotal').textContent = pipe.length;
   document.getElementById('kpiContatado').textContent = st('Contatado');
@@ -3675,6 +3674,7 @@ function getFiltered() {
   const ca = document.getElementById('filterCanal').value;
   const pr = document.getElementById('filterPrioridade').value;
   return leads.filter(l => {
+    if (l.canal === 'FECOMERCIO') return false; // base FECOMERCIO vive só na aba própria
     if (isQuente(l)) return false; // leads quentes ficam na aba 🔥 Quentes
     if (l.status === 'Desqualificado') return false; // ficam na aba Desqualificados
     if (_soMeusLeads && !souDono(l)) return false;
@@ -6974,9 +6974,13 @@ async function aposLogin(session) {
 }
 
 function chaveLead(l) {
+  // A chave SEMPRE inclui a empresa. Deduplicar só por e-mail apagava empresas
+  // legítimas e distintas que compartilham o e-mail do mesmo escritório contábil
+  // (comum na base FECOMERCIO: um contador responde por dezenas de empresas).
+  const emp = (l.empresa || '').trim().toLowerCase();
   return (l.email && l.email.trim())
-    ? 'e:' + l.email.trim().toLowerCase()
-    : 'n:' + (l.empresa || '').trim().toLowerCase() + '|' + (l.nome_contato || '').trim().toLowerCase();
+    ? 'e:' + l.email.trim().toLowerCase() + '|' + emp
+    : 'n:' + emp + '|' + (l.nome_contato || '').trim().toLowerCase();
 }
 async function dedupeLeads(silencioso) {
   const prog = l => (l.status && l.status !== 'Novo Lead' ? 2 : 0) + ((l.historico && l.historico.length) ? 1 : 0) + (l.email ? 1 : 0);
@@ -6984,6 +6988,9 @@ async function dedupeLeads(silencioso) {
   const vistos = new Map(); const manter = []; const removerIds = [];
   ordenado.forEach(l => { const k = chaveLead(l); if (vistos.has(k)) removerIds.push(l.id); else { vistos.set(k, l); manter.push(l); } });
   if (!removerIds.length) { if (!silencioso) showToast('Nenhum duplicado encontrado'); return 0; }
+  // A limpeza AUTOMÁTICA (login) nunca apaga: só avisa. Apagar em silêncio já causou
+  // perda real de leads. Exclusão só pelo botão "Limpar duplicados" (ação consciente).
+  if (silencioso) { console.warn('[dedupe] ' + removerIds.length + ' possíveis duplicados — não removidos automaticamente'); return 0; }
   leads = manter;
   save();
   renderLeads();
