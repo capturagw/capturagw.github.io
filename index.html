@@ -5172,7 +5172,7 @@ function renderFecomercio() {
   if (box) {
     const semDono = fec.filter(l => !l.dono).length;
     box.innerHTML = (semDono && window.CAPTURA.user)
-      ? `<button class="btn-secondary" style="padding:7px 12px;font-size:12px" onclick="assumirFiltradosFec()">Assumir as ${semDono} empresas sem responsável deste filtro</button>`
+      ? `<button class="btn-secondary" style="padding:7px 12px;font-size:12px" onclick="assumirFiltradosFec()">Assumir ${semDono === 1 ? 'a empresa sem responsável deste filtro' : 'as ' + semDono + ' empresas sem responsável deste filtro'}</button>`
       : '';
   }
 
