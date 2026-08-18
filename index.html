@@ -1997,16 +1997,19 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
         <div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> Base FECOMERCIO</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddFecomercio()">+ Nova empresa FECOMERCIO</button>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
+        <button class="btn-meus-leads" id="btnMeusLeadsFec" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Só os meus</button>
         <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
+        <select class="filter" id="fecFiltroDono" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os responsáveis</option><option value="__pool">Sem responsável (pool)</option></select>
         <select class="filter" id="fecFiltroEtapa" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as etapas</option></select>
         <select class="filter" id="fecFiltroPlano" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os planos</option></select>
       </div>
     </div>
     <div class="hoje-stats" id="fecStats" style="margin-top:14px"></div>
+    <div id="fecAcoesLote" style="margin-top:10px"></div>
     <div class="table-wrap" style="margin-top:8px">
       <table>
-        <thead><tr><th>Empresa</th><th>Cidade</th><th>Contato</th><th>Plano</th><th>Etapa</th><th>Substatus</th></tr></thead>
+        <thead><tr><th>Empresa</th><th>Cidade</th><th>Contato</th><th>Responsável</th><th>Plano</th><th>Etapa</th><th>Substatus</th></tr></thead>
         <tbody id="fecBody"></tbody>
       </table>
     </div>
@@ -3737,7 +3740,7 @@ let _soMeusLeads = false;
 function toggleMeusLeads() {
   _soMeusLeads = !_soMeusLeads;
   document.querySelectorAll('.btn-meus-leads').forEach(b => b.classList.toggle('active', _soMeusLeads));
-  _pipelinePage = 1; _resPagina = 1;
+  _pipelinePage = 1; _resPagina = 1; _fecPagina = 1;
   renderLeads(); renderParceiros();
 }
 
@@ -5094,9 +5097,35 @@ const fecEtapa = l => (l.onboarding && l.onboarding.etapa) || 'Cadastro';
 const fecSub   = l => (l.onboarding && l.onboarding.subetapa) || '';
 const fecPlano = l => l.pacote || 'A definir';
 
+// lista de colaboradores (para filtrar e atribuir responsável) — carregada 1x
+let _perfisFec = null;
+async function carregarPerfisFec() {
+  if (_perfisFec || !sb) return;
+  try {
+    const { data } = await sb.from('perfis').select('id,nome,email');
+    _perfisFec = (data || []).map(p => ({ id: p.id, nome: p.nome || p.email || '—' }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+    renderFecomercio();
+  } catch (e) { console.warn('perfis', e); _perfisFec = []; }
+}
+const nomeDono = id => {
+  if (!id) return '';
+  const p = (_perfisFec || []).find(x => x.id === id);
+  return p ? p.nome : 'outro usuário';
+};
+
 async function setFecCampo(id, campo, valor) {
   const l = leads.find(x => x.id === id); if (!l) return;
   try {
+    if (campo === 'dono') {
+      const anterior = l.dono;
+      l.dono = valor || null;
+      if (sb) {
+        const { data, error } = await sb.from('leads').update({ dono: l.dono }).eq('id', id).select('id');
+        if (error || !data || !data.length) { l.dono = anterior; throw (error || new Error('sem permissão')); }
+      }
+      save(); renderFecomercio(); return;
+    }
     if (campo === 'plano') {
       l.pacote = valor;
       if (sb) { const { error } = await sb.from('leads').update({ pacote: valor }).eq('id', id); if (error) throw error; }
@@ -5121,11 +5150,14 @@ async function setFecCampo(id, campo, valor) {
 
 let _fecPagina = 1;
 function renderFecomercio() {
+  if (_perfisFec === null) carregarPerfisFec();
   const bq = (document.getElementById('fecBusca')?.value || '').trim().toLowerCase();
   const fEt = document.getElementById('fecFiltroEtapa')?.value || '';
   const fPl = document.getElementById('fecFiltroPlano')?.value || '';
+  const fDo = document.getElementById('fecFiltroDono')?.value || '';
   const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado'
     && (!_soMeusLeads || souDono(l))
+    && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
     && (!fEt || fecEtapa(l) === fEt)
     && (!fPl || fecPlano(l) === fPl)
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
@@ -5138,6 +5170,17 @@ function renderFecomercio() {
   if (selEt && selEt.options.length === 1) FEC_ETAPAS.forEach(e => selEt.add(new Option(e, e)));
   const selPl = document.getElementById('fecFiltroPlano');
   if (selPl && selPl.options.length === 1) FEC_PLANOS.forEach(p => selPl.add(new Option(p, p)));
+  const selDo = document.getElementById('fecFiltroDono');
+  if (selDo && _perfisFec && selDo.options.length === 2) _perfisFec.forEach(p => selDo.add(new Option(p.nome, p.id)));
+
+  // ação em lote: assumir tudo o que está filtrado na tela
+  const box = document.getElementById('fecAcoesLote');
+  if (box) {
+    const semDono = fec.filter(l => !l.dono).length;
+    box.innerHTML = (semDono && window.CAPTURA.user)
+      ? `<button class="btn-secondary" style="padding:7px 12px;font-size:12px" onclick="assumirFiltradosFec()">Assumir as ${semDono} empresas sem responsável deste filtro</button>`
+      : '';
+  }
 
   const st = document.getElementById('fecStats');
   if (st) {
@@ -5150,7 +5193,7 @@ function renderFecomercio() {
       <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:20px">${semPlano}</div><div class="l">Plano a definir</div></div>`;
   }
   const body = document.getElementById('fecBody'); if (!body) return;
-  if (!fec.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; return; }
+  if (!fec.length) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; return; }
   const FEC_PAGE_SIZE = 15;
   const totalPaginas = Math.ceil(fec.length / FEC_PAGE_SIZE);
   if (!_fecPagina) _fecPagina = 1;
@@ -5173,10 +5216,16 @@ function renderFecomercio() {
         ${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a><br>`:''}
         ${l.email?`<a href="mailto:${l.email}" onclick="event.stopPropagation()" style="color:var(--text3)">${l.email}</a>`:(l.telefone?'':'—')}
       </td>
+      <td><select onclick="event.stopPropagation()" onchange="event.stopPropagation();setFecCampo('${l.id}','dono',this.value)"
+            style="padding:5px 7px;font-size:11.5px;border-radius:7px;border:1.5px solid var(--border);background:var(--card);color:${l.dono?'var(--text)':'var(--text3)'};max-width:150px">
+            <option value="" ${!l.dono?'selected':''}>— pool —</option>
+            ${(_perfisFec||[]).map(p => `<option value="${p.id}" ${l.dono===p.id?'selected':''}>${p.nome}</option>`).join('')}
+            ${l.dono && !(_perfisFec||[]).some(p=>p.id===l.dono) ? `<option value="${l.dono}" selected>outro usuário</option>` : ''}
+          </select></td>
       <td>${selHTML(l.id,'plano',FEC_PLANOS,fecPlano(l), fecPlano(l)==='A definir'?'':'var(--text)')}</td>
       <td>${selHTML(l.id,'etapa',FEC_ETAPAS,et,FEC_COR_ETAPA[et])}</td>
       <td>${selHTML(l.id,'subetapa',FEC_SUBETAPAS[et]||[],fecSub(l))}</td>
-    </tr>`;}).join('') + (totalPaginas > 1 ? `<tr><td colspan="6" style="padding:14px">
+    </tr>`;}).join('') + (totalPaginas > 1 ? `<tr><td colspan="7" style="padding:14px">
       <div style="display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap">
         <button class="btn-secondary" style="padding:6px 10px" ${_fecPagina<=1?'disabled':''} onclick="event.stopPropagation();irParaPaginaFec(${_fecPagina-1})">‹ Anterior</button>
         ${Array.from({length: totalPaginas}, (_, i) => i+1).map(p => `<button class="btn-secondary" style="padding:6px 11px;${p===_fecPagina?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="event.stopPropagation();irParaPaginaFec(${p})">${p}</button>`).join('')}
@@ -5185,6 +5234,34 @@ function renderFecomercio() {
     </td></tr>` : '');
 }
 function irParaPaginaFec(p) { _fecPagina = p; renderFecomercio(); }
+
+// assume, de uma vez, todas as empresas SEM responsável que estão no filtro atual
+async function assumirFiltradosFec() {
+  const u = window.CAPTURA.user; if (!u || !sb) return;
+  const bq = (document.getElementById('fecBusca')?.value || '').trim().toLowerCase();
+  const fEt = document.getElementById('fecFiltroEtapa')?.value || '';
+  const fPl = document.getElementById('fecFiltroPlano')?.value || '';
+  const fDo = document.getElementById('fecFiltroDono')?.value || '';
+  const alvo = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado' && !l.dono
+    && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
+    && (!fEt || fecEtapa(l) === fEt) && (!fPl || fecPlano(l) === fPl)
+    && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
+             || (l.cidade||'').toLowerCase().includes(bq) || (l.email||'').toLowerCase().includes(bq)
+             || (l.notas||'').toLowerCase().includes(bq)));
+  if (!alvo.length) return;
+  if (!confirm(`Assumir ${alvo.length} empresa(s) para ${u.nome || 'você'}? Elas saem do pool e passam a aparecer em "Só os meus".`)) return;
+  const ids = alvo.map(l => l.id);
+  try {
+    const { data, error } = await sb.from('leads').update({ dono: u.id }).in('id', ids).select('id');
+    if (error) throw error;
+    const ok = new Set((data || []).map(r => r.id));
+    alvo.forEach(l => { if (ok.has(l.id)) l.dono = u.id; });
+    save(); renderFecomercio();
+    showToast(`✓ ${ok.size} empresa(s) agora no seu nome`);
+  } catch (e) {
+    console.warn(e); showToast('⚠ Não foi possível assumir: ' + (e.message || e));
+  }
+}
 function openAddFecomercio() {
   document.getElementById('addModal').classList.add('open');
   const sel = document.getElementById('addCanal'); if (sel) sel.value = 'FECOMERCIO';
