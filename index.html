@@ -6747,21 +6747,229 @@ async function salvarParceiroEdit() {
 }
 async function gerarContratoParceria() {
   const g = k => (document.getElementById(k).value || '').trim();
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Contrato de Parceria — ${g('peNome')}</title>
-<style>@media print{.noprint{display:none}}body{font-family:Arial,sans-serif;color:#1a1a1a;max-width:800px;margin:0 auto;padding:40px 48px;line-height:1.5;font-size:13px}h1{text-align:center;font-size:17px;margin:0 0 2px}.sub{text-align:center;font-weight:700;color:#34507a;font-size:12px;margin-bottom:22px}h2{font-size:13px;margin:18px 0 6px}p{margin:7px 0;text-align:justify}.sig div{margin-top:46px;border-top:1px solid #333;width:340px;padding-top:4px;font-weight:700}.btn{background:#e8675b;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700}</style></head><body>
-<div class="noprint" style="position:sticky;top:0;background:#fff;padding:8px 0 14px;border-bottom:1px solid #eee;margin-bottom:18px"><button class="btn" onclick="window.print()">Imprimir / Salvar PDF</button></div>
-<h1>CONTRATO DE PARCERIA COMERCIAL E INDICAÇÃO DE NEGÓCIOS</h1><div class="sub">FLEX ON × ${g('peNome').toUpperCase()}</div>
-<p><b>FLEX ON LTDA.</b>, CNPJ 56.067.342/0001-83, sede em Goiânia/GO, representada por André Velloso Macêdo ("FLEX ON"), e <b>${g('peNome')}</b>, ${g('peCidade')||'—'}${g('peEmail')?', e-mail '+g('peEmail'):''} ("PARCEIRO"), celebram o presente contrato de parceria e indicação de negócios.</p>
-<h2>CLÁUSULA 1ª — OBJETO</h2><p>1.1. O PARCEIRO indicará à FLEX ON potenciais clientes interessados nas soluções de conformidade NR-1 (gestão de riscos psicossociais) e bem-estar corporativo. 1.2. A FLEX ON conduzirá a negociação, contratação e prestação dos serviços aos clientes indicados.</p>
-<h2>CLÁUSULA 2ª — REMUNERAÇÃO POR INDICAÇÃO</h2><p>2.1. A cada cliente indicado que efetivamente contratar a FLEX ON, o PARCEIRO fará jus a comissão de indicação, conforme percentual acordado entre as partes por escrito (e-mail válido), incidente sobre o valor líquido recebido durante a vigência do contrato do cliente. 2.2. O pagamento ocorre após a confirmação do recebimento da respectiva mensalidade pela FLEX ON.</p>
-<h2>CLÁUSULA 3ª — OBRIGAÇÕES</h2><p>3.1. O PARCEIRO atuará com ética e em conformidade com a LGPD, obtendo base legal para compartilhar dados de contato dos indicados. 3.2. Nenhuma das partes representa a outra nem assume vínculo societário, empregatício ou de exclusividade, salvo ajuste escrito.</p>
-<h2>CLÁUSULA 4ª — VIGÊNCIA E RESCISÃO</h2><p>4.1. Vigência de 12 (doze) meses, renovável automaticamente, podendo qualquer parte rescindir mediante aviso prévio de 30 dias. 4.2. Comissões de indicações já efetivadas permanecem devidas após a rescisão, durante a vigência do contrato do cliente.</p>
-<h2>CLÁUSULA 5ª — CONFIDENCIALIDADE E FORO</h2><p>5.1. As partes manterão sigilo sobre informações confidenciais. 5.2. Fica eleito o foro da Comarca de Goiânia/GO.</p>
-<p style="margin-top:24px">Goiânia/GO, ${hoje}.</p>
-<div class="sig"><div>FLEX ON LTDA. — André Velloso Macêdo</div></div>
-<div class="sig"><div>${g('peNome')} — Parceiro</div></div>
+  const hoje = new Date();
+  const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const nomeParceiro = g('peNome');
+  // Campos da OUTRA empresa (CNPJ, endereço, representante) saem SEMPRE EM BRANCO,
+  // para serem preenchidos à mão ou no PDF — o app não tem esses dados cadastrados.
+  const br = w => `<span class="br" style="min-width:${w}"></span>`;
+  const nomeOuBranco = nomeParceiro ? nomeParceiro.toUpperCase() : br('280px');
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Contrato de Parceria Comercial${nomeParceiro ? ' — ' + nomeParceiro : ''}</title>
+<style>
+  @media print{.noprint{display:none}.pb{page-break-before:always}}
+  body{font-family:"Times New Roman",Georgia,serif;color:#111;max-width:820px;margin:0 auto;padding:38px 54px 60px;line-height:1.52;font-size:13.5px;text-align:justify}
+  h1{text-align:center;font-size:17px;margin:4px 0 4px;letter-spacing:.3px}
+  .sub{text-align:center;font-style:italic;font-size:12.5px;color:#333;margin-bottom:10px}
+  .rule{border-top:2px solid #111;margin:14px 0 22px}
+  h2{text-align:center;font-size:13.5px;margin:24px 0 10px;text-transform:uppercase}
+  h3{font-size:13px;margin:20px 0 8px}
+  p{margin:9px 0}
+  .box{border:1px solid #999;background:#fafafa;padding:11px 14px;margin:14px 0;font-size:12.5px}
+  .box .tt{font-variant:small-caps;font-weight:700;letter-spacing:.4px;display:block;margin-bottom:5px}
+  .box i{display:block;color:#333}
+  .br{display:inline-block;border-bottom:1px solid #333;min-width:120px;vertical-align:baseline}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12.5px}
+  th,td{border:1px solid #999;padding:6px 9px;text-align:center}
+  th{background:#eee;font-weight:700}
+  td:first-child,th:first-child{text-align:left}
+  .sigs{display:flex;gap:40px;margin-top:52px;text-align:center}
+  .sigs > div{flex:1}
+  .sigline{border-top:1px solid #333;padding-top:5px;font-weight:700;font-size:13px}
+  .sigs small{display:block;font-weight:400;font-size:12px}
+  .sigs em{display:block;font-size:12px}
+  .test{margin-top:46px}
+  .test .linha{display:flex;gap:40px;margin-top:34px}
+  .test .linha > div{flex:1}
+  .btn{background:#e8675b;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700;font-family:Arial,sans-serif}
+  .topo{position:sticky;top:0;background:#fff;padding:8px 0 14px;border-bottom:1px solid #eee;margin-bottom:18px}
+  .aviso{font-family:Arial,sans-serif;font-size:12px;color:#7a716b;margin-top:6px}
+</style></head><body>
+<div class="noprint topo"><button class="btn" onclick="window.print()">Imprimir / Salvar PDF</button>
+<div class="aviso">Os campos sublinhados (CNPJ, endereço, representante legal) ficam em branco de propósito — preencha antes de enviar para assinatura.</div></div>
+
+<h1>CONTRATO DE PARCERIA COMERCIAL</h1>
+<div class="sub">Revenda por Repasse — Soluções de Conformidade NR-1 e Bem-Estar Corporativo</div>
+<div class="rule"></div>
+
+<p>Pelo presente instrumento particular, de um lado <b>FLEX ON LTDA</b>, pessoa jurídica de direito privado, inscrita no CNPJ nº 56.067.342/0001-83, com sede na Rua 8, nº 657, Setor Central, Goiânia – GO, CEP 74.013-030, neste ato representada na forma de seu contrato social por seu representante legal, Sr. André Velloso Macêdo, doravante denominada simplesmente <b>FLEX ON</b>;</p>
+
+<p>e, de outro lado, <b>${nomeOuBranco}</b>, pessoa jurídica de direito privado, inscrita no CNPJ nº ${br('180px')}, com sede na ${br('300px')}, nº ${br('60px')}, ${br('170px')}, ${br('180px')} – ${br('40px')}, CEP ${br('110px')}, neste ato representada por ${br('250px')}, doravante denominada simplesmente <b>PARCEIRO</b>;</p>
+
+<p>FLEX ON e PARCEIRO, quando referidas em conjunto, doravante denominadas simplesmente <b>PARTES</b>;</p>
+
+<p><b>CONSIDERANDO QUE</b> a FLEX ON é detentora e prestadora de soluções e plataformas próprias voltadas à gestão de saúde ocupacional, conformidade psicossocial à NR-1, bem-estar e compliance no ambiente corporativo, organizadas nos planos comerciais Diagnóstico, Essencial e Gestão &amp; Engajamento;</p>
+
+<p><b>CONSIDERANDO QUE</b> o PARCEIRO atua em segmento que lhe permite captar e relacionar-se com clientes interessados nas soluções da FLEX ON;</p>
+
+<p><b>CONSIDERANDO QUE</b> as PARTES desejam estabelecer uma relação comercial de revenda por repasse, pela qual o PARCEIRO comercializa as soluções da FLEX ON a preço por ele definido, sendo a prestação técnica e o faturamento ao cliente final conduzidos pela FLEX ON, e cabendo ao PARCEIRO a margem correspondente, sem qualquer relação de subordinação, vínculo empregatício ou societário;</p>
+
+<p>resolvem as PARTES celebrar o presente <b>Contrato de Parceria Comercial</b>, que se regerá pelas cláusulas e condições a seguir, que mutuamente aceitam e outorgam.</p>
+
+<h2>Cláusula Primeira – Do Objeto e do Modelo de Parceria</h2>
+<p><b>1.1.</b> O presente contrato tem por objeto estabelecer uma parceria comercial de revenda por repasse, pela qual o PARCEIRO comercializa, junto a clientes por ele captados, os produtos, serviços e planos da FLEX ON, definindo livremente o preço de venda ao cliente final dentro da política deste contrato, fazendo jus à margem correspondente à diferença entre o preço de venda e o preço de atacado (parceiro) constante do Anexo I.</p>
+
+<div class="box"><span class="tt">Nota — natureza dos valores do Anexo I</span>
+<i>Os valores constantes do Anexo I são os preços de atacado (parceiro) já fechados e travados — isto é, o valor que a FLEX ON deve efetivamente receber por cada plano. Não se aplica sobre esses valores qualquer percentual de comissão de 15%, 20%, 25% ou similar. A remuneração do PARCEIRO é a margem (preço de venda definido pelo PARCEIRO menos preço de atacado do Anexo I), conforme a Cláusula Quarta.</i></div>
+
+<p><b>1.2.</b> Os produtos, serviços e planos abrangidos são os comercializados pela FLEX ON em sua linha de conformidade NR-1 e bem-estar corporativo, organizados nos três planos descritos no Anexo I (Diagnóstico, Essencial e Gestão &amp; Engajamento), que combinam: (i) RPS-1 — diagnóstico psicossocial baseado em questionário HSE-IT validado; (ii) Enxoval de Documentação NR-1; (iii) Flex ON Edu; (iv) Canal de Denúncias (Lei 14.457/22); e (v) MEV 360 — programa contínuo de 12 (doze) meses com gamificação. Incluem-se ainda outros produtos que venham a ser comercializados pela FLEX ON e formalmente incluídos por aditivo, observada a Cláusula 12.1.</p>
+
+<p><b>1.3.</b> No modelo de revenda por repasse, cabe ao PARCEIRO captar clientes, apresentar as soluções e definir o preço de venda ao cliente final; e cabe à FLEX ON a execução técnica integral das soluções, o faturamento e a relação contratual direta com o cliente final, o suporte e a prestação dos serviços. O PARCEIRO não executa as soluções nem fatura ao cliente final.</p>
+
+<p><b>1.4.</b> Não se estabelece, por meio deste instrumento, sociedade em participação, consórcio, empreendimento comum, agência, representação comercial, franquia, mandato, gestão de negócios, <i>joint venture</i> ou qualquer outra forma de associação entre as PARTES, limitando-se a relação ao escopo comercial de revenda por repasse aqui ajustado.</p>
+
+<h2>Cláusula Segunda – Da Inexistência de Vínculo e da Não Caracterização de Representação Comercial</h2>
+<p><b>2.1.</b> Este contrato é de natureza estritamente comercial e civil, firmado em caráter não exclusivo (Cláusula Sexta), não estabelecendo qualquer vínculo trabalhista, empregatício ou societário entre as PARTES, nem entre seus sócios, administradores, empregados, prepostos ou contratados.</p>
+<p><b>2.2.</b> Cada PARTE permanecerá responsável pelos vínculos empregatícios, encargos sociais, tributários e previdenciários de seus próprios colaboradores, não podendo pleitear da outra direitos de natureza trabalhista ou previdenciária.</p>
+<p><b>2.3. Não Caracterização de Representação Comercial.</b> As PARTES expressamente reconhecem que a relação ora ajustada não constitui contrato de representação comercial autônoma nos termos da Lei 4.886/1965, por ausência de seus elementos caracterizadores: o PARCEIRO atua como revendedor por conta própria, define seu preço e sua margem, não recebe poderes de mediação para concretizar negócios em nome da FLEX ON, e inexiste exclusividade de zona, produto ou cliente. Não se aplicam, portanto, as disposições da Lei 4.886/1965, especialmente quanto a indenizações por rescisão, aviso prévio especial ou comissões diferidas.</p>
+<p><b>2.4.</b> O PARCEIRO atuará como contratante autônomo e independente, sem poderes para assumir obrigações em nome da FLEX ON ou representá-la legalmente, salvo autorização prévia e por escrito para atos específicos. A FLEX ON não exercerá poder de direção ou controle sobre as atividades empresariais do PARCEIRO.</p>
+
+<h2>Cláusula Terceira – Da Captação de Clientes, do Registro e da Carteira do Parceiro</h2>
+<p><b>3.1. Registro de Cliente.</b> O PARCEIRO apresentará à FLEX ON os clientes captados mediante registro pelos meios definidos pela FLEX ON (plataforma específica ou comunicação por escrito ou e-mail corporativo), contendo, no mínimo: razão social, CNPJ, dados de contato do tomador de decisão, plano de interesse, número estimado de colaboradores e o preço de venda proposto ao cliente.</p>
+<p><b>3.2. Venda Válida.</b> Considera-se Venda Válida aquela na qual o cliente captado pelo PARCEIRO (i) formalize a contratação de qualquer plano ou produto da FLEX ON e (ii) efetue o pagamento de, ao menos, a primeira mensalidade ou parcela devida, incluída, quando aplicável, a taxa de setup do Anexo I.</p>
+<p><b>3.3. Carteira do PARCEIRO.</b> As Vendas Válidas compõem a Carteira do PARCEIRO, entendida como o conjunto de clientes por ele captados que mantêm contratos ativos com a FLEX ON. Durante a vigência, o cliente permanece vinculado ao PARCEIRO, gerando direito à margem (Cláusula Quarta) enquanto (i) este contrato estiver vigente e (ii) o contrato do cliente estiver ativo e adimplido. Encerrada a vigência, aplicam-se as regras da Cláusula Nona, ficando afastada qualquer interpretação de vínculo perpétuo.</p>
+<p><b>3.4. Aprovação de Clientes e do Preço de Venda.</b> A FLEX ON reserva-se o direito de aprovar ou não, motivadamente, qualquer cliente captado, bem como o preço de venda proposto pelo PARCEIRO, antes da formalização do contrato com o cliente final. A recusa será comunicada em até 10 (dez) dias úteis, com justificativa razoável (conflito comercial, restrição cadastral, política de risco, preço que comprometa o posicionamento de marca, cliente pré-existente).</p>
+<p><b>3.5. Cliente Pré-existente.</b> Não será Venda Válida a apresentação de empresa que: (i) já seja cliente ativo ou inativo da FLEX ON na data do registro; (ii) já esteja em negociação ativa com a FLEX ON, comprovada por registro em CRM, proposta enviada ou troca de mensagens anterior ao registro; ou (iii) já tenha sido validamente registrada por outro parceiro. A FLEX ON comunicará em até 10 (dez) dias úteis, com elementos mínimos de comprovação.</p>
+<p><b>3.6. Registro Duplicado.</b> Caso dois ou mais parceiros registrem o mesmo cliente, prevalecerá o registro primeiro lançado na plataforma da FLEX ON. Em caso de dúvida, a FLEX ON decidirá com base nos registros disponíveis, facultada a apresentação de elementos adicionais em 10 (dez) dias úteis.</p>
+<p><b>3.7. Vedação à Autorrevenda e Conflitos de Interesse.</b> O PARCEIRO obriga-se a não registrar como cliente empresa em que ele próprio, seus sócios, administradores, cônjuges, ascendentes, descendentes ou pessoas relacionadas detenham participação societária, cargo de gestão ou interesse econômico relevante, salvo divulgação prévia, expressa e por escrito, sujeita à aprovação específica da FLEX ON. O descumprimento configura violação grave (Cláusula 9.4).</p>
+
+<h2>Cláusula Quarta – Da Remuneração do Parceiro (Margem por Repasse)</h2>
+<div class="box"><span class="tt">Modelo único de remuneração: margem</span>
+<i><b>Margem do Parceiro = Preço de Venda (definido pelo Parceiro e aprovado pela FLEX ON) menos Preço de Atacado do Anexo I.</b></i>
+<i style="margin-top:5px">Não existe, em nenhuma hipótese, comissão percentual de 15%, 20%, 25% ou qualquer outro percentual sobre os valores do Anexo I.</i></div>
+<p><b>4.1. Definição do Preço de Venda.</b> O PARCEIRO define livremente o preço de venda ao cliente final, observado o preço de atacado (parceiro) do Anexo I como piso (valor mínimo a ser garantido à FLEX ON) e a aprovação prévia do preço pela FLEX ON (Cláusula 3.4). A diferença positiva entre o preço de venda e o preço de atacado constitui a margem do PARCEIRO.</p>
+<p><b>4.2. Apuração e Repasse da Margem.</b> Como a FLEX ON fatura e recebe do cliente final (Cláusula Quinta), a FLEX ON reterá o valor de atacado do Anexo I e repassará ao PARCEIRO a margem correspondente a cada competência, na proporção do efetivamente recebido do cliente naquela competência.</p>
+<p><b>4.3. Recorrência.</b> Para planos em regime de assinatura ou cobrança recorrente, a margem será apurada e repassada mensalmente, incidindo sobre a receita mensal efetivamente recebida pela FLEX ON, e será devida enquanto cumulativamente: (i) este contrato estiver vigente; e (ii) o contrato do cliente estiver ativo e adimplido, inclusive em renovações automáticas ou tácitas. A cessação de qualquer dessas condições extingue o direito a novas competências, ressalvada a Cláusula Nona.</p>
+<p><b>4.4. Taxa de Setup.</b> A taxa de setup de cobrança única (Anexo I) para execução do RPS-1 compõe o preço e segue a mesma lógica: o valor de atacado da setup é retido pela FLEX ON e a diferença, se houver, integra a margem do PARCEIRO na competência em que efetivamente recebida.</p>
+<p><b>4.5. Renovação, Upsell, Cross-sell e Migração de Plano.</b> O PARCEIRO fará jus à margem também sobre: (i) renovações do contrato do cliente captado; (ii) migrações de plano; e (iii) contratações adicionais (upsell ou cross-sell) do cliente captado, desde que diretamente decorrentes da relação originada pelo PARCEIRO. Não serão remuneráveis contratações desvinculadas, originadas de unidades de negócio distintas, de relacionamento autônomo da FLEX ON ou de prospecção independente da FLEX ON ou de terceiros após a captação.</p>
+<p><b>4.6. Condição de Adimplemento.</b> O repasse da margem está condicionado ao efetivo ingresso das receitas no caixa da FLEX ON. Não haverá repasse sobre valores faturados e não recebidos, cancelados, objeto de chargeback, estorno ou restituição. Recebido valor inicialmente em atraso, a margem correspondente será repassada na competência seguinte ao recebimento. Não incide margem sobre multas, juros moratórios, encargos por inadimplemento ou reembolsos de despesas.</p>
+
+<h2>Cláusula Quinta – Do Faturamento, das Formas e Prazos de Pagamento</h2>
+<p><b>5.1. Faturamento ao Cliente Final (Modelo de Repasse).</b> A FLEX ON emite a nota fiscal de serviços ao cliente final, pelo valor cheio do preço de venda, e recebe diretamente do cliente. Este modelo é adotado por ser o de menor fricção tributária e por ser a FLEX ON a efetiva prestadora técnica dos serviços, evitando que o PARCEIRO fature serviço que não executa.</p>
+<p><b>5.2. Nota Fiscal do Parceiro.</b> O PARCEIRO emitirá nota fiscal de serviços em favor da FLEX ON, no valor da margem auferida em cada competência, sendo responsável por suas obrigações fiscais e tributárias conforme o regime a que estiver submetido. A FLEX ON poderá reter tributos na fonte quando legalmente exigível, fornecendo os comprovantes.</p>
+<p><b>5.3. Periodicidade.</b> As margens devidas serão apuradas mensalmente e repassadas pela FLEX ON até o 15º (décimo quinto) dia útil do mês subsequente ao mês em que a respectiva receita houver sido efetivamente recebida pela FLEX ON.</p>
+<p><b>5.4. Meios de Pagamento.</b> A FLEX ON poderá efetuar o repasse via split de pagamento em plataforma eletrônica ou via transferência bancária para conta de titularidade do PARCEIRO, indicada por escrito. Custos de transferência poderão ser descontados do montante devido.</p>
+<p><b>5.5. Relatórios e Contestação.</b> A FLEX ON disponibilizará ao PARCEIRO, com periodicidade mínima mensal, relatórios para conferência, contendo no mínimo: cliente, plano, mês de competência, número de colaboradores ativos, preço de venda, preço de atacado, valor bruto recebido e margem devida. Divergências deverão ser apontadas por escrito em até 60 (sessenta) dias do recebimento do relatório, presumindo-se relativamente a concordância na ausência de manifestação, admitida prova em contrário. A FLEX ON terá 30 (trinta) dias para responder.</p>
+<p><b>5.6. Direito de Auditoria.</b> O PARCEIRO poderá, mediante notificação prévia de 30 (trinta) dias e no máximo 1 (uma) vez por ano civil, solicitar auditoria independente dos registros estritamente relacionados ao cálculo das margens, por auditor idôneo sujeito a confidencialidade equivalente à Cláusula Décima. Os custos correrão por conta do PARCEIRO, salvo divergência superior a 5% (cinco por cento) em seu desfavor, hipótese em que serão suportados pela FLEX ON, com pagamento dos valores devidos corrigidos pelo IPCA.</p>
+
+<h2>Cláusula Sexta – Da Não Exclusividade e da Não Solicitação</h2>
+<p><b>6.1.</b> A presente parceria não é exclusiva para nenhuma das PARTES. O PARCEIRO não adquire exclusividade de território, mercado, segmento ou produto, podendo a FLEX ON livremente nomear outros parceiros, comercializar diretamente ou celebrar parcerias de qualquer natureza.</p>
+<p><b>6.2.</b> O PARCEIRO permanece livre para comercializar produtos e serviços de terceiros, ainda que correlatos, desde que sem uso indevido de Informações Confidenciais da FLEX ON (Cláusula Décima).</p>
+<p><b>6.3. Não Solicitação de Clientes da Carteira.</b> Durante a vigência e por 12 (doze) meses após a extinção, o PARCEIRO compromete-se a não abordar, contatar ativamente ou aliciar, direta ou indiretamente, os clientes de sua Carteira que tenham mantido contrato ativo com a FLEX ON em qualquer momento dos 12 (doze) meses anteriores ao contato, com o propósito de oferecer serviços concorrentes que substituam ou rescindam a contratação com a FLEX ON. Trata-se de obrigação de não solicitação, e não de não concorrência.</p>
+<p><b>6.4. Reciprocidade.</b> A FLEX ON, durante a vigência, compromete-se a manter o repasse da margem devida em relação aos clientes da Carteira ativos, sem buscar artifícios contratuais para descaracterizar a captação ou suprimir o direito à margem.</p>
+
+<h2>Cláusula Sétima – Do Uso de Marca e Identidade Corporativa</h2>
+<p><b>7.1.</b> A FLEX ON autoriza o PARCEIRO a utilizar sua marca e logotipo estritamente para identificação da parceria e divulgação dos produtos objeto deste contrato, observadas as diretrizes de branding fornecidas pela FLEX ON.</p>
+<p><b>7.2.</b> Poderá ser fornecido ao PARCEIRO endereço de e-mail vinculado ao domínio da FLEX ON e/ou materiais de identificação, exclusivamente para uso comercial relativo à oferta. O endereço identificará o PARCEIRO como parceiro externo, não configurando vínculo empregatício, societário ou de representação. O PARCEIRO obriga-se a apresentar-se sempre como parceiro independente, jamais como empregado, preposto, representante ou filial.</p>
+<p><b>7.3.</b> O PARCEIRO compromete-se a zelar pela imagem e reputação da marca FLEX ON, abstendo-se de qualquer ato que possa lesá-la.</p>
+<p><b>7.4.</b> Cessada a parceria, o PARCEIRO interromperá imediatamente o uso da marca, nome e demais sinais distintivos da FLEX ON e desativará o e-mail eventualmente concedido, no prazo de até 5 (cinco) dias úteis.</p>
+
+<h2>Cláusula Oitava – Da Conduta, Compliance e Ausência de Metas</h2>
+<p><b>8.1.</b> Não haverá imposição de metas mínimas obrigatórias ao PARCEIRO. A atuação dar-se-á de forma autônoma. A FLEX ON poderá sugerir metas ou implementar programas de premiação por desempenho, sem que isso configure obrigação de atingimento.</p>
+<p><b>8.2.</b> A ausência de metas não exime o PARCEIRO do compromisso de atuação de boa-fé na divulgação dos produtos da FLEX ON, sem que isso configure habitualidade ou mediação contínua de negócios para os fins da Lei 4.886/1965.</p>
+<p><b>8.3. Declarações de Compliance.</b> O PARCEIRO declara, sob as penas da lei, que: (i) não consta em listas de sanções nacionais ou internacionais (CEIS, CNEP, OFAC e equivalentes); (ii) seus titulares e administradores não são pessoas politicamente expostas sem conflito de interesse direto não divulgado; (iii) está regular perante o fisco federal, estadual e municipal; e (iv) não foi condenado, nos últimos 5 (cinco) anos, por atos lesivos à administração pública (Lei 12.846/2013). O PARCEIRO compromete-se a comunicar imediatamente qualquer alteração nas declarações acima.</p>
+<p><b>8.4.</b> O PARCEIRO compromete-se a observar padrões éticos compatíveis com os praticados pela FLEX ON, abstendo-se de fazer afirmações falsas, enganosas ou exageradas, prometer resultados não garantidos, ou comprometer-se em nome da FLEX ON sobre prazos, descontos ou condições não autorizadas previamente por escrito.</p>
+
+<h2>Cláusula Nona – Da Vigência e da Rescisão</h2>
+<p><b>9.1. Vigência (Prazo Determinado).</b> O presente contrato vigorará pelo prazo determinado de 12 (doze) meses, contados da data de sua assinatura, encerrando-se automaticamente ao término desse período, salvo se as PARTES, de comum acordo e por escrito, celebrarem aditivo de prorrogação. Os valores de referência do Anexo I são os praticados durante este período, observada a Cláusula 12.7.</p>
+<p><b>9.2. Rescisão Unilateral Imotivada.</b> Qualquer das PARTES poderá rescindir antecipadamente este contrato, mediante notificação por escrito com antecedência mínima de 30 (trinta) dias, sem incidência de multa.</p>
+<p><b>9.3. Rescisão por Inadimplemento.</b> No caso de descumprimento de obrigação essencial não sanado em 15 (quinze) dias após notificação por escrito, a parte inocente poderá considerar rescindido o contrato, conservando o direito de buscar reparação por perdas e danos.</p>
+<p><b>9.4. Rescisão Imediata.</b> Em caso de violação grave — incluindo violação de confidencialidade, uso indevido de marca, violação de propriedade intelectual, conduta antiética ou anticoncorrencial, fraude, atos lesivos à reputação da outra PARTE, descumprimento da Cláusula 3.7 (autorrevenda), 6.3 (não solicitação) ou 8.3 (compliance) — a rescisão poderá ser declarada imediata, independentemente de notificação prévia.</p>
+<p><b>9.5. Consequências do Término Natural, da Rescisão Imotivada e do Inadimplemento da FLEX ON (Tail Period).</b> Encerrado o contrato pelo decurso natural do prazo (9.1), rescindido de forma imotivada por qualquer das PARTES (9.2), ou rescindido pelo PARCEIRO por inadimplemento essencial não sanado da FLEX ON (9.3), aplicam-se exclusivamente: (i) a FLEX ON repassará ao PARCEIRO as margens já apuradas e ainda não pagas até a data do término; e (ii) quanto às margens recorrentes referentes a contratos de clientes da Carteira que permaneçam ativos, o PARCEIRO fará jus à manutenção por 12 (doze) meses contados do término (período de transição ou tail period), cessando definitivamente após esse prazo, inclusive quanto a renovações, upsell, cross-sell e migrações posteriores.</p>
+<p><b>9.6. Consequências da Rescisão por Culpa do PARCEIRO.</b> Em caso de rescisão por culpa exclusiva do PARCEIRO (9.4), cessam imediatamente os direitos a margens futuras, ainda que decorrentes de contratos previamente firmados, ressalvadas as margens já apuradas e não pagas. Tratando-se de inadimplemento essencial não sanado pelo PARCEIRO (9.3), a FLEX ON poderá, mediante decisão fundamentada e comunicada por escrito, propor a redução, suspensão ou extinção proporcional das margens futuras, observados: (i) demonstração documental do descumprimento; (ii) quantificação do prejuízo, quando aplicável; e (iii) proporcionalidade entre a medida e o impacto comercial. O PARCEIRO terá 15 (quinze) dias úteis para impugnar por escrito, com efeito suspensivo até a resolução pela Cláusula Décima Terceira, facultado às PARTES manter os valores em conta vinculada (escrow) até decisão final.</p>
+<p><b>9.7. Obrigações de Sobrevivência.</b> O término não prejudicará as obrigações de sobrevivência: confidencialidade (Cláusula Décima), proteção de dados (Cláusula Décima Primeira), propriedade intelectual (Cláusula Décima Quarta), não utilização indevida da marca (7.4), não solicitação (6.3), efeitos da vedação à autorrevenda (3.7), limite de responsabilidade (12.9) e créditos pendentes.</p>
+
+<h2>Cláusula Décima – Da Confidencialidade</h2>
+<p><b>10.1.</b> As PARTES obrigam-se mutuamente a manter sigilo e confidencialidade em relação a todas as informações obtidas uma da outra em decorrência deste contrato, sejam de natureza técnica, comercial, estratégica, financeira ou de qualquer outra espécie. Serão consideradas Informações Confidenciais todas as informações não públicas, incluindo softwares, códigos-fonte, algoritmos, estratégias de mercado, listas de clientes, dados pessoais, know-how, política de preços e carteira de clientes do PARCEIRO.</p>
+<p><b>10.2.</b> Cada PARTE utilizará as Informações Confidenciais da outra exclusivamente para os fins deste contrato, abstendo-se de divulgá-las a terceiros sem autorização prévia por escrito, exceto a empregados, prestadores e assessores que tenham necessidade de acesso e estejam vinculados a deveres de confidencialidade equivalentes.</p>
+<p><b>10.3. Exceções.</b> A obrigação não se aplicará a informações que: (a) já eram de conhecimento prévio lícito da parte receptora; (b) sejam ou se tornem de domínio público sem violação desta cláusula; (c) sejam legitimamente recebidas de terceiro não sujeito a sigilo; ou (d) cuja divulgação seja exigida por lei ou ordem judicial, caso em que a parte obrigada notificará prontamente a outra.</p>
+<p><b>10.4.</b> Após o término, cada PARTE restituirá ou destruirá todas as Informações Confidenciais tangíveis da outra que estejam em seu poder, mediante declaração formal de cumprimento.</p>
+<p><b>10.5.</b> A obrigação de confidencialidade vigorará durante a vigência do contrato e por mais 2 (dois) anos após sua extinção.</p>
+
+<h2>Cláusula Décima Primeira – Da Proteção de Dados (LGPD)</h2>
+<p><b>11.1.</b> As PARTES comprometem-se a cumprir rigorosamente a Lei Geral de Proteção de Dados (Lei nº 13.709/2018) no âmbito das atividades relacionadas a este contrato.</p>
+<p><b>11.2. Definição de Papéis.</b> Considerando que o PARCEIRO não tem acesso aos dados pessoais dos colaboradores das empresas clientes da FLEX ON: (a) a FLEX ON atuará como controladora dos dados pessoais tratados em decorrência da prestação dos serviços ao cliente final; e (b) o PARCEIRO atuará como controlador independente dos dados de contatos comerciais que ele mesmo coleta em suas atividades de prospecção (nome, e-mail e telefone de representantes de potenciais clientes), sendo individualmente responsável pelo cumprimento da LGPD em relação a tais dados.</p>
+<p><b>11.3. Obrigações Específicas do PARCEIRO.</b> O PARCEIRO compromete-se a: (i) coletar dados pessoais de potenciais clientes com base legal adequada, com transparência quanto à finalidade e ao compartilhamento com a FLEX ON; (ii) responder isoladamente por eventuais violações decorrentes de coleta irregular de dados de leads conduzida por ele próprio; e (iii) ressarcir e manter indene a FLEX ON, em direito de regresso, de qualquer reclamação, autuação, condenação ou indenização que esta venha a sofrer em razão exclusiva de irregularidade na coleta de dados conduzida pelo PARCEIRO. Esta cláusula opera entre as PARTES, sem prejuízo da responsabilidade direta de cada uma perante a ANPD, titulares de dados e terceiros.</p>
+<p><b>11.4.</b> Em caso de incidente de segurança envolvendo dados pessoais relacionados a este contrato, a PARTE responsável comunicará a outra imediatamente após a detecção, fornecendo as informações necessárias para avaliação da gravidade e cumprimento de eventuais obrigações de reporte à ANPD e aos titulares.</p>
+<p><b>11.5.</b> As obrigações desta cláusula permanecem vigentes após o término do contrato, enquanto as PARTES estiverem na posse de dados pessoais obtidos em decorrência da parceria.</p>
+
+<h2>Cláusula Décima Segunda – Das Disposições Gerais</h2>
+<p><b>12.1.</b> Este contrato, juntamente com seus Anexos, representa a íntegra das condições acordadas entre as PARTES. Qualquer modificação somente terá validade se efetuada por escrito e assinada por ambas as PARTES.</p>
+<p><b>12.2.</b> A tolerância de qualquer das PARTES quanto ao descumprimento de cláusula pela outra não constituirá renúncia, novação ou alteração das obrigações pactuadas.</p>
+<p><b>12.3.</b> Caso qualquer cláusula venha a ser declarada inválida, ineficaz ou inexequível, as demais permanecerão válidas e em pleno vigor, comprometendo-se as PARTES a, de boa-fé, substituí-la por outra de efeitos econômicos equivalentes.</p>
+<p><b>12.4.</b> As PARTES elegem os endereços indicados no preâmbulo para todas as notificações formais, sendo válidas também as notificações enviadas por e-mail aos endereços corporativos previamente indicados, com confirmação de recebimento.</p>
+<p><b>12.5. Cessão.</b> O PARCEIRO não poderá ceder este contrato, no todo ou em parte, sem prévia anuência por escrito da FLEX ON. A FLEX ON poderá ceder este contrato a sociedades de seu grupo econômico, mediante comunicação ao PARCEIRO, permanecendo solidariamente responsável pelas obrigações cedidas, salvo anuência expressa do PARCEIRO quanto à exoneração, que não poderá ser injustificadamente recusada.</p>
+<p><b>12.6. Caso Fortuito e Força Maior.</b> Nenhuma das PARTES será responsabilizada por atraso ou descumprimento decorrente de caso fortuito ou força maior, nos termos do art. 393 do Código Civil.</p>
+<p><b>12.7. Reajuste.</b> Os valores de referência do Anexo I poderão ser reajustados pela FLEX ON, mediante comunicação por escrito com antecedência mínima de 30 (trinta) dias, na hipótese de prorrogação do contrato por novo período de 12 (doze) meses, com base na variação acumulada do IPCA/IBGE ou índice que vier a substituí-lo. Durante o prazo determinado original, os valores permanecerão inalterados, salvo acordo entre as PARTES. O reajuste do preço de atacado impacta o piso da margem.</p>
+<p><b>12.8. Anticorrupção.</b> As PARTES declaram que conduzirão suas atividades em estrita conformidade com a legislação anticorrupção aplicável, incluindo a Lei 12.846/2013 e a Lei 9.613/1998, comprometendo-se a não oferecer, prometer ou dar, direta ou indiretamente, vantagem indevida a agente público ou pessoa a ele relacionada. A violação desta cláusula constitui motivo para rescisão imediata.</p>
+<p><b>12.9. Limite de Responsabilidade.</b> Exceto nos casos de dolo, fraude, violação de propriedade intelectual (Cláusula Décima Quarta) ou descumprimento de confidencialidade (Cláusula Décima), a responsabilidade total de cada PARTE por danos decorrentes deste contrato ficará limitada ao montante total efetivamente pago ou recebido pela PARTE infratora nos 12 (doze) meses anteriores ao evento que deu origem à reclamação. Esta limitação não se aplica a danos causados a terceiros por violação da LGPD.</p>
+
+<h2>Cláusula Décima Terceira – Da Resolução de Conflitos e do Foro</h2>
+<p><b>13.1.</b> As PARTES comprometem-se a tentar resolver amigavelmente quaisquer controvérsias, mediante negociação direta entre seus representantes, no prazo de 15 (quinze) dias úteis contados da comunicação do impasse.</p>
+<p><b>13.2.</b> Frustrada a negociação direta, as PARTES poderão submeter a controvérsia a mediação, conforme a Lei 13.140/2015, perante câmara de mediação sediada em Goiânia/GO.</p>
+<p><b>13.3.</b> Para dirimir quaisquer questões não resolvidas por negociação ou mediação, as PARTES, declarando ter livremente discutido e aderido a esta cláusula em paridade de condições, elegem o Foro da Comarca de Goiânia – GO, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
+
+<h2>Cláusula Décima Quarta – Da Propriedade Intelectual</h2>
+<p><b>14.1.</b> Todos os direitos de propriedade intelectual relativos a softwares, plataformas, metodologias, conteúdos, marcas, patentes e demais ativos intangíveis da FLEX ON, incluindo, mas não se limitando a RPS-1, Enxoval de Documentação NR-1, Flex ON Edu, Canal de Denúncias e MEV 360, são e permanecerão de titularidade exclusiva da FLEX ON.</p>
+<p><b>14.2.</b> Considerando que o PARCEIRO atua como revendedor por repasse, eventual acesso a materiais de marketing, apresentações comerciais e demonstrações de plataforma se dá em caráter estritamente promocional, sob licença de uso não exclusiva, intransferível e revogável, limitada ao território brasileiro e à vigência deste contrato.</p>
+<p><b>14.3.</b> O PARCEIRO compromete-se a não reproduzir, copiar, modificar, adaptar, traduzir, descompilar, realizar engenharia reversa ou criar obras derivadas dos softwares, plataformas e materiais da FLEX ON, sob pena de rescisão imediata e responsabilização civil e criminal.</p>
+<p><b>14.4.</b> Cessada a parceria, o PARCEIRO perderá imediatamente o direito de acesso e uso dos materiais e plataformas, devendo a FLEX ON desativar todos os acessos eventualmente concedidos.</p>
+
+<p style="margin-top:22px">E, por estarem assim justas e contratadas, as PARTES assinam o presente instrumento em 2 (duas) vias de igual teor e forma, na presença de 2 (duas) testemunhas.</p>
+
+<p style="margin-top:18px">Goiânia/GO, ${hoje.getDate()} de ${MESES[hoje.getMonth()]} de ${hoje.getFullYear()}.</p>
+
+<div class="sigs">
+  <div><div class="sigline">FLEX ON LTDA</div><small>CNPJ: 56.067.342/0001-83</small><em>Rep. Legal: André Velloso Macêdo</em></div>
+  <div><div class="sigline">${nomeOuBranco}</div><small>CNPJ: ${br('150px')}</small><em>Rep. Legal: ${br('170px')}</em></div>
+</div>
+
+<div class="test"><b>Testemunhas:</b>
+  <div class="linha">
+    <div><div class="sigline" style="font-weight:400">&nbsp;</div>Nome: ${br('170px')}<br>CPF: ${br('170px')}</div>
+    <div><div class="sigline" style="font-weight:400">&nbsp;</div>Nome: ${br('170px')}<br>CPF: ${br('170px')}</div>
+  </div>
+</div>
+
+<div class="pb"></div>
+<h1 style="margin-top:30px">ANEXO I — TABELA DE PREÇOS DE ATACADO (PARCEIRO)</h1>
+<div class="sub">Parte integrante do Contrato de Parceria Comercial.</div>
+<div class="rule"></div>
+<p><b>Data de referência da tabela:</b> maio de 2026. Os valores abaixo correspondem aos preços de atacado (parceiro) já travados — o valor que a FLEX ON deve efetivamente receber por plano, vigentes durante o prazo determinado de 12 (doze) meses deste contrato. O preço de venda ao cliente final é definido pelo PARCEIRO (sujeito à aprovação da FLEX ON, Cláusula 3.4); a margem do PARCEIRO é a diferença entre o preço de venda e o preço de atacado abaixo. Para 0 a 100 colaboradores, os valores indicados são mensalidades fixas; para as demais faixas, são por colaborador, multiplicados pela quantidade de colaboradores ativos no contrato.</p>
+
+<div class="box"><span class="tt">Nota</span>
+<i>Não se aplica sobre esta tabela qualquer percentual de comissão de 15%, 20%, 25% ou similar. Os percentuais foram removidos do contrato. Estes são preços de atacado fechados; a remuneração do PARCEIRO é a margem (Cláusula Quarta).</i></div>
+
+<h3>1. Preços por faixa de colaboradores e por plano (atacado)</h3>
+<table>
+  <tr><th>Faixa de Colaboradores</th><th>Diagnóstico</th><th>Essencial</th><th>Gestão &amp; Engajamento</th></tr>
+  <tr><td><b>0 – 25 (fixo/mês)</b></td><td>R$ 180,00</td><td>R$ 250,00</td><td>R$ 450,00</td></tr>
+  <tr><td><b>25 – 50 (fixo/mês)</b></td><td>R$ 200,00</td><td>R$ 300,00</td><td>R$ 550,00</td></tr>
+  <tr><td><b>50 – 100 (fixo/mês)</b></td><td>R$ 220,00</td><td>R$ 340,00</td><td>R$ 720,00</td></tr>
+  <tr><td><b>100 – 200 (por colab.)</b></td><td>R$ 2,35</td><td>R$ 3,65</td><td>R$ 7,50</td></tr>
+  <tr><td><b>200 – 500 (por colab.)</b></td><td>R$ 2,05</td><td>R$ 3,40</td><td>R$ 6,50</td></tr>
+  <tr><td><b>500 – 1.000 (por colab.)</b></td><td>R$ 1,80</td><td>R$ 3,15</td><td>R$ 5,50</td></tr>
+  <tr><td><b>1.000+ (por colab.)</b></td><td>R$ 1,60</td><td>R$ 2,90</td><td>R$ 4,50</td></tr>
+</table>
+
+<p><b>Taxa de setup:</b> cobrança única de R$ 300,00 (atacado) para execução do RPS-1, aplicável a todos os planos.</p>
+<p style="margin-left:16px">• <b>Plano Diagnóstico:</b> RPS-1 + Enxoval de Documentação NR-1 + Canal de Denúncias.<br>
+• <b>Plano Essencial:</b> tudo do Diagnóstico + Flex ON Edu.<br>
+• <b>Plano Gestão &amp; Engajamento:</b> tudo do Essencial + MEV 360 (programa contínuo de 12 meses com gamificação).</p>
+
+<h3>2. Remuneração do PARCEIRO — Margem por Repasse</h3>
+<div class="box">
+<i><b>Margem do Parceiro = Preço de Venda (definido pelo Parceiro, aprovado pela FLEX ON) menos Preço de Atacado (tabela acima).</b></i>
+<i style="margin-top:5px">A margem é apurada e repassada por competência, sobre o valor efetivamente recebido pela FLEX ON do cliente, conforme a Cláusula Quarta. Não há faixas de comissão nem percentuais progressivos.</i></div>
+
+<p style="margin-top:14px">Os valores acima poderão ser reajustados em caso de prorrogação do contrato, conforme Cláusula 12.7.</p>
+
+<div class="sigs">
+  <div><div class="sigline">FLEX ON LTDA</div></div>
+  <div><div class="sigline">${nomeOuBranco}</div></div>
+</div>
 </body></html>`;
+
   const w = window.open('', '_blank'); if (!w) { alert('Permita pop-ups.'); return; }
   w.document.write(html); w.document.close();
   const p = _parcAtual();
