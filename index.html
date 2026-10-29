@@ -2658,7 +2658,7 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
   <div class="modal" style="max-width:780px">
     <div class="modal-header">
       <div>
-        <div class="modal-title"><svg class="ic"><use href="#i-repeat"/></svg> Onboarding NR-1</div>
+        <div class="modal-title"><svg class="ic"><use href="#i-repeat"/></svg> Status do projeto</div>
         <div class="modal-subtitle" id="onbEmpresa">—</div>
       </div>
       <button class="modal-close" onclick="closeModal('onboardingModal')">✕</button>
@@ -4282,9 +4282,9 @@ function openDetail(id) {
         <div><div class="form-label" style="margin:0">Data de contratação</div><div class="form-value">${fmtDataBR(dataContratacaoLead(l))}</div></div>
         <div><div class="form-label" style="margin:0">Pacote</div><div class="form-value">${l.pacote || '—'}</div></div>
         <div><div class="form-label" style="margin:0">Valor mensal</div><div class="form-value" style="color:var(--green);font-weight:700">${fmtV(l.valor_fechado||l.valor_estimado)}</div></div>
-        <div><div class="form-label" style="margin:0">Onboarding</div><div class="form-value">${onb ? `<span class="badge badge-${onb.pct>=100?'fechado':'novo'}">${onb.label} · ${onb.pct}%</span>` : `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="closeModal('detailModal');abrirOnboarding('${l.id}')">Iniciar onboarding</button>`}</div></div>
+        <div><div class="form-label" style="margin:0">Status do projeto</div><div class="form-value">${onb ? `<span class="badge badge-${onb.pct>=100?'fechado':'novo'}">${onb.label} · ${onb.pct}%</span>` : `<button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="closeModal('detailModal');abrirOnboarding('${l.id}')">Iniciar acompanhamento</button>`}</div></div>
       </div>
-      ${onb ? `<button class="btn-secondary" style="margin-top:10px;padding:6px 12px;font-size:11.5px" onclick="closeModal('detailModal');abrirOnboarding('${l.id}')">Ver onboarding</button>` : ''}
+      ${onb ? `<button class="btn-secondary" style="margin-top:10px;padding:6px 12px;font-size:11.5px" onclick="closeModal('detailModal');abrirOnboarding('${l.id}')">Ver status do projeto</button>` : ''}
       <div class="modal-grid" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
         <div class="form-group"><div class="form-label">Contato</div><div class="form-value">${l.nome_contato || '—'}${l.cargo ? ' · '+l.cargo : ''}</div></div>
         <div class="form-group"><div class="form-label">Telefone</div><div class="form-value">${l.telefone || '—'}</div></div>
@@ -5429,7 +5429,7 @@ function renderAtivos() {
   if (cxr) cxr.innerHTML = podeB2G() ? `<button class="btn-vip" onclick="switchAppView('financeiro')"><svg class="ic"><use href="#i-money"/></svg> ★ Ambiente Financeiro</button>` : '';
   const body = document.getElementById('ativosBody'); if (!body) return;
   const tabCli = clientes.length ? `<div class="table-wrap" style="margin-top:6px"><table>
-    <thead><tr><th>Cliente</th><th>Contato</th><th>Pacote</th><th>Valor mensal</th><th>Contratação</th><th>Onboarding</th><th></th></tr></thead>
+    <thead><tr><th>Cliente</th><th>Contato</th><th>Pacote</th><th>Valor mensal</th><th>Contratação</th><th>Status do projeto</th><th></th></tr></thead>
     <tbody>${clientes.map(l => { const onb = onboardingStatusAtual(l); const temContrato = (l.documentos||[]).some(d=>d.tipo==='Contrato'); return `<tr onclick="openDetail('${l.id}')">
       <td><div class="td-empresa">${l.empresa}</div><div class="td-contato">${l.cidade||''}</div></td>
       <td>${l.nome_contato||'—'}</td><td>${l.pacote||'—'}</td>
@@ -5438,7 +5438,7 @@ function renderAtivos() {
       <td>${onb ? `<span class="badge badge-${onb.pct>=100?'fechado':'novo'}" style="font-size:10.5px">${onb.label} · ${onb.pct}%</span>` : '<span style="color:var(--text3);font-size:11px">não iniciado</span>'}</td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();openDetail('${l.id}');setTimeout(abrirContrato,150)">${temContrato ? 'Editar contrato' : 'Contrato'}</button>
-        <button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();abrirOnboarding('${l.id}')">${l.onboarding ? 'Ver onboarding' : 'Iniciar onboarding'}</button>
+        <button class="btn-secondary" style="padding:6px 11px;font-size:11px" onclick="event.stopPropagation();abrirOnboarding('${l.id}')">${l.onboarding ? 'Ver status do projeto' : 'Iniciar acompanhamento'}</button>
       </td>
     </tr>`; }).join('')}</tbody></table></div>` : '<div style="color:var(--text3);font-size:13px;padding:16px">Nenhum cliente fechado ainda.</div>';
   const tabParc = parc.length ? `<div class="table-wrap" style="margin-top:16px"><table>
@@ -5476,7 +5476,7 @@ const ONBOARDING_TEMPLATES = {
 
   // ── Pacote Diagnóstico: mesma base FeComércio, sem Flex ON Edu ──
   diagnostico: [
-    { fase: 'Fase 1 — Onboarding', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
+    { fase: 'Fase 1 — Início do projeto', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
       { texto: 'Reunião de Kickoff — alinhar comitê, cronograma de 120 dias e responsáveis (RH, SESMT, CIPA, diretor)', prazo: 'Dia 1', dica: 'Coletar: organograma/GHEs, histórico de afastamentos, PGR/PCMSO vigentes. Agende em até 48h após a assinatura.' },
       { texto: 'DOC01 — Ficha de Identificação + Critérios GRO (CNPJ, GHEs, severidade/probabilidade)', prazo: 'D+2', dica: 'Levante CNAE, setores, nº de colaboradores por GHE e os critérios que vão pontuar severidade × probabilidade.' },
       { texto: 'DOC15 — Cronograma de Implantação 120 dias com prazos e marcos', prazo: 'D+2', dica: 'Gere o cronograma com datas reais (não genéricas) e envie por e-mail ao ponto focal do cliente.' },
@@ -5524,7 +5524,7 @@ const ONBOARDING_TEMPLATES = {
 
   // ── Pacote Essencial: base completa FeComércio + Flex ON Edu ──
   essencial: [
-    { fase: 'Fase 1 — Onboarding', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
+    { fase: 'Fase 1 — Início do projeto', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
       { texto: 'Reunião de Kickoff — alinhar comitê, cronograma de 120 dias e responsáveis (RH, SESMT, CIPA, diretor)', prazo: 'Dia 1', dica: 'Coletar: organograma/GHEs, histórico de afastamentos, PGR/PCMSO vigentes. Agende em até 48h após a assinatura.' },
       { texto: 'DOC01 — Ficha de Identificação + Critérios GRO (CNPJ, GHEs, severidade/probabilidade)', prazo: 'D+2', dica: 'Levante CNAE, setores, nº de colaboradores por GHE e os critérios que vão pontuar severidade × probabilidade.' },
       { texto: 'DOC15 — Cronograma de Implantação 120 dias com prazos e marcos', prazo: 'D+2', dica: 'Gere o cronograma com datas reais (não genéricas) e envie por e-mail ao ponto focal do cliente.' },
@@ -5573,7 +5573,7 @@ const ONBOARDING_TEMPLATES = {
 
   // ── Pacote Gestão e Engajamento: base completa + Flex ON Edu + MEV360 ──
   gestao: [
-    { fase: 'Fase 1 — Onboarding', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
+    { fase: 'Fase 1 — Início do projeto', dias: 'Dias 1–5', responsavel: 'CS Flex ON', passos: [
       { texto: 'Reunião de Kickoff — alinhar comitê, cronograma de 120 dias e responsáveis (RH, SESMT, CIPA, diretor)', prazo: 'Dia 1', dica: 'Coletar: organograma/GHEs, histórico de afastamentos, PGR/PCMSO vigentes. Agende em até 48h após a assinatura.' },
       { texto: 'DOC01 — Ficha de Identificação + Critérios GRO (CNPJ, GHEs, severidade/probabilidade)', prazo: 'D+2', dica: 'Levante CNAE, setores, nº de colaboradores por GHE e os critérios que vão pontuar severidade × probabilidade.' },
       { texto: 'DOC15 — Cronograma de Implantação 120 dias com prazos e marcos', prazo: 'D+2', dica: 'Gere o cronograma com datas reais (não genéricas) e envie por e-mail ao ponto focal do cliente.' },
