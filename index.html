@@ -396,6 +396,41 @@
     background-repeat: no-repeat;
     background-position: right 10px center;
   }
+  .filter-multi { position: relative; display: inline-block; }
+  button.filter-multi-btn {
+    padding: 7px 26px 7px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    font-size: 12px;
+    background: var(--surface2);
+    color: var(--text2);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s;
+    font-family: inherit;
+    text-align: left;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  button.filter-multi-btn.ativo { border-color: var(--primary); color: var(--text); font-weight: 600; }
+  .filter-multi-menu {
+    display: none; position: absolute; z-index: 60; top: calc(100% + 5px); left: 0;
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 11px;
+    padding: 7px; min-width: 200px; box-shadow: 0 12px 30px rgba(0,0,0,.14);
+  }
+  .filter-multi-menu.aberto { display: block; }
+  .filter-multi-menu label {
+    display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 7px;
+    font-size: 12.5px; color: var(--text2); cursor: pointer; white-space: nowrap;
+  }
+  .filter-multi-menu label:hover { background: var(--surface2); }
+  .filter-multi-menu input { accent-color: var(--primary); width: 14px; height: 14px; cursor: pointer; }
+  .filter-multi-menu .limpar {
+    width: 100%; margin-top: 4px; padding: 6px; border: none; border-top: 1px solid var(--border);
+    background: none; color: var(--text3); font-size: 11.5px; cursor: pointer; font-family: inherit;
+  }
+  .filter-multi-menu .limpar:hover { color: var(--primary); }
   select.filter:focus {
     border-color: var(--primary);
     color: var(--text);
@@ -2004,7 +2039,10 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
       <button class="btn-meus-leads" id="btnMeusLeadsFec" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Só os meus</button>
       <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
       <select class="filter" id="fecFiltroDono" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os responsáveis</option><option value="__pool">Sem responsável (pool)</option></select>
-      <select class="filter" id="fecFiltroEtapa" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as etapas</option></select>
+      <div class="filter-multi" id="fecEtapaWrap">
+        <button type="button" class="filter-multi-btn" id="fecEtapaBtn" onclick="toggleMenuEtapas(event)">Todas as etapas</button>
+        <div class="filter-multi-menu" id="fecEtapaMenu"></div>
+      </div>
       <select class="filter" id="fecFiltroPlano" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os planos</option></select>
       <select class="filter" id="fecFiltroMes" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as datas</option></select>
     </div>
@@ -5217,11 +5255,50 @@ async function setFecCampo(id, campo, valor) {
 }
 
 let _fecPagina = 1;
+// Filtro de etapa aceita VÁRIAS etapas ao mesmo tempo (vazio = todas).
+let _fecEtapasSel = new Set();
+
+function montarMenuEtapas() {
+  const menu = document.getElementById('fecEtapaMenu'); if (!menu || menu.dataset.pronto) return;
+  menu.innerHTML = FEC_ETAPAS.map(e => `
+    <label><input type="checkbox" value="${e}" onchange="alternarEtapa(this.value, this.checked)">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${FEC_COR_ETAPA[e]}"></span>${e}</label>`).join('')
+    + `<button type="button" class="limpar" onclick="limparEtapas()">Limpar seleção</button>`;
+  menu.dataset.pronto = '1';
+}
+function toggleMenuEtapas(ev) {
+  ev.stopPropagation();
+  montarMenuEtapas();
+  document.getElementById('fecEtapaMenu').classList.toggle('aberto');
+}
+function alternarEtapa(etapa, marcada) {
+  if (marcada) _fecEtapasSel.add(etapa); else _fecEtapasSel.delete(etapa);
+  _fecPagina = 1; renderFecomercio();
+}
+function limparEtapas() {
+  _fecEtapasSel.clear();
+  document.querySelectorAll('#fecEtapaMenu input').forEach(i => { i.checked = false; });
+  _fecPagina = 1; renderFecomercio();
+}
+function rotuloEtapasSel() {
+  const n = _fecEtapasSel.size;
+  if (!n) return 'Todas as etapas';
+  if (n === 1) return [..._fecEtapasSel][0];
+  if (n === FEC_ETAPAS.length) return 'Todas as etapas';
+  return n + ' etapas selecionadas';
+}
+// fecha o menu ao clicar fora
+document.addEventListener('click', e => {
+  const m = document.getElementById('fecEtapaMenu');
+  if (m && m.classList.contains('aberto') && !e.target.closest('#fecEtapaWrap')) m.classList.remove('aberto');
+});
+
 function renderFecomercio() {
   if (_perfisFec === null) carregarPerfisFec();
   const bq = (document.getElementById('fecBusca')?.value || '').trim().toLowerCase();
-  const fEt = document.getElementById('fecFiltroEtapa')?.value || '';
   const fPl = document.getElementById('fecFiltroPlano')?.value || '';
+  const btnEt = document.getElementById('fecEtapaBtn');
+  if (btnEt) { btnEt.textContent = rotuloEtapasSel(); btnEt.classList.toggle('ativo', _fecEtapasSel.size > 0 && _fecEtapasSel.size < FEC_ETAPAS.length); }
   const fDo = document.getElementById('fecFiltroDono')?.value || '';
   const todasFec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado');
   const mesesFec = [...new Set(todasFec.map(l => String(l.data_adicao || '').slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m)))].sort();
@@ -5231,7 +5308,7 @@ function renderFecomercio() {
     && (!_soMeusLeads || souDono(l))
     && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
     && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
-    && (!fEt || fecEtapa(l) === fEt)
+    && (!_fecEtapasSel.size || _fecEtapasSel.has(fecEtapa(l)))
     && (!fPl || fecPlano(l) === fPl)
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
              || (l.cidade||'').toLowerCase().includes(bq) || (l.email||'').toLowerCase().includes(bq)
@@ -5239,8 +5316,6 @@ function renderFecomercio() {
   const cnt = document.getElementById('fecCount'); if (cnt) cnt.textContent = fec.length;
 
   // popula os selects de filtro uma vez
-  const selEt = document.getElementById('fecFiltroEtapa');
-  if (selEt && selEt.options.length === 1) FEC_ETAPAS.forEach(e => selEt.add(new Option(e, e)));
   const selPl = document.getElementById('fecFiltroPlano');
   if (selPl && selPl.options.length === 1) FEC_PLANOS.forEach(p => selPl.add(new Option(p, p)));
   const selDo = document.getElementById('fecFiltroDono');
@@ -5312,14 +5387,13 @@ function irParaPaginaFec(p) { _fecPagina = p; renderFecomercio(); }
 async function assumirFiltradosFec() {
   const u = window.CAPTURA.user; if (!u || !sb) return;
   const bq = (document.getElementById('fecBusca')?.value || '').trim().toLowerCase();
-  const fEt = document.getElementById('fecFiltroEtapa')?.value || '';
   const fPl = document.getElementById('fecFiltroPlano')?.value || '';
   const fDo = document.getElementById('fecFiltroDono')?.value || '';
   const fMe = document.getElementById('fecFiltroMes')?.value || '';
   const alvo = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado' && !l.dono
     && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
     && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
-    && (!fEt || fecEtapa(l) === fEt) && (!fPl || fecPlano(l) === fPl)
+    && (!_fecEtapasSel.size || _fecEtapasSel.has(fecEtapa(l))) && (!fPl || fecPlano(l) === fPl)
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
              || (l.cidade||'').toLowerCase().includes(bq) || (l.email||'').toLowerCase().includes(bq)
              || (l.notas||'').toLowerCase().includes(bq)));
