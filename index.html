@@ -1997,16 +1997,17 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
         <div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> Base FECOMERCIO</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddFecomercio()">+ Nova empresa FECOMERCIO</button>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
-        <button class="btn-meus-leads" id="btnMeusLeadsFec" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Só os meus</button>
-        <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
-        <select class="filter" id="fecFiltroDono" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os responsáveis</option><option value="__pool">Sem responsável (pool)</option></select>
-        <select class="filter" id="fecFiltroEtapa" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as etapas</option></select>
-        <select class="filter" id="fecFiltroPlano" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os planos</option></select>
-      </div>
     </div>
     <div class="hoje-stats" id="fecStats" style="margin-top:14px"></div>
     <div id="fecAcoesLote" style="margin-top:10px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px">
+      <button class="btn-meus-leads" id="btnMeusLeadsFec" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Só os meus</button>
+      <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
+      <select class="filter" id="fecFiltroDono" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os responsáveis</option><option value="__pool">Sem responsável (pool)</option></select>
+      <select class="filter" id="fecFiltroEtapa" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as etapas</option></select>
+      <select class="filter" id="fecFiltroPlano" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os planos</option></select>
+      <select class="filter" id="fecFiltroMes" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as datas</option></select>
+    </div>
     <div class="table-wrap" style="margin-top:8px">
       <table>
         <thead><tr><th>Empresa</th><th>Cidade</th><th>Contato</th><th>Responsável</th><th>Plano</th><th>Etapa</th><th>Substatus</th></tr></thead>
@@ -2054,6 +2055,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input class="filter filter-search" id="b2gBusca" type="text" placeholder="Buscar licitação..." oninput="renderB2G()" style="min-width:170px">
+        <select class="filter" id="b2gFiltroMes" onchange="renderB2G()"><option value="">Todos os prazos</option></select>
         <button class="btn-primary" onclick="toggleCredVault()"><svg class="ic" style="stroke:#fff"><use href="#i-id"/></svg> Credenciais Flex ON</button>
       </div>
     </div>
@@ -2361,6 +2363,15 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
           <div class="form-value" id="modalProximoPassoDisplay">—</div>
         </div>
       </div>
+      <div class="form-group full" id="anotacoesBox" style="margin:4px 0 16px">
+        <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span>Anotações</span>
+          <button type="button" class="btn-secondary" style="padding:4px 11px;font-size:11px" onclick="salvarAnotacoes()">Salvar anotações</button>
+        </label>
+        <textarea class="form-textarea" id="perfilAnotacoes" style="min-height:92px" placeholder="Observações sobre este cliente: o que foi conversado, pendências, preferências, quem decide..."></textarea>
+        <div id="anotacoesMeta" class="section-sub" style="margin-top:6px;display:none;font-size:11.5px"></div>
+      </div>
+
       <div class="stage-actions" id="stageActionsBox">
         <span class="stage-actions-label">Avançar etapa:</span>
         <button class="stage-btn" onclick="avancarStatus('Contatado')">Contatado</button>
@@ -3037,6 +3048,59 @@ Se objeção "já temos SST/PGR":
 "Ótimo — o PGR/PCMSO cobre a parte física. A camada psicossocial da NR-1 é nova e separada; é justamente o que a gente completa, sem refazer o que vocês já têm."`;
 
   return base;
+}
+
+// ── DATAS: rótulo de mês e leitura de prazo ───────────────────────────────────
+const MES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const rotuloMes = ym => { const [a, m] = String(ym).split('-'); return (MES_PT[+m - 1] || '?') + '/' + a; };
+const mesAtualYM = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+// o prazo pode vir ISO (robô do PNCP) ou dd/mm[/aaaa] (cadastro manual) — normaliza p/ AAAA-MM
+function prazoParaMes(p) {
+  const t = String(p || '').trim();
+  let m = t.match(/^(\d{4})-(\d{2})-\d{2}/);
+  if (m) return m[1] + '-' + m[2];
+  m = t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?/);
+  if (m) return (m[3] || String(new Date().getFullYear())) + '-' + String(+m[2]).padStart(2, '0');
+  return '';
+}
+// preenche um <select> de meses sem perder o que já estava escolhido
+function preencherSelectMeses(el, meses, rotuloVazio) {
+  if (!el) return;
+  const atual = el.value;
+  const quer = [''].concat(meses);
+  const tem = [...el.options].map(o => o.value);
+  if (JSON.stringify(tem) === JSON.stringify(quer)) return;
+  el.innerHTML = `<option value="">${rotuloVazio}</option>` +
+    meses.map(m => `<option value="${m}">${rotuloMes(m)}${m === mesAtualYM() ? ' (mês atual)' : ''}</option>`).join('');
+  if (quer.includes(atual)) el.value = atual;
+}
+
+// ── ANOTAÇÕES DO CADASTRO ─────────────────────────────────────────────────────
+// A 1ª linha de `notas` pode ser metadado da importação (base FECOMERCIO, robô).
+// As anotações da equipe são o que vem DEPOIS dela, então nada da importação se perde.
+function separarNotas(l) {
+  const bruto = (l && l.notas) || '';
+  const i = bruto.indexOf('\n');
+  const primeira = i === -1 ? bruto : bruto.slice(0, i);
+  const ehMeta = /^(\[FECOMERCIO\]|\[QUENTE\]|\[EDU\]|🔎|✅|⚠)/.test(primeira.trim());
+  return ehMeta ? { meta: primeira, anotacoes: i === -1 ? '' : bruto.slice(i + 1) }
+                : { meta: '', anotacoes: bruto };
+}
+async function salvarAnotacoes() {
+  const l = leads.find(x => x.id === currentLeadId); if (!l) return;
+  const { meta } = separarNotas(l);
+  const txt = (document.getElementById('perfilAnotacoes').value || '').trim();
+  l.notas = meta ? (txt ? meta + '\n' + txt : meta) : txt;
+  save();
+  if (sb) {
+    try {
+      const { error } = await sb.from('leads').update({ notas: l.notas }).eq('id', l.id);
+      if (error) throw error;
+    } catch (e) { console.warn(e); showToast('⚠ Não foi possível salvar na nuvem'); return; }
+  }
+  const ed = document.getElementById('editNotas'); if (ed) ed.value = l.notas;
+  renderLeads();
+  showToast('✓ Anotações salvas');
 }
 
 // ── PLANO DE HOJE ─────────────────────────────────────────────────────────────
@@ -4050,6 +4114,16 @@ function openDetail(id) {
   document.getElementById('modalStatusDisplay').innerHTML =
     `<span class="badge badge-${STATUS_COLORS[l.status]||'novo'}">${l.status}</span>`;
   document.getElementById('modalProximoPassoDisplay').textContent = l.proximo_passo || '—';
+
+  // Aba Perfil — Anotações (separadas do metadado de importação)
+  const sepNotas = separarNotas(l);
+  const anotEl = document.getElementById('perfilAnotacoes');
+  if (anotEl) anotEl.value = sepNotas.anotacoes;
+  const metaEl = document.getElementById('anotacoesMeta');
+  if (metaEl) {
+    metaEl.style.display = sepNotas.meta ? '' : 'none';
+    metaEl.textContent = sepNotas.meta ? 'Dados da importação: ' + sepNotas.meta : '';
+  }
 
   // Aba Script — gerar automaticamente
   const scripts = generateScript(l);
@@ -5149,8 +5223,13 @@ function renderFecomercio() {
   const fEt = document.getElementById('fecFiltroEtapa')?.value || '';
   const fPl = document.getElementById('fecFiltroPlano')?.value || '';
   const fDo = document.getElementById('fecFiltroDono')?.value || '';
+  const todasFec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado');
+  const mesesFec = [...new Set(todasFec.map(l => String(l.data_adicao || '').slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m)))].sort();
+  preencherSelectMeses(document.getElementById('fecFiltroMes'), mesesFec, 'Todas as datas');
+  const fMe = document.getElementById('fecFiltroMes')?.value || '';
   const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado'
     && (!_soMeusLeads || souDono(l))
+    && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
     && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
     && (!fEt || fecEtapa(l) === fEt)
     && (!fPl || fecPlano(l) === fPl)
@@ -5236,7 +5315,9 @@ async function assumirFiltradosFec() {
   const fEt = document.getElementById('fecFiltroEtapa')?.value || '';
   const fPl = document.getElementById('fecFiltroPlano')?.value || '';
   const fDo = document.getElementById('fecFiltroDono')?.value || '';
+  const fMe = document.getElementById('fecFiltroMes')?.value || '';
   const alvo = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado' && !l.dono
+    && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
     && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
     && (!fEt || fecEtapa(l) === fEt) && (!fPl || fecPlano(l) === fPl)
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
@@ -6168,9 +6249,15 @@ function renderB2G() {
 
   const body = document.getElementById('b2gBody');
   const bq = (document.getElementById('b2gBusca')?.value || '').trim().toLowerCase();
-  const licsTab = bq ? lics.filter(x => ((x.orgao||'')+' '+(x.objeto||'')+' '+(x.uf||'')+' '+(x.numero_edital||'')).toLowerCase().includes(bq)) : lics;
+  // filtro por mês do prazo
+  const mesesB2G = [...new Set(lics.map(x => prazoParaMes(x.prazo)).filter(Boolean))].sort();
+  preencherSelectMeses(document.getElementById('b2gFiltroMes'), mesesB2G, 'Todos os prazos');
+  const fMes = document.getElementById('b2gFiltroMes')?.value || '';
+  const licsTab = lics.filter(x =>
+    (!fMes || prazoParaMes(x.prazo) === fMes) &&
+    (!bq || ((x.orgao||'')+' '+(x.objeto||'')+' '+(x.uf||'')+' '+(x.numero_edital||'')).toLowerCase().includes(bq)));
   if (!licsTab.length) {
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">${bq ? 'Nenhuma licitação encontrada para “'+bq+'”.' : 'Nenhuma licitação ainda. A máquina busca 2×/dia (6h30 e 17h) nos portais públicos — aparecem aqui automaticamente.'}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">${bq || fMes ? 'Nenhuma licitação com esse filtro.' : 'Nenhuma licitação ainda. A máquina busca 2×/dia (6h30 e 17h) nos portais públicos — aparecem aqui automaticamente.'}</td></tr>`;
     return;
   }
   body.innerHTML = licsTab.map(x => {
