@@ -540,6 +540,9 @@
   .badge-novo        { background: #eceef1; color: #4a5365; }
   .badge-novo::before { background: #8a93a8; }
 
+  .badge-novocliente { background: #fdeceb; color: #b23f33; font-weight: 700; }
+  .badge-novocliente::before { background: #e8675b; }
+
   .badge-contatado   { background: #fef3c7; color: #92400e; }
   .badge-contatado::before { background: #f59e0b; }
 
@@ -2037,6 +2040,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
     <div id="fecAcoesLote" style="margin-top:10px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px">
       <button class="btn-meus-leads" id="btnMeusLeadsFec" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Só os meus</button>
+      <button class="btn-meus-leads" id="btnSoNovosFec" onclick="toggleSoNovosFec()"><svg class="ic" style="width:13px;height:13px"><use href="#i-flame"/></svg> Só novos clientes</button>
       <input class="filter filter-search" id="fecBusca" type="text" placeholder="Buscar empresa, cidade, CNPJ..." oninput="_fecPagina=1;renderFecomercio()" style="min-width:180px">
       <select class="filter" id="fecFiltroDono" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os responsáveis</option><option value="__pool">Sem responsável (pool)</option></select>
       <div class="filter-multi" id="fecEtapaWrap">
@@ -5255,6 +5259,22 @@ async function setFecCampo(id, campo, valor) {
 }
 
 let _fecPagina = 1;
+// Empresa que entrou na base há pouco tempo — serve para a equipe separar a leva
+// que acabou de chegar da IEB sem precisar decorar datas. Expira sozinho.
+const DIAS_CLIENTE_NOVO = 30;
+function ehClienteNovo(l) {
+  const d = String(l.data_adicao || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const dias = (Date.now() - new Date(d + 'T00:00:00').getTime()) / 86400000;
+  return dias >= 0 && dias <= DIAS_CLIENTE_NOVO;
+}
+let _soNovosFec = false;
+function toggleSoNovosFec() {
+  _soNovosFec = !_soNovosFec;
+  document.getElementById('btnSoNovosFec').classList.toggle('active', _soNovosFec);
+  _fecPagina = 1; renderFecomercio();
+}
+
 // Filtro de etapa aceita VÁRIAS etapas ao mesmo tempo (vazio = todas).
 let _fecEtapasSel = new Set();
 
@@ -5308,6 +5328,7 @@ function renderFecomercio() {
     && (!_soMeusLeads || souDono(l))
     && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
     && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
+    && (!_soNovosFec || ehClienteNovo(l))
     && (!_fecEtapasSel.size || _fecEtapasSel.has(fecEtapa(l)))
     && (!fPl || fecPlano(l) === fPl)
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
@@ -5338,7 +5359,8 @@ function renderFecomercio() {
     st.innerHTML = `
       <div class="hoje-stat"><div class="n" style="color:var(--primary)">${todas.length}</div><div class="l">Empresas</div></div>
       ${FEC_ETAPAS.map(e => `<div class="hoje-stat"><div class="n" style="color:${FEC_COR_ETAPA[e]};font-size:20px">${porEtapa(e)}</div><div class="l">${e}</div></div>`).join('')}
-      <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:20px">${semPlano}</div><div class="l">Plano a definir</div></div>`;
+      <div class="hoje-stat"><div class="n" style="color:var(--text2);font-size:20px">${semPlano}</div><div class="l">Plano a definir</div></div>
+      <div class="hoje-stat"><div class="n" style="color:var(--primary);font-size:20px">${todas.filter(ehClienteNovo).length}</div><div class="l">Novos clientes</div></div>`;
   }
   const body = document.getElementById('fecBody'); if (!body) return;
   if (!fec.length) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; return; }
@@ -5358,7 +5380,7 @@ function renderFecomercio() {
     const et = fecEtapa(l);
     return `
     <tr onclick="openDetail('${l.id}')">
-      <td><div class="td-empresa">${l.empresa}</div><div class="td-contato">${cnpjDe(l)}</div></td>
+      <td><div class="td-empresa">${l.empresa} ${ehClienteNovo(l) ? '<span class="badge badge-novocliente">Novo cliente</span>' : ''}</div><div class="td-contato">${cnpjDe(l)}</div></td>
       <td>${l.cidade||'—'}</td>
       <td style="font-size:12px">
         ${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a><br>`:''}
@@ -5391,6 +5413,7 @@ async function assumirFiltradosFec() {
   const fDo = document.getElementById('fecFiltroDono')?.value || '';
   const fMe = document.getElementById('fecFiltroMes')?.value || '';
   const alvo = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado' && !l.dono
+    && (!_soNovosFec || ehClienteNovo(l))
     && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
     && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
     && (!_fecEtapasSel.size || _fecEtapasSel.has(fecEtapa(l))) && (!fPl || fecPlano(l) === fPl)
