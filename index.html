@@ -1831,11 +1831,6 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   </select>
   <select class="filter" id="filterCanal" onchange="_pipelinePage=1;renderLeads()">
     <option value="">Todos os canais</option>
-    <option value="B2B Privado">B2B Privado</option>
-    <option value="Parceiro">Parceiro</option>
-    <option value="B2G Licitação">B2G Licitação</option>
-    <option value="Residencial">Residencial</option>
-    <option value="FECOMERCIO">FECOMERCIO</option>
   </select>
   <select class="filter" id="filterPrioridade" onchange="_pipelinePage=1;renderLeads()">
     <option value="">Todas prioridades</option>
@@ -3871,7 +3866,23 @@ function getFiltered() {
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
+let _canaisAssinatura = '';
+function montarFiltroCanal() {
+  // Opções vindas dos dados: canal novo aparece sozinho, sem editar o HTML.
+  const el = document.getElementById('filterCanal');
+  if (!el) return;
+  const canais = [...new Set(leads.map(l => l.canal).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const assinatura = canais.join('|');
+  if (assinatura === _canaisAssinatura) return;
+  _canaisAssinatura = assinatura;
+  const atual = el.value;
+  el.innerHTML = '<option value="">Todos os canais</option>' +
+    canais.map(c => `<option value="${c}">${c}</option>`).join('');
+  if (canais.includes(atual)) el.value = atual;
+}
+
 function renderLeads() {
+  montarFiltroCanal();
   const filtered = getFiltered();
   if (currentView === 'table') renderTable(filtered);
   else renderKanban(filtered);
@@ -5882,7 +5893,7 @@ async function renderEquipe() {
   let perfis = [], todos = [], parceirosTodos = [];
   try {
     const r1 = await sb.from('perfis').select('id,nome,email,papel,metas'); perfis = r1.data || [];
-    const r2 = await sb.from('leads').select('id,empresa,nome_contato,canal,status,valor_estimado,valor_fechado,dono,historico,cadencia,reuniao_data'); todos = r2.data || [];
+    todos = await fetchTodasLinhas('leads', 'id,empresa,nome_contato,canal,status,valor_estimado,valor_fechado,dono,historico,cadencia,reuniao_data');
     const r3 = await sb.from('parceiros').select('id,nome,tipo,status,dono,historico,cadencia'); parceirosTodos = r3.data || [];
   } catch (e) { body.innerHTML = '<div style="color:var(--red);padding:18px">Erro ao carregar a equipe.</div>'; return; }
   _equipeCache = { perfis, leadsAll: todos, parceirosAll: parceirosTodos };
@@ -7504,7 +7515,8 @@ async function aposLogin(session) {
 
   // carrega leads da nuvem; se vazio e há dados locais, migra
   let cloud = [];
-  try { const { data } = await sb.from('leads').select('*'); cloud = data || []; } catch (e) {}
+  try { cloud = await fetchTodasLinhas('leads', '*'); }
+  catch (e) { console.warn('Captura: falha ao carregar leads —', e.message); }
   if (cloud.length) {
     leads = cloud.map(r => { if (r.reuniao_data) r.reuniao_data = String(r.reuniao_data).slice(0,16); return r; }); // todos veem todos os leads (1ª fase colaborativa)
     // RESGATE: leads que existem só no navegador (não subiram para a nuvem) não podem ser apagados — sobem agora
@@ -7542,6 +7554,23 @@ function chaveLead(l) {
     ? 'e:' + l.email.trim().toLowerCase() + '|' + emp
     : 'n:' + emp + '|' + (l.nome_contato || '').trim().toLowerCase();
 }
+async function fetchTodasLinhas(tabela, colunas) {
+  // O Supabase corta a resposta em 1000 linhas. Sem paginar, a base aparece
+  // truncada em silêncio — foi o que escondeu 1076 leads em 12/11/2026.
+  const PAG = 1000;
+  let saida = [], de = 0;
+  for (;;) {
+    const { data, error } = await sb.from(tabela).select(colunas)
+      .order('id', { ascending: true }).range(de, de + PAG - 1);
+    if (error) throw error;
+    const bloco = data || [];
+    saida = saida.concat(bloco);
+    if (bloco.length < PAG) break;
+    de += PAG;
+  }
+  return saida;
+}
+
 async function dedupeLeads(silencioso) {
   const prog = l => (l.status && l.status !== 'Novo Lead' ? 2 : 0) + ((l.historico && l.historico.length) ? 1 : 0) + (l.email ? 1 : 0);
   const ordenado = [...leads].sort((a, b) => prog(b) - prog(a));
