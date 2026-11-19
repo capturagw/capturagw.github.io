@@ -1644,8 +1644,8 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   .papel-badge { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 8px; background: var(--primary-l); color: var(--primary-h); margin-left: 6px; }
 
   /* ─── Dashboard da gestão + cadência FECOMERCIO (19/11/2026) ─────────── */
-  .g-painel { background: var(--card); border: 1.5px solid var(--border); border-radius: 16px;
-              padding: 18px 20px 20px; margin-bottom: 18px; }
+  .g-painel { background: var(--white); border: 1px solid var(--border); border-radius: 16px;
+              padding: 18px 20px 20px; margin-bottom: 18px; box-shadow: var(--shadow-sm); }
   .g-painel-head { display:flex; justify-content:space-between; align-items:center; gap:12px;
                    flex-wrap:wrap; margin-bottom:12px; }
   .g-painel-head .section-title { margin:0; }
@@ -1670,8 +1670,8 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   .sla-btns { display:flex; flex-direction:column; gap:4px; }
   .sla-btn { display:flex; justify-content:space-between; align-items:center; gap:10px;
              width:100%; text-align:left; font-size:11.5px; font-weight:600; cursor:pointer;
-             padding:6px 10px; border-radius:8px; border:1.5px solid var(--border);
-             background: var(--card); color: var(--text2); font-family:inherit; }
+             padding:6px 10px; border-radius:8px; border:1px solid var(--border);
+             background: var(--white); color: var(--text2); font-family:inherit; }
   .sla-btn:hover { border-color: var(--primary); color: var(--text); }
   .sla-btn .sla-prazo { font-size:10px; font-weight:600; color: var(--text3); white-space:nowrap; }
   .sla-btn.feito { background:#e7f5ee; border-color:#9fd6bd; color:#166c4a; }
@@ -1694,6 +1694,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   #gestaoBody { display:grid; grid-template-columns:repeat(2, minmax(0,1fr));
                 gap:16px; align-items:start; }
   #gestaoBody .g-painel { margin-bottom:0; }
+  #gestaoBody .hoje-stat { background:var(--surface2); border-color:var(--border); box-shadow:none; }
   @media (max-width:1180px) { #gestaoBody { grid-template-columns:1fr; } }
 
   /* Gráficos: SVG inline, sem biblioteca. Marcas finas, eixo recessivo,
@@ -7954,7 +7955,11 @@ function caminhoBarra(x, y, w, h) {
  * linhas: [{ nome, valor, exibicao, nota, cor }]
  */
 function graficoBarras(linhas, opcoes) {
-  const o = Object.assign({ alturaBarra: 9, passo: 42, largura: 400, trilha: true }, opcoes || {});
+  // Cada linha tem até três andares: nome+valor, barra, e a nota embaixo.
+  // O passo padrão sai da presença de nota — com nota a linha precisa ser
+  // mais alta, senão o texto encosta na barra (foi o que aconteceu em 19/11).
+  const temNota = linhas.some(l => l.nota);
+  const o = Object.assign({ alturaBarra: 9, passo: temNota ? 50 : 36, largura: 400, trilha: true }, opcoes || {});
   if (!linhas.length) return '';
   const max = Math.max(...linhas.map(l => Number(l.valor) || 0), 1);
   const H = linhas.length * o.passo + 2;
@@ -7963,13 +7968,13 @@ function graficoBarras(linhas, opcoes) {
     const y = i * o.passo;
     const v = Math.max(0, Number(l.valor) || 0);
     const w = max > 0 ? (v / max) * larguraMax : 0;
-    const yb = y + 20;
+    const yb = y + 18;
     const cor = l.cor || COR_BARRA;
     const titulo = `${l.nome}: ${l.exibicao != null ? l.exibicao : v}${l.nota ? ' · ' + l.nota : ''}`;
     return `<g><title>${esc(titulo)}</title>
       <text class="gc-nome" x="0" y="${y + 11}">${esc(l.nome)}</text>
       <text class="gc-valor" x="${larguraMax}" y="${y + 11}" text-anchor="end">${esc(l.exibicao != null ? l.exibicao : v)}</text>
-      ${l.nota ? `<text class="gc-nota" x="${larguraMax}" y="${y + 34}" text-anchor="end">${esc(l.nota)}</text>` : ''}
+      ${l.nota ? `<text class="gc-nota" x="${larguraMax}" y="${y + 41}" text-anchor="end">${esc(l.nota)}</text>` : ''}
       ${o.trilha ? `<path class="gc-trilha" d="${caminhoBarra(xBarra, yb, larguraMax, o.alturaBarra)}"/>` : ''}
       <path d="${caminhoBarra(xBarra, yb, w, o.alturaBarra)}" fill="${cor}"/>
     </g>`;
@@ -8097,7 +8102,7 @@ function painelCS() {
       ${m.fec.length ? graficoBarras(etapas, { titulo: 'Clientes em cada etapa da implantação' })
                      : vazioChart('Nenhum cliente na carteira FECOMERCIO.')}
       <div class="g-sub">Tempo médio até cada marco</div>
-      ${temPrazo ? graficoBarras(prazos, { titulo: 'Dias médios até cada marco da cadência', passo: 38 })
+      ${temPrazo ? graficoBarras(prazos, { titulo: 'Dias médios até cada marco da cadência' })
                  : vazioChart('Nenhum marco da cadência foi registrado ainda. Marque na coluna "Cadência" da aba FECOMERCIO e o tempo médio aparece aqui.')}
     </div>`;
 }
@@ -8142,7 +8147,7 @@ function painelOperacional() {
         ${cartao(m.conformidade, 'Em conformidade', 'var(--primary)')}
         ${cartao(m.concluido, 'Implantação concluída', 'var(--text)')}
       </div>
-      ${algum ? graficoBarras(linhas, { titulo: 'Onde está cada cliente da implantação', passo: 38 })
+      ${algum ? graficoBarras(linhas, { titulo: 'Onde está cada cliente da implantação' })
               : vazioChart('Nenhum substatus preenchido na carteira. O substatus é definido na aba FECOMERCIO.')}
     </div>`;
 }
@@ -8160,8 +8165,11 @@ function metricasGestao() {
     porPlano[p].vidas += Number(l.vidas) || 0;
   });
   const comVidas = clientes.filter(l => Number(l.vidas) > 0).length;
-  return { clientes, vidas, novos, receita, porPlano, comVidas,
-           ticket: clientes.length ? Math.round(receita / clientes.length) : 0 };
+  // Ticket médio sobre quem TEM valor registrado. Dividir pela carteira
+  // inteira dava R$ 2, porque quase nenhum cliente tem valor preenchido.
+  const comReceita = clientes.filter(l => Number(l.valor_fechado) > 0);
+  return { clientes, vidas, novos, receita, porPlano, comVidas, comReceita,
+           ticket: comReceita.length ? Math.round(receita / comReceita.length) : 0 };
 }
 
 function painelGestaoBemEstar() {
@@ -8183,9 +8191,10 @@ function painelGestaoBemEstar() {
         ${cartao(m.vidas.toLocaleString('pt-BR'), 'Vidas cobertas', 'var(--primary)', m.comVidas < m.clientes.length ? (m.clientes.length - m.comVidas) + ' sem vidas informadas' : '')}
         ${cartao(m.clientes.length, 'Clientes ativos', 'var(--text)')}
         ${cartao(m.novos.length, 'Novos no período', 'var(--text)')}
-        ${cartao(brl(m.ticket), 'Ticket médio', 'var(--text)')}
+        ${cartao(m.comReceita.length ? brl(m.ticket) : '—', 'Ticket médio', 'var(--text)',
+          m.comReceita.length ? 'sobre ' + m.comReceita.length + (m.comReceita.length > 1 ? ' clientes com valor' : ' cliente com valor') : 'nenhum valor registrado')}
       </div>
-      ${temReceita ? graficoBarras(linhas, { titulo: 'Receita contratada por plano', passo: 38 })
+      ${temReceita ? graficoBarras(linhas, { titulo: 'Receita contratada por plano' })
                    : vazioChart('Nenhum cliente com valor fechado registrado. O valor entra no modal do cliente.')}
     </div>`;
 }
