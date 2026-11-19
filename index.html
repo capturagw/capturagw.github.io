@@ -1689,6 +1689,23 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   .kanban-vazio { font-size:11.5px; color: var(--text3); padding:14px 4px; text-align:center; }
   #fecKanban { display:flex; gap:12px; overflow-x:auto; padding-bottom:10px; align-items:flex-start; }
   #fecKanban .kanban-col { min-width:260px; flex:1 1 260px; }
+
+  /* ─── Quatro banners dividindo a tela (19/11/2026) ──────────────────── */
+  #gestaoBody { display:grid; grid-template-columns:repeat(2, minmax(0,1fr));
+                gap:16px; align-items:start; }
+  #gestaoBody .g-painel { margin-bottom:0; }
+  @media (max-width:1180px) { #gestaoBody { grid-template-columns:1fr; } }
+
+  /* Gráficos: SVG inline, sem biblioteca. Marcas finas, eixo recessivo,
+     texto sempre em token de texto — nunca na cor da série.             */
+  .g-chart { width:100%; height:auto; display:block; margin-top:4px; }
+  .g-chart .gc-nome  { font-size:11.5px; font-weight:600; fill:var(--text2); }
+  .g-chart .gc-valor { font-size:12.5px; font-weight:800; fill:var(--text); }
+  .g-chart .gc-nota  { font-size:10px; font-weight:600; fill:var(--text3); }
+  .g-chart .gc-trilha{ fill:var(--surface2); }
+  .g-chart .gc-base  { stroke:var(--border2); stroke-width:1; }
+  .g-chart-vazio { font-size:12px; color:var(--text3); padding:16px 2px; line-height:1.5; }
+  .g-chart-legenda { font-size:10.5px; color:var(--text3); margin-top:8px; line-height:1.45; }
 </style>
 </head>
 <body>
@@ -1788,6 +1805,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
 
 <!-- NAV PRINCIPAL -->
 <nav class="app-nav">
+  <button class="app-tab" id="apptab-gestao" onclick="switchAppView('gestao')"><svg class="ic"><use href="#i-chart"/></svg> Gestão</button>
   <button class="app-tab active" id="apptab-pipeline" onclick="switchAppView('pipeline')"><svg class="ic"><use href="#i-grid"/></svg> Pipeline Geral</button>
   <button class="app-tab" id="apptab-equipe" onclick="switchAppView('equipe')" style="display:none"><svg class="ic"><use href="#i-users"/></svg> Equipe</button>
   <button class="app-tab" id="apptab-hoje" onclick="switchAppView('hoje')"><svg class="ic"><use href="#i-cal"/></svg> Suas ações <span class="kanban-count" id="hojeCount">0</span></button>
@@ -1798,7 +1816,6 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   <button class="app-tab" id="apptab-ativos" onclick="switchAppView('ativos')"><svg class="ic"><use href="#i-flag"/></svg> Ativos <span class="kanban-count" id="ativosCount">0</span></button>
   <button class="app-tab" id="apptab-b2g" onclick="switchAppView('b2g')"><svg class="ic"><use href="#i-building"/></svg> B2G <span class="kanban-count" id="b2gCount">0</span></button>
   <button class="app-tab apptab-vip" id="apptab-financeiro" onclick="switchAppView('financeiro')" style="display:none"><svg class="ic"><use href="#i-money"/></svg> ★ Financeiro</button>
-  <button class="app-tab" id="apptab-gestao" onclick="switchAppView('gestao')"><svg class="ic"><use href="#i-chart"/></svg> Gestão</button>
   <button class="app-tab" id="apptab-desq" onclick="switchAppView('desq')"><svg class="ic"><use href="#i-trash"/></svg> Desqualificados <span class="kanban-count" id="desqCount">0</span></button>
 </nav>
 
@@ -7899,6 +7916,70 @@ function renderMarcacoesSDR() {
     ${b(EV_REU_NAO, 'Não compareceu')}`;
 }
 
+
+// ── GRÁFICOS DO DASHBOARD ───────────────────────────────────────────────────
+// SVG inline, sem biblioteca: o Captura é um arquivo único e não vale criar
+// dependência de CDN. Paleta conferida com o validador da skill dataviz:
+//
+//   Rampa ordinal (coral, 4 passos) — para etapa de funil e etapa de cliente,
+//   que são ESCALAS ORDENADAS: trocar a ordem muda o sentido, então a cor
+//   mostra a progressão. Passou monotonia de luminosidade, ΔL >= 0.06 entre
+//   passos, ponta clara 2.00:1 sobre branco e matiz único.
+//
+//   Barra de hue único #dd6354 (3.51:1 sobre branco) — para plano e substatus,
+//   que são categorias SEM ordem natural: colorir por valor gastaria o canal
+//   de identidade repetindo o que o comprimento da barra já diz.
+//
+// As cores de etapa do próprio app (#8a877f / #e8675b / #d99a2b / #1f9d6b)
+// foram testadas e REPROVARAM como preenchimento adjacente: âmbar x coral dá
+// ΔE 11,3 na visão normal (piso 15) e 4,1 em deuteranopia, e o cinza fica
+// abaixo do piso de croma. Continuam nos seletores e no Kanban, onde são
+// texto e selo pequeno, mas não entram em gráfico.
+const RAMPA_ORDINAL = ['#f2a399', '#e88a7c', '#dd6354', '#ad3726'];
+const COR_BARRA = '#dd6354';
+
+const esc = t => String(t == null ? '' : t)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Barra horizontal: topo reto na base, ponta arredondada em 4px. */
+function caminhoBarra(x, y, w, h) {
+  const r = Math.min(4, h / 2);
+  if (w <= r + 1) return `M${x},${y}h${Math.max(w, 1)}v${h}h${-Math.max(w, 1)}Z`;
+  return `M${x},${y}H${x + w - r}a${r},${r} 0 0 1 ${r},${r}V${y + h - r}a${r},${r} 0 0 1 ${-r},${r}H${x}Z`;
+}
+
+/**
+ * Lista de medidores: nome em cima, barra embaixo, valor à direita.
+ * O valor fica SEMPRE fora da barra — assim nunca é cortado por barra curta.
+ * linhas: [{ nome, valor, exibicao, nota, cor }]
+ */
+function graficoBarras(linhas, opcoes) {
+  const o = Object.assign({ alturaBarra: 9, passo: 42, largura: 400, trilha: true }, opcoes || {});
+  if (!linhas.length) return '';
+  const max = Math.max(...linhas.map(l => Number(l.valor) || 0), 1);
+  const H = linhas.length * o.passo + 2;
+  const xBarra = 0, larguraMax = o.largura;
+  const corpo = linhas.map((l, i) => {
+    const y = i * o.passo;
+    const v = Math.max(0, Number(l.valor) || 0);
+    const w = max > 0 ? (v / max) * larguraMax : 0;
+    const yb = y + 20;
+    const cor = l.cor || COR_BARRA;
+    const titulo = `${l.nome}: ${l.exibicao != null ? l.exibicao : v}${l.nota ? ' · ' + l.nota : ''}`;
+    return `<g><title>${esc(titulo)}</title>
+      <text class="gc-nome" x="0" y="${y + 11}">${esc(l.nome)}</text>
+      <text class="gc-valor" x="${larguraMax}" y="${y + 11}" text-anchor="end">${esc(l.exibicao != null ? l.exibicao : v)}</text>
+      ${l.nota ? `<text class="gc-nota" x="${larguraMax}" y="${y + 34}" text-anchor="end">${esc(l.nota)}</text>` : ''}
+      ${o.trilha ? `<path class="gc-trilha" d="${caminhoBarra(xBarra, yb, larguraMax, o.alturaBarra)}"/>` : ''}
+      <path d="${caminhoBarra(xBarra, yb, w, o.alturaBarra)}" fill="${cor}"/>
+    </g>`;
+  }).join('');
+  return `<svg class="g-chart" viewBox="0 0 ${o.largura} ${H}" preserveAspectRatio="xMinYMin meet"
+    role="img" aria-label="${esc(o.titulo || 'gráfico de barras')}">${corpo}</svg>`;
+}
+
+const vazioChart = t => `<div class="g-chart-vazio">${t}</div>`;
+
 // ── 4. DASHBOARD DA GESTÃO ──────────────────────────────────────────────────
 let _gestaoPeriodo = 'mes';
 const PERIODOS = { mes: 'Este mês', d30: 'Últimos 30 dias', d90: 'Últimos 90 dias', tudo: 'Desde o início' };
@@ -7943,19 +8024,32 @@ function metricasSDR() {
 function painelSDR() {
   const m = metricasSDR();
   const semDado = m.responderam.length === 0 && m.sqls.length === 0 && m.comparecimento === 0;
+  const taxa = pct(m.responderam.length, m.abordados.length);
+  const show = m.comparecimento ? pct(m.feitas.length, m.comparecimento) : null;
+  // Funil: escala ORDENADA, então rampa de um matiz mostrando a progressão.
+  const linhas = [
+    { nome: 'Leads abordados',    valor: m.abordados.length,  exibicao: m.abordados.length,  cor: RAMPA_ORDINAL[0] },
+    { nome: 'Responderam',        valor: m.responderam.length, exibicao: m.responderam.length, nota: 'taxa de resposta ' + taxa + '%', cor: RAMPA_ORDINAL[1] },
+    { nome: 'Qualificados (SQL)', valor: m.sqls.length,        exibicao: m.sqls.length,        nota: pct(m.sqls.length, m.abordados.length) + '% dos abordados', cor: RAMPA_ORDINAL[2] },
+    { nome: 'Reuniões realizadas',valor: m.feitas.length,      exibicao: m.feitas.length,
+      nota: show === null ? 'sem reunião encerrada' : 'show rate ' + show + '% (' + m.feitas.length + ' de ' + m.comparecimento + ')', cor: RAMPA_ORDINAL[3] },
+  ];
+  const temAlgo = m.abordados.length || m.responderam.length || m.sqls.length || m.feitas.length;
   return `
     <div class="g-painel">
       <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-flame"/></svg> SDR — prospecção</div>
-        <button class="btn-secondary g-exp" onclick="exportarGestaoSDR()">Exportar relatório</button></div>
+        <button class="btn-secondary g-exp" onclick="exportarGestaoSDR()">Exportar</button></div>
       <div class="hoje-stats">
         ${cartao(m.abordados.length, 'Leads abordados', 'var(--primary)')}
-        ${cartao(pct(m.responderam.length, m.abordados.length) + '%', 'Taxa de resposta', '#d97706', `${m.responderam.length} de ${m.abordados.length}`)}
-        ${cartao(m.sqls.length, 'SQL', '#2faa86', pct(m.sqls.length, m.abordados.length) + '% dos abordados')}
-        ${cartao(m.comparecimento ? pct(m.feitas.length, m.comparecimento) + '%' : '—', 'Show rate', '#5b8fd0', m.comparecimento ? `${m.feitas.length} de ${m.comparecimento} reuniões` : 'sem reunião marcada ainda')}
-        ${cartao(m.agendadas.length, 'Reuniões agendadas', 'var(--text2)')}
+        ${cartao(taxa + '%', 'Taxa de resposta', 'var(--text)')}
+        ${cartao(m.sqls.length, 'SQL', 'var(--text)')}
+        ${cartao(show === null ? '—' : show + '%', 'Show rate', 'var(--text)')}
       </div>
-      ${semDado ? `<div class="g-aviso">Resposta, SQL e show rate começam a contar agora: marque no modal do lead, no bloco
-        "Registrar para a métrica do SDR". Só aparece aqui o que for marcado de hoje em diante.</div>` : ''}
+      ${temAlgo ? graficoBarras(linhas, { titulo: 'Funil do SDR, do lead abordado à reunião realizada' })
+                : vazioChart('Nenhum lead abordado no período escolhido.')}
+      <div class="g-chart-legenda">Do mais claro ao mais escuro: cada passo do funil. O tom escurece conforme o lead avança.</div>
+      ${semDado ? `<div class="g-aviso">Resposta, SQL e show rate contam as marcações novas: no modal do lead,
+        bloco "Registrar para a métrica do SDR". Só entra aqui o que for marcado de hoje em diante.</div>` : ''}
     </div>`;
 }
 
@@ -7979,26 +8073,32 @@ function metricasCS() {
 
 function painelCS() {
   const m = metricasCS();
+  // Etapa é escala ORDENADA (Cadastro → ... → Concluído): rampa de um matiz.
+  const etapas = FEC_ETAPAS.map((e, i) => ({
+    nome: e, valor: m.porEtapa[e], exibicao: m.porEtapa[e],
+    nota: pct(m.porEtapa[e], m.fec.length) + '% da carteira', cor: RAMPA_ORDINAL[i]
+  }));
+  const prazos = m.medias.map((x, i) => ({
+    nome: 'Até ' + x.curto.toLowerCase(), valor: x.media === null ? 0 : x.media,
+    exibicao: x.media === null ? '—' : x.media + 'd',
+    nota: x.media === null ? 'ainda sem marco registrado' : 'prazo ' + x.dias + 'd · ' + x.n + (x.n > 1 ? ' empresas' : ' empresa'),
+    cor: RAMPA_ORDINAL[i]
+  }));
+  const temPrazo = m.medias.some(x => x.media !== null);
   return `
     <div class="g-painel">
       <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> CS — carteira FECOMERCIO</div>
-        <button class="btn-secondary g-exp" onclick="exportarFecomercio()">Exportar relatório</button></div>
+        <button class="btn-secondary g-exp" onclick="exportarFecomercio()">Exportar</button></div>
       <div class="hoje-stats">
         ${cartao(m.fec.length, 'Clientes na carteira', 'var(--primary)')}
-        ${FEC_ETAPAS.map(e => cartao(m.porEtapa[e], e, FEC_COR_ETAPA[e])).join('')}
-        ${cartao(pct(m.emDia.length, m.fec.length) + '%', 'Cadência em dia', m.atrasados.length ? '#c2540f' : '#1f9d6b', `${m.atrasados.length} com prazo vencido`)}
-        ${cartao(m.concluidosPeriodo.length, 'Concluídos no período', '#1f9d6b')}
+        ${cartao(pct(m.emDia.length, m.fec.length) + '%', 'Cadência em dia', 'var(--text)', m.atrasados.length + ' com prazo vencido')}
+        ${cartao(m.concluidosPeriodo.length, 'Concluídos no período', 'var(--text)')}
       </div>
-      <div class="g-sub">Tempo médio até cada marco da cadência</div>
-      <div class="hoje-stats">
-        ${m.medias.map(x => cartao(x.media === null ? '—' : x.media + 'd', 'Até ' + x.curto.toLowerCase(),
-            x.media === null ? 'var(--text3)' : (x.media > x.dias ? '#c2540f' : '#1f9d6b'),
-            x.media === null ? 'sem registro' : `prazo ${x.dias}d · ${x.n} empresa${x.n > 1 ? 's' : ''}`)).join('')}
-      </div>
-      ${m.atrasados.length ? `<div class="g-aviso alerta">
-        <strong>${m.atrasados.length} empresa${m.atrasados.length > 1 ? 's' : ''} com prazo vencido.</strong>
-        ${m.atrasados.slice(0, 8).map(l => `<button class="g-link" onclick="switchAppView('fecomercio');openDetail('${l.id}')">${l.empresa}</button>`).join('')}
-        ${m.atrasados.length > 8 ? ` e mais ${m.atrasados.length - 8}` : ''}</div>` : ''}
+      ${m.fec.length ? graficoBarras(etapas, { titulo: 'Clientes em cada etapa da implantação' })
+                     : vazioChart('Nenhum cliente na carteira FECOMERCIO.')}
+      <div class="g-sub">Tempo médio até cada marco</div>
+      ${temPrazo ? graficoBarras(prazos, { titulo: 'Dias médios até cada marco da cadência', passo: 38 })
+                 : vazioChart('Nenhum marco da cadência foi registrado ainda. Marque na coluna "Cadência" da aba FECOMERCIO e o tempo médio aparece aqui.')}
     </div>`;
 }
 
@@ -8022,23 +8122,28 @@ function metricasOperacional() {
 
 function painelOperacional() {
   const m = metricasOperacional();
+  const total = m.fec.length;
+  // Substatus são categorias SEM ordem natural entre si: um matiz só.
+  const linhas = [
+    { nome: 'Pendente cadastro',      valor: m.pendenteCadastro },
+    { nome: 'Cadastro em análise',    valor: m.emAnalise },
+    { nome: 'Diagnóstico iniciado',   valor: m.diagIniciado },
+    { nome: 'Diagnóstico finalizado', valor: m.diagFinalizado },
+    { nome: 'Capacitação de líderes', valor: m.capacitacao },
+    { nome: 'Canal de denúncias',     valor: m.canalDenuncias },
+    { nome: 'Flex ON Edu',            valor: m.edu },
+  ].map(l => ({ ...l, exibicao: l.valor, nota: total ? pct(l.valor, total) + '% da carteira' : '', cor: COR_BARRA }));
+  const algum = linhas.some(l => l.valor > 0);
   return `
     <div class="g-painel">
       <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-grid"/></svg> Operacional — implantação</div>
-        <button class="btn-secondary g-exp" onclick="exportarGestaoOperacional()">Exportar relatório</button></div>
+        <button class="btn-secondary g-exp" onclick="exportarGestaoOperacional()">Exportar</button></div>
       <div class="hoje-stats">
-        ${cartao(m.pendenteCadastro, 'Pendente cadastro', '#8a877f')}
-        ${cartao(m.emAnalise, 'Cadastro em análise', '#8a877f')}
-        ${cartao(m.diagIniciado, 'Diagnóstico iniciado', '#e8675b')}
-        ${cartao(m.diagFinalizado, 'Diagnóstico finalizado', '#e8675b')}
+        ${cartao(m.conformidade, 'Em conformidade', 'var(--primary)')}
+        ${cartao(m.concluido, 'Implantação concluída', 'var(--text)')}
       </div>
-      <div class="g-sub">Conformidade entregue</div>
-      <div class="hoje-stats">
-        ${cartao(m.capacitacao, 'Capacitação de líderes', '#d99a2b')}
-        ${cartao(m.canalDenuncias, 'Canal de denúncias', '#d99a2b')}
-        ${cartao(m.edu, 'Flex ON Edu', '#d99a2b')}
-        ${cartao(m.concluido, 'Implantação concluída', '#1f9d6b')}
-      </div>
+      ${algum ? graficoBarras(linhas, { titulo: 'Onde está cada cliente da implantação', passo: 38 })
+              : vazioChart('Nenhum substatus preenchido na carteira. O substatus é definido na aba FECOMERCIO.')}
     </div>`;
 }
 
@@ -8061,24 +8166,27 @@ function metricasGestao() {
 
 function painelGestaoBemEstar() {
   const m = metricasGestao();
-  const planos = Object.entries(m.porPlano).sort((a, b) => b[1].n - a[1].n);
+  // Plano é categoria SEM ordem natural: barras ordenadas por valor, um matiz só.
+  const linhas = Object.entries(m.porPlano)
+    .sort((a, b) => b[1].receita - a[1].receita || b[1].n - a[1].n)
+    .map(([plano, v]) => ({
+      nome: plano, valor: v.receita, exibicao: brl(v.receita),
+      nota: v.n + (v.n > 1 ? ' clientes' : ' cliente') + (v.vidas ? ' · ' + v.vidas.toLocaleString('pt-BR') + ' vidas' : ''),
+      cor: COR_BARRA
+    }));
+  const temReceita = linhas.some(l => l.valor > 0);
   return `
     <div class="g-painel">
       <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-flag"/></svg> Gestão e bem-estar</div>
-        <button class="btn-secondary g-exp" onclick="exportarGestaoClientes()">Exportar relatório</button></div>
+        <button class="btn-secondary g-exp" onclick="exportarGestaoClientes()">Exportar</button></div>
       <div class="hoje-stats">
-        ${cartao(m.clientes.length, 'Clientes ativos', 'var(--primary)')}
-        ${cartao(m.vidas.toLocaleString('pt-BR'), 'Vidas cobertas', '#2faa86', m.comVidas < m.clientes.length ? `${m.clientes.length - m.comVidas} sem vidas informadas` : '')}
-        ${cartao(m.novos.length, 'Novos no período', '#5b8fd0')}
-        ${cartao(brl(m.receita), 'Receita contratada', '#1f9d6b')}
-        ${cartao(brl(m.ticket), 'Ticket médio', 'var(--text2)')}
+        ${cartao(m.vidas.toLocaleString('pt-BR'), 'Vidas cobertas', 'var(--primary)', m.comVidas < m.clientes.length ? (m.clientes.length - m.comVidas) + ' sem vidas informadas' : '')}
+        ${cartao(m.clientes.length, 'Clientes ativos', 'var(--text)')}
+        ${cartao(m.novos.length, 'Novos no período', 'var(--text)')}
+        ${cartao(brl(m.ticket), 'Ticket médio', 'var(--text)')}
       </div>
-      <div class="g-sub">Por plano</div>
-      <div class="table-wrap">
-        <table><thead><tr><th>Plano</th><th>Clientes</th><th>Vidas</th><th>Receita</th></tr></thead>
-        <tbody>${planos.map(([p, v]) => `<tr><td>${p}</td><td>${v.n}</td><td>${v.vidas.toLocaleString('pt-BR')}</td><td>${brl(v.receita)}</td></tr>`).join('')
-          || '<tr><td colspan="4">Sem cliente com plano definido.</td></tr>'}</tbody></table>
-      </div>
+      ${temReceita ? graficoBarras(linhas, { titulo: 'Receita contratada por plano', passo: 38 })
+                   : vazioChart('Nenhum cliente com valor fechado registrado. O valor entra no modal do cliente.')}
     </div>`;
 }
 
