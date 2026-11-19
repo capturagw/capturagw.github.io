@@ -1642,6 +1642,53 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   .btn-sair { background: none; border: 1px solid var(--border2); color: var(--text2); font-family: inherit; font-size: 11.5px; font-weight: 600; padding: 6px 11px; border-radius: 8px; cursor: pointer; margin-left: 8px; }
   .btn-sair:hover { border-color: var(--primary); color: var(--primary-h); }
   .papel-badge { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 8px; background: var(--primary-l); color: var(--primary-h); margin-left: 6px; }
+
+  /* ─── Dashboard da gestão + cadência FECOMERCIO (19/11/2026) ─────────── */
+  .g-painel { background: var(--card); border: 1.5px solid var(--border); border-radius: 16px;
+              padding: 18px 20px 20px; margin-bottom: 18px; }
+  .g-painel-head { display:flex; justify-content:space-between; align-items:center; gap:12px;
+                   flex-wrap:wrap; margin-bottom:12px; }
+  .g-painel-head .section-title { margin:0; }
+  .g-exp { padding:7px 13px; font-size:12px; white-space:nowrap; }
+  .g-sub { font-size:12px; font-weight:700; color: var(--text3); text-transform:uppercase;
+           letter-spacing:.06em; margin:18px 0 8px; }
+  .g-nota { font-size:10.5px; color: var(--text3); margin-top:3px; line-height:1.35; }
+  .g-aviso { margin-top:14px; padding:11px 14px; border-radius:10px; font-size:12.5px;
+             line-height:1.55; background: var(--surface2); color: var(--text2); }
+  .g-aviso.alerta { background: #fdf0ec; color: #8f3418; border:1px solid #f3c9bb; }
+  .g-link { background:none; border:none; padding:0 6px 0 0; font:inherit; font-size:12.5px;
+            color:#b3431f; text-decoration:underline; cursor:pointer; }
+  .g-periodo-wrap { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:16px; }
+
+  .sla-badge { display:inline-block; font-size:10.5px; font-weight:700; border-radius:20px;
+               padding:3px 9px; white-space:nowrap; line-height:1.5; }
+  .sla-badge.ok       { background:#e7f5ee; color:#166c4a; }
+  .sla-badge.hoje     { background:#fdf3dc; color:#8a5a08; }
+  .sla-badge.atrasado { background:#fcebe5; color:#a8381a; }
+  .sla-badge.neutro   { background: var(--surface2); color: var(--text3); }
+
+  .sla-btns { display:flex; flex-direction:column; gap:4px; }
+  .sla-btn { display:flex; justify-content:space-between; align-items:center; gap:10px;
+             width:100%; text-align:left; font-size:11.5px; font-weight:600; cursor:pointer;
+             padding:6px 10px; border-radius:8px; border:1.5px solid var(--border);
+             background: var(--card); color: var(--text2); font-family:inherit; }
+  .sla-btn:hover { border-color: var(--primary); color: var(--text); }
+  .sla-btn .sla-prazo { font-size:10px; font-weight:600; color: var(--text3); white-space:nowrap; }
+  .sla-btn.feito { background:#e7f5ee; border-color:#9fd6bd; color:#166c4a; }
+  .sla-btn.feito .sla-prazo { color:#2f8c66; }
+  .sla-btn.feito-atrasado { background:#fdf3dc; border-color:#e8ca8a; color:#8a5a08; }
+  .sla-btn.atrasado { background:#fcebe5; border-color:#f0bfae; color:#a8381a; }
+  .sla-btn.atrasado .sla-prazo { color:#c2540f; }
+
+  .kc-nome { font-size:13px; font-weight:700; color: var(--text); line-height:1.3; }
+  .kc-meta { font-size:11px; color: var(--text3); margin-top:3px; }
+  .kc-sub  { font-size:11px; color: var(--text2); margin-top:4px; font-weight:600; }
+  .kc-sla  { margin-top:7px; }
+  .kc-dono { font-size:10.5px; color: var(--text3); margin-top:6px; }
+  .kanban-card.sla-alerta { border-left:3px solid #c2540f; }
+  .kanban-vazio { font-size:11.5px; color: var(--text3); padding:14px 4px; text-align:center; }
+  #fecKanban { display:flex; gap:12px; overflow-x:auto; padding-bottom:10px; align-items:flex-start; }
+  #fecKanban .kanban-col { min-width:260px; flex:1 1 260px; }
 </style>
 </head>
 <body>
@@ -1751,6 +1798,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   <button class="app-tab" id="apptab-ativos" onclick="switchAppView('ativos')"><svg class="ic"><use href="#i-flag"/></svg> Ativos <span class="kanban-count" id="ativosCount">0</span></button>
   <button class="app-tab" id="apptab-b2g" onclick="switchAppView('b2g')"><svg class="ic"><use href="#i-building"/></svg> B2G <span class="kanban-count" id="b2gCount">0</span></button>
   <button class="app-tab apptab-vip" id="apptab-financeiro" onclick="switchAppView('financeiro')" style="display:none"><svg class="ic"><use href="#i-money"/></svg> ★ Financeiro</button>
+  <button class="app-tab" id="apptab-gestao" onclick="switchAppView('gestao')"><svg class="ic"><use href="#i-chart"/></svg> Gestão</button>
   <button class="app-tab" id="apptab-desq" onclick="switchAppView('desq')"><svg class="ic"><use href="#i-trash"/></svg> Desqualificados <span class="kanban-count" id="desqCount">0</span></button>
 </nav>
 
@@ -1838,6 +1886,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
     <option value="Média">Média</option>
   </select>
   <button class="btn-meus-leads" id="btnMeusLeads" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Meus leads</button>
+  <button class="btn-secondary g-exp" onclick="exportarPipeline()">Exportar relatório</button>
   <div class="view-toggle">
     <button class="view-btn active" id="btnTable" onclick="setView('table')"><svg class="ic"><use href="#i-table"/></svg> Tabela</button>
     <button class="view-btn" id="btnKanban" onclick="setView('kanban')"><svg class="ic"><use href="#i-grid"/></svg> Kanban</button>
@@ -1906,6 +1955,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
       <div>
         <div class="section-title"><svg class="ic"><use href="#i-flame"/></svg> Radar — Glassdoor & LinkedIn</div>
+        <button class="btn-secondary g-exp" style="margin-top:10px" onclick="exportarQuentes()">Exportar relatório</button>
         <div class="section-sub">Empresas com o problema já exposto publicamente (sinais de compra). A máquina varre todos os dias às 6h30 — meta de 20 empresas do Glassdoor + 10 do LinkedIn por dia — e elas chegam aqui separadas da pipeline normal.</div>
       </div>
     </div>
@@ -1934,6 +1984,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
       <div>
         <div class="section-title"><svg class="ic"><use href="#i-hands"/></svg> Parceiros de Canal</div>
+        <button class="btn-secondary g-exp" style="margin-top:10px" onclick="exportarParceiros()">Exportar relatório</button>
         <div class="section-sub">Clínicas de SST, contábeis, corretoras e consultorias — cada parceria vale dezenas de indicações. A máquina aborda 2/dia automaticamente.</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddParceiro()">+ Novo parceiro</button>
       </div>
@@ -1970,6 +2021,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
 <div class="app-view" id="appview-desq">
   <div class="parceiros-wrap">
     <div class="section-title"><svg class="ic"><use href="#i-trash"/></svg> Desqualificados</div>
+        <button class="btn-secondary g-exp" style="margin-top:10px" onclick="exportarDesq()">Exportar relatório</button>
     <div class="section-sub">Leads e parceiros tirados do pipeline ativo. Você pode reativar ou excluir de vez.</div>
     <div id="desqChart" class="desq-chart" style="display:none"></div>
     <div class="table-wrap" style="margin-top:16px">
@@ -2006,6 +2058,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
       <div>
         <div class="section-title"><svg class="ic"><use href="#i-building"/></svg> Flex Residenciais</div>
+        <button class="btn-secondary g-exp" style="margin-top:10px" onclick="exportarResidenciais()">Exportar relatório</button>
         <div class="section-sub">Condomínios, administradoras e síndicos — gestão de academia em condomínio (treinadores + sistema).</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddResidencial()">+ Novo residencial</button>
       </div>
@@ -2030,6 +2083,11 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
         <div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> Base FECOMERCIO</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddFecomercio()">+ Nova empresa FECOMERCIO</button>
       </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn-meus-leads active" id="fecModo-tabela" onclick="setFecModo('tabela')">Tabela</button>
+        <button class="btn-meus-leads" id="fecModo-kanban" onclick="setFecModo('kanban')">Kanban</button>
+        <button class="btn-secondary g-exp" onclick="exportarFecomercio()">Exportar relatório</button>
+      </div>
     </div>
     <div class="hoje-stats" id="fecStats" style="margin-top:14px"></div>
     <div id="fecAcoesLote" style="margin-top:10px"></div>
@@ -2045,12 +2103,13 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
       <select class="filter" id="fecFiltroPlano" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os planos</option></select>
       <select class="filter" id="fecFiltroMes" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as datas</option></select>
     </div>
-    <div class="table-wrap" style="margin-top:8px">
+    <div class="table-wrap" id="fecTabelaWrap" style="margin-top:8px">
       <table>
-        <thead><tr><th>Empresa</th><th>Cidade</th><th>Contato</th><th>Responsável</th><th>Plano</th><th>Etapa</th><th>Substatus</th></tr></thead>
+        <thead><tr><th>Empresa</th><th>Cidade</th><th>Contato</th><th>Responsável</th><th>Plano</th><th>Etapa</th><th>Substatus</th><th>Cadência</th></tr></thead>
         <tbody id="fecBody"></tbody>
       </table>
     </div>
+    <div id="fecKanban" style="margin-top:8px;display:none"></div>
   </div>
 </div>
 
@@ -2058,6 +2117,7 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
 <div class="app-view" id="appview-ativos">
   <div class="parceiros-wrap">
     <div class="section-title"><svg class="ic"><use href="#i-flag"/></svg> Clientes & Parceiros ativos</div>
+        <button class="btn-secondary g-exp" style="margin-top:10px" onclick="exportarAtivos()">Exportar relatório</button>
     <div class="section-sub">Contratos fechados e parcerias ativas. Sua carteira em produção.</div>
     <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
       <div class="hoje-stats" id="ativosStats" style="margin-top:14px;flex:1"></div>
@@ -2115,6 +2175,19 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
 </div>
 
 <!-- ═══ VIEW: REPOSITÓRIO DE PROCESSOS ═══ -->
+<div class="app-view" id="appview-gestao">
+  <div class="parceiros-wrap">
+    <div class="section-title"><svg class="ic"><use href="#i-chart"/></svg> Dashboard da gestão</div>
+    <div class="section-sub">Métricas por time. O período vale para tudo o que tem data: abordagens, conclusões e novos contratos.</div>
+    <div class="g-periodo-wrap">
+      <label class="form-label" style="margin:0">Período</label>
+      <select class="filter" id="gestaoPeriodo" onchange="setGestaoPeriodo(this.value)"></select>
+      <button class="btn-secondary g-exp" onclick="renderGestao()">Atualizar</button>
+    </div>
+    <div id="gestaoBody"></div>
+  </div>
+</div>
+
 <div class="app-view" id="appview-repositorio">
   <div class="parceiros-wrap">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px">
@@ -2417,6 +2490,8 @@ ALTER TABLE repositorio ADD COLUMN IF NOT EXISTS arquivo_nome text;
         <button class="stage-btn fechar" onclick="avancarStatus('Fechado')">Fechar negócio</button>
         <button class="stage-btn lose" onclick="avancarStatus('Perdido')">Perdido</button>
       </div>
+
+      <div class="stage-actions" id="sdrMarcasBox" style="display:none"></div>
 
       <div id="clienteAtivoBox" style="display:none;margin-bottom:14px"></div>
 
@@ -4884,7 +4959,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 
 // ══ NAVEGAÇÃO ENTRE VIEWS ════════════════════════════════════════════════════
 function switchAppView(view) {
-  ['pipeline','hoje','quentes','residenciais','fecomercio','parceiros','ativos','desq','b2g','equipe','financeiro','repositorio'].forEach(v => {
+  ['pipeline','hoje','quentes','residenciais','fecomercio','parceiros','ativos','desq','b2g','equipe','financeiro','repositorio','gestao'].forEach(v => {
     const av = document.getElementById('appview-' + v); if (av) av.classList.toggle('active', v === view);
     const at = document.getElementById('apptab-' + v); if (at) at.classList.toggle('active', v === view);
   });
@@ -4899,6 +4974,7 @@ function switchAppView(view) {
   if (view === 'financeiro') abrirContasReceber();
   if (view === 'pipeline') setTimeout(animateKPIs, 60);
   if (view === 'repositorio') carregarRepositorio().then(renderRepositorio);
+  if (view === 'gestao') renderGestao();
 }
 
 function abrirContrato() {
@@ -5335,16 +5411,7 @@ function renderFecomercio() {
   const mesesFec = [...new Set(todasFec.map(l => String(l.data_adicao || '').slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m)))].sort();
   preencherSelectMeses(document.getElementById('fecFiltroMes'), mesesFec, 'Todas as datas');
   const fMe = document.getElementById('fecFiltroMes')?.value || '';
-  const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado'
-    && (!_soMeusLeads || souDono(l))
-    && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
-    && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
-    && (!_soNovosFec || ehClienteNovo(l))
-    && (!_fecEtapasSel.size || _fecEtapasSel.has(fecEtapa(l)))
-    && (!fPl || fecPlano(l) === fPl)
-    && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
-             || (l.cidade||'').toLowerCase().includes(bq) || (l.email||'').toLowerCase().includes(bq)
-             || (l.notas||'').toLowerCase().includes(bq)));
+  const fec = fecFiltrados();
   const cnt = document.getElementById('fecCount'); if (cnt) cnt.textContent = fec.length;
 
   // popula os selects de filtro uma vez
@@ -5374,7 +5441,7 @@ function renderFecomercio() {
       <div class="hoje-stat"><div class="n" style="color:var(--primary);font-size:20px">${todas.filter(ehClienteNovo).length}</div><div class="l">Novos clientes</div></div>`;
   }
   const body = document.getElementById('fecBody'); if (!body) return;
-  if (!fec.length) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; return; }
+  if (!fec.length) { body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; aplicarModoFec(); return; }
   const FEC_PAGE_SIZE = 15;
   const totalPaginas = Math.ceil(fec.length / FEC_PAGE_SIZE);
   if (!_fecPagina) _fecPagina = 1;
@@ -5406,7 +5473,8 @@ function renderFecomercio() {
       <td>${selHTML(l.id,'plano',FEC_PLANOS,fecPlano(l), fecPlano(l)==='A definir'?'':'var(--text)')}</td>
       <td>${selHTML(l.id,'etapa',FEC_ETAPAS,et,FEC_COR_ETAPA[et])}</td>
       <td>${selHTML(l.id,'subetapa',FEC_SUBETAPAS[et]||[],fecSub(l))}</td>
-    </tr>`;}).join('') + (totalPaginas > 1 ? `<tr><td colspan="7" style="padding:14px">
+      <td onclick="event.stopPropagation()"><div class="kc-sla">${seloSlaFec(l)}</div><div class="sla-btns" style="margin-top:6px">${botoesSlaFec(l)}</div></td>
+    </tr>`;}).join('') + (totalPaginas > 1 ? `<tr><td colspan="8" style="padding:14px">
       <div style="display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap">
         <button class="btn-secondary" style="padding:6px 10px" ${_fecPagina<=1?'disabled':''} onclick="event.stopPropagation();irParaPaginaFec(${_fecPagina-1})">‹ Anterior</button>
         ${Array.from({length: totalPaginas}, (_, i) => i+1).map(p => `<button class="btn-secondary" style="padding:6px 11px;${p===_fecPagina?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="event.stopPropagation();irParaPaginaFec(${p})">${p}</button>`).join('')}
@@ -7599,6 +7667,521 @@ async function bootCaptura() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) { await aposLogin(session); } else { showLogin(); }
 }
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  DASHBOARD DA GESTÃO + CADÊNCIA FECOMERCIO + EXPORTAÇÃO                  ║
+// ║  Pedido da Giovanna em 19/11/2026.                                       ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+// ── 1. CADÊNCIA DA FECOMERCIO: prazos contados da entrada da empresa ────────
+// A contagem começa em data_adicao (quando a empresa entrou na base).
+// Os marcos ficam em onboarding.sla, que é jsonb e já sincroniza com a nuvem.
+const FEC_SLA = [
+  { chave: 'tratativa',   dias: 3,  rotulo: 'Iniciar tratativa',      curto: 'Tratativa' },
+  { chave: 'kickoff',     dias: 7,  rotulo: 'Reunião de kick-off',    curto: 'Kick-off' },
+  { chave: 'implantacao', dias: 10, rotulo: 'Entrar em implantação',  curto: 'Implantação' },
+  { chave: 'concluido',   dias: 30, rotulo: 'Concluir implantação',   curto: 'Conclusão' },
+];
+
+function diasDesdeEntrada(l) {
+  const d = String(l.data_adicao || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  return Math.floor((Date.now() - new Date(d + 'T00:00:00').getTime()) / 86400000);
+}
+
+/** Estado de cada marco: feito, no prazo, vence hoje ou atrasado. */
+function slaFec(l) {
+  const sla = (l.onboarding && l.onboarding.sla) || {};
+  const dias = diasDesdeEntrada(l);
+  return FEC_SLA.map(m => {
+    const feitoEm = sla[m.chave] || null;
+    if (feitoEm) {
+      const gastos = Math.floor((new Date(feitoEm) - new Date(String(l.data_adicao).slice(0,10) + 'T00:00:00')) / 86400000);
+      return { ...m, estado: gastos <= m.dias ? 'feito' : 'feito_atrasado', feitoEm, gastos };
+    }
+    if (dias === null) return { ...m, estado: 'sem_data', feitoEm: null, gastos: null };
+    const restam = m.dias - dias;
+    const estado = restam < 0 ? 'atrasado' : (restam === 0 ? 'vence_hoje' : 'no_prazo');
+    return { ...m, estado, feitoEm: null, gastos: null, restam };
+  });
+}
+
+const slaAtrasos    = l => slaFec(l).filter(m => m.estado === 'atrasado');
+const slaProximo    = l => slaFec(l).find(m => m.estado !== 'feito' && m.estado !== 'feito_atrasado');
+const slaEmDia      = l => slaAtrasos(l).length === 0;
+const slaConcluido  = l => !!((l.onboarding && l.onboarding.sla) || {}).concluido;
+
+/** Marca (ou desmarca) um marco da cadência e grava na nuvem. */
+async function marcarSlaFec(id, chave) {
+  const l = leads.find(x => x.id === id); if (!l) return;
+  const m = FEC_SLA.find(x => x.chave === chave); if (!m) return;
+  l.onboarding = Object.assign({}, l.onboarding);
+  l.onboarding.sla = Object.assign({}, l.onboarding.sla);
+  const jaTinha = !!l.onboarding.sla[chave];
+  if (jaTinha) {
+    delete l.onboarding.sla[chave];
+  } else {
+    l.onboarding.sla[chave] = agoraISO();
+    logEvento(l, 'Cadência: ' + m.rotulo);
+  }
+  try {
+    if (sb) {
+      const { error } = await sb.from('leads')
+        .update({ onboarding: l.onboarding, historico: l.historico }).eq('id', id);
+      if (error) throw error;
+    }
+    save();
+    if (!jaTinha) {
+      showToast('✓ ' + m.rotulo + ' registrado');
+      if (chave === 'concluido') launchConfetti();
+    } else showToast(m.rotulo + ' desmarcado');
+  } catch (e) {
+    console.warn(e);
+    showToast('Não foi possível salvar na nuvem — recarregue e tente de novo');
+  }
+  renderFecomercio(); renderGestao();
+}
+
+/** Selo compacto da cadência, usado na tabela e no Kanban. */
+function seloSlaFec(l) {
+  const atrasos = slaAtrasos(l);
+  if (atrasos.length) {
+    const pior = atrasos[atrasos.length - 1];
+    return `<span class="sla-badge atrasado" title="Prazo de ${pior.dias} dias vencido">
+      ${atrasos.length > 1 ? atrasos.length + ' prazos vencidos' : pior.curto + ' atrasado'}</span>`;
+  }
+  const prox = slaProximo(l);
+  if (!prox) return `<span class="sla-badge ok">Cadência concluída</span>`;
+  if (prox.estado === 'sem_data') return `<span class="sla-badge neutro">Sem data de entrada</span>`;
+  if (prox.estado === 'vence_hoje') return `<span class="sla-badge hoje">${prox.curto} vence hoje</span>`;
+  return `<span class="sla-badge ok">${prox.curto} em ${prox.restam}d</span>`;
+}
+
+/** Botões de marcar marco, para o modal e para o card do Kanban. */
+function botoesSlaFec(l) {
+  return slaFec(l).map(m => {
+    const feito = m.estado === 'feito' || m.estado === 'feito_atrasado';
+    const cls = feito ? (m.estado === 'feito_atrasado' ? 'sla-btn feito-atrasado' : 'sla-btn feito')
+                      : (m.estado === 'atrasado' ? 'sla-btn atrasado' : 'sla-btn');
+    const info = feito ? `feito em ${m.gastos}d (prazo ${m.dias}d)`
+               : (m.estado === 'atrasado' ? `vencido há ${Math.abs(m.restam)}d`
+               : (m.estado === 'vence_hoje' ? 'vence hoje' : `faltam ${m.restam}d`));
+    return `<button type="button" class="${cls}" title="${info}"
+      onclick="marcarSlaFec('${l.id}','${m.chave}')">
+      ${feito ? '✓ ' : ''}${m.rotulo}<span class="sla-prazo">${info}</span></button>`;
+  }).join('');
+}
+
+// ── 2. EXPORTAÇÃO DE RELATÓRIO ──────────────────────────────────────────────
+// Exporta exatamente o que está filtrado na tela, para a apresentação de
+// resultados: a Lara filtra o status, exporta e mostra quantos há em cada etapa.
+function exportarCSV(nomeBase, colunas, linhas) {
+  if (!linhas.length) { showToast('Nada para exportar com os filtros atuais'); return; }
+  const esc = v => {
+    const s = v === null || v === undefined ? '' : String(v);
+    return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const corpo = [colunas.map(c => esc(c.titulo)).join(';')]
+    .concat(linhas.map(l => colunas.map(c => esc(c.valor(l))).join(';')))
+    .join('\r\n');
+  const hoje = new Date().toISOString().slice(0, 10);
+  const nome = `${nomeBase}_${hoje}.csv`;
+  // BOM para o Excel abrir acentuação certa
+  const blob = new Blob(['﻿' + corpo], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nome;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  showToast(`✓ ${linhas.length} linha${linhas.length > 1 ? 's' : ''} exportada${linhas.length > 1 ? 's' : ''} — ${nome}`);
+}
+
+const nomeResponsavel = id => {
+  if (!id) return 'Sem responsável';
+  const p = (_perfisFec || []).find(x => x.id === id);
+  return p ? p.nome : id.slice(0, 8);
+};
+
+const COLS_LEAD = [
+  { titulo: 'Empresa',       valor: l => l.empresa || '' },
+  { titulo: 'Contato',       valor: l => l.nome_contato || '' },
+  { titulo: 'Cargo',         valor: l => l.cargo || '' },
+  { titulo: 'E-mail',        valor: l => l.email || '' },
+  { titulo: 'Telefone',      valor: l => l.telefone || '' },
+  { titulo: 'Cidade',        valor: l => l.cidade || '' },
+  { titulo: 'Setor',         valor: l => l.setor || '' },
+  { titulo: 'Canal',         valor: l => l.canal || '' },
+  { titulo: 'Status',        valor: l => l.status || '' },
+  { titulo: 'Prioridade',    valor: l => l.prioridade || '' },
+  { titulo: 'Responsável',   valor: l => nomeResponsavel(l.dono) },
+  { titulo: 'Plano',         valor: l => l.pacote || '' },
+  { titulo: 'Vidas',         valor: l => l.vidas || '' },
+  { titulo: 'Valor estimado',valor: l => l.valor_estimado || '' },
+  { titulo: 'Valor fechado', valor: l => l.valor_fechado || '' },
+  { titulo: 'Entrou em',     valor: l => String(l.data_adicao || '').slice(0, 10) },
+  { titulo: 'Reunião',       valor: l => l.reuniao_data || '' },
+];
+
+const COLS_FEC = [
+  { titulo: 'Empresa',     valor: l => l.empresa || '' },
+  { titulo: 'Cidade',      valor: l => l.cidade || '' },
+  { titulo: 'Contato',     valor: l => l.nome_contato || '' },
+  { titulo: 'E-mail',      valor: l => l.email || '' },
+  { titulo: 'Telefone',    valor: l => l.telefone || '' },
+  { titulo: 'Responsável', valor: l => nomeResponsavel(l.dono) },
+  { titulo: 'Plano',       valor: l => fecPlano(l) },
+  { titulo: 'Etapa',       valor: l => fecEtapa(l) },
+  { titulo: 'Substatus',   valor: l => fecSub(l) },
+  { titulo: 'Entrou em',   valor: l => String(l.data_adicao || '').slice(0, 10) },
+  { titulo: 'Dias na base',valor: l => { const d = diasDesdeEntrada(l); return d === null ? '' : d; } },
+  { titulo: 'Cadência',    valor: l => slaAtrasos(l).length ? 'Atrasada' : (slaConcluido(l) ? 'Concluída' : 'Em dia') },
+  { titulo: 'Prazos vencidos', valor: l => slaAtrasos(l).map(m => m.curto).join(' + ') },
+  { titulo: 'Próximo prazo',   valor: l => { const p = slaProximo(l); return p ? `${p.rotulo} (${p.dias}d)` : 'nenhum'; } },
+].concat(FEC_SLA.map(m => ({
+  titulo: m.curto + ' em',
+  valor: l => { const s = (l.onboarding && l.onboarding.sla) || {}; return s[m.chave] ? String(s[m.chave]).slice(0, 10) : ''; }
+})));
+
+function exportarPipeline()   { exportarCSV('Pipeline_FlexON', COLS_LEAD, getFiltered()); }
+function exportarFecomercio() { exportarCSV('FECOMERCIO_FlexON', COLS_FEC, fecFiltrados()); }
+function exportarResidenciais(){ exportarCSV('Residenciais_FlexON', COLS_LEAD, leads.filter(l => l.canal === 'Residencial' && l.status !== 'Desqualificado')); }
+function exportarQuentes()    { exportarCSV('Radar_FlexON', COLS_LEAD, leads.filter(isQuente)); }
+function exportarAtivos()     { exportarCSV('Ativos_FlexON', COLS_LEAD, leads.filter(l => l.status === 'Fechado')); }
+function exportarDesq()       { exportarCSV('Desqualificados_FlexON', COLS_LEAD, leads.filter(l => l.status === 'Desqualificado')); }
+function exportarParceiros()  {
+  exportarCSV('Parceiros_FlexON', [
+    { titulo: 'Parceiro', valor: p => p.nome || '' },
+    { titulo: 'Tipo',     valor: p => TIPO_LABELS[p.tipo] || p.tipo || '' },
+    { titulo: 'Cidade',   valor: p => p.cidade || '' },
+    { titulo: 'E-mail',   valor: p => p.email || '' },
+    { titulo: 'Telefone', valor: p => p.telefone || p.whatsapp || '' },
+    { titulo: 'Status',   valor: p => (typeof PARC_STATUS_LABELS !== 'undefined' ? (PARC_STATUS_LABELS[p.status] || p.status) : p.status) || '' },
+    { titulo: 'Reunião',  valor: p => p.reuniao_data || '' },
+  ], getParceiros());
+}
+
+// ── 3. MARCAÇÕES DO SDR ─────────────────────────────────────────────────────
+// Taxa de resposta, SQL e show rate não tinham registro nenhum. Agora cada um
+// tem um evento próprio no histórico, que é de onde o painel lê.
+const EV_RESPONDEU = 'Respondeu';
+const EV_SQL       = 'Qualificado (SQL)';
+const EV_REU_OK    = 'Reunião realizada';
+const EV_REU_NAO   = 'Reunião não compareceu';
+
+const temEvento = (l, tipo) => (l.historico || []).some(h => (h.tipo || '') === tipo);
+
+async function marcarEventoLead(tipo) {
+  const l = leads.find(x => x.id === currentLeadId); if (!l) return;
+  if (temEvento(l, tipo)) { showToast('Já estava marcado como "' + tipo + '"'); return; }
+  logEvento(l, tipo);
+  if (tipo === EV_SQL && !l.sinais) l.sinais = {};
+  try {
+    if (sb) {
+      const { error } = await sb.from('leads').update({ historico: l.historico }).eq('id', l.id);
+      if (error) throw error;
+    }
+    save(); showToast('✓ ' + tipo);
+  } catch (e) { console.warn(e); showToast('Não foi possível salvar na nuvem'); }
+  renderMarcacoesSDR(); renderGestao();
+}
+
+function renderMarcacoesSDR() {
+  const box = document.getElementById('sdrMarcasBox'); if (!box) return;
+  const l = leads.find(x => x.id === currentLeadId);
+  if (!l || ehFec(l)) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  const b = (tipo, rot) => `<button type="button" class="sla-btn ${temEvento(l, tipo) ? 'feito' : ''}"
+      onclick="marcarEventoLead('${tipo.replace(/'/g, "\\'")}')">${temEvento(l, tipo) ? '✓ ' : ''}${rot}</button>`;
+  box.innerHTML = `<span class="stage-actions-label">Registrar para a métrica do SDR:</span>
+    ${b(EV_RESPONDEU, 'Respondeu')}
+    ${b(EV_SQL, 'Qualificado (SQL)')}
+    ${b(EV_REU_OK, 'Reunião realizada')}
+    ${b(EV_REU_NAO, 'Não compareceu')}`;
+}
+
+// ── 4. DASHBOARD DA GESTÃO ──────────────────────────────────────────────────
+let _gestaoPeriodo = 'mes';
+const PERIODOS = { mes: 'Este mês', d30: 'Últimos 30 dias', d90: 'Últimos 90 dias', tudo: 'Desde o início' };
+
+function dentroPeriodo(iso) {
+  if (!iso) return false;
+  if (_gestaoPeriodo === 'tudo') return true;
+  const d = new Date(iso); if (isNaN(d)) return false;
+  const agora = new Date();
+  if (_gestaoPeriodo === 'mes') return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+  const dias = _gestaoPeriodo === 'd30' ? 30 : 90;
+  return (agora - d) / 86400000 <= dias;
+}
+
+/** Leads com um evento do tipo pedido dentro do período. */
+const comEventoNoPeriodo = (base, tipo) =>
+  base.filter(l => (l.historico || []).some(h => (h.tipo || '') === tipo && dentroPeriodo(h.quando)));
+
+function setGestaoPeriodo(p) { _gestaoPeriodo = p; renderGestao(); }
+
+const pct = (a, b) => b > 0 ? Math.round((a / b) * 100) : 0;
+const brl = v => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+
+function cartao(valor, rotulo, cor, nota) {
+  return `<div class="hoje-stat"><div class="n" style="color:${cor};font-size:22px">${valor}</div>
+    <div class="l">${rotulo}</div>${nota ? `<div class="g-nota">${nota}</div>` : ''}</div>`;
+}
+
+function metricasSDR() {
+  // universo do SDR: prospecção. FECOMERCIO já é cliente e não entra.
+  const base = leads.filter(l => l.canal !== 'FECOMERCIO');
+  const abordados = comEventoNoPeriodo(base, 'Contatado');
+  const responderam = comEventoNoPeriodo(base, EV_RESPONDEU);
+  const sqls = comEventoNoPeriodo(base, EV_SQL);
+  const agendadas = comEventoNoPeriodo(base, 'Reunião agendada');
+  const feitas = comEventoNoPeriodo(base, EV_REU_OK);
+  const faltaram = comEventoNoPeriodo(base, EV_REU_NAO);
+  const comparecimento = feitas.length + faltaram.length;
+  return { abordados, responderam, sqls, agendadas, feitas, faltaram, comparecimento };
+}
+
+function painelSDR() {
+  const m = metricasSDR();
+  const semDado = m.responderam.length === 0 && m.sqls.length === 0 && m.comparecimento === 0;
+  return `
+    <div class="g-painel">
+      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-flame"/></svg> SDR — prospecção</div>
+        <button class="btn-secondary g-exp" onclick="exportarGestaoSDR()">Exportar relatório</button></div>
+      <div class="hoje-stats">
+        ${cartao(m.abordados.length, 'Leads abordados', 'var(--primary)')}
+        ${cartao(pct(m.responderam.length, m.abordados.length) + '%', 'Taxa de resposta', '#d97706', `${m.responderam.length} de ${m.abordados.length}`)}
+        ${cartao(m.sqls.length, 'SQL', '#2faa86', pct(m.sqls.length, m.abordados.length) + '% dos abordados')}
+        ${cartao(m.comparecimento ? pct(m.feitas.length, m.comparecimento) + '%' : '—', 'Show rate', '#5b8fd0', m.comparecimento ? `${m.feitas.length} de ${m.comparecimento} reuniões` : 'sem reunião marcada ainda')}
+        ${cartao(m.agendadas.length, 'Reuniões agendadas', 'var(--text2)')}
+      </div>
+      ${semDado ? `<div class="g-aviso">Resposta, SQL e show rate começam a contar agora: marque no modal do lead, no bloco
+        "Registrar para a métrica do SDR". Só aparece aqui o que for marcado de hoje em diante.</div>` : ''}
+    </div>`;
+}
+
+function metricasCS() {
+  const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado');
+  const porEtapa = {}; FEC_ETAPAS.forEach(e => porEtapa[e] = fec.filter(l => fecEtapa(l) === e).length);
+  const atrasados = fec.filter(l => slaAtrasos(l).length);
+  const emDia = fec.filter(l => slaEmDia(l));
+  const concluidosPeriodo = fec.filter(l => {
+    const s = (l.onboarding && l.onboarding.sla) || {};
+    return s.concluido && dentroPeriodo(s.concluido);
+  });
+  // tempo médio até cada marco, com os marcos que a equipe já registrou
+  const medias = FEC_SLA.map(m => {
+    const g = fec.map(l => slaFec(l).find(x => x.chave === m.chave))
+                 .filter(x => x && x.gastos !== null && x.gastos >= 0).map(x => x.gastos);
+    return { ...m, media: g.length ? Math.round(g.reduce((a, b) => a + b, 0) / g.length) : null, n: g.length };
+  });
+  return { fec, porEtapa, atrasados, emDia, concluidosPeriodo, medias };
+}
+
+function painelCS() {
+  const m = metricasCS();
+  return `
+    <div class="g-painel">
+      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> CS — carteira FECOMERCIO</div>
+        <button class="btn-secondary g-exp" onclick="exportarFecomercio()">Exportar relatório</button></div>
+      <div class="hoje-stats">
+        ${cartao(m.fec.length, 'Clientes na carteira', 'var(--primary)')}
+        ${FEC_ETAPAS.map(e => cartao(m.porEtapa[e], e, FEC_COR_ETAPA[e])).join('')}
+        ${cartao(pct(m.emDia.length, m.fec.length) + '%', 'Cadência em dia', m.atrasados.length ? '#c2540f' : '#1f9d6b', `${m.atrasados.length} com prazo vencido`)}
+        ${cartao(m.concluidosPeriodo.length, 'Concluídos no período', '#1f9d6b')}
+      </div>
+      <div class="g-sub">Tempo médio até cada marco da cadência</div>
+      <div class="hoje-stats">
+        ${m.medias.map(x => cartao(x.media === null ? '—' : x.media + 'd', 'Até ' + x.curto.toLowerCase(),
+            x.media === null ? 'var(--text3)' : (x.media > x.dias ? '#c2540f' : '#1f9d6b'),
+            x.media === null ? 'sem registro' : `prazo ${x.dias}d · ${x.n} empresa${x.n > 1 ? 's' : ''}`)).join('')}
+      </div>
+      ${m.atrasados.length ? `<div class="g-aviso alerta">
+        <strong>${m.atrasados.length} empresa${m.atrasados.length > 1 ? 's' : ''} com prazo vencido.</strong>
+        ${m.atrasados.slice(0, 8).map(l => `<button class="g-link" onclick="switchAppView('fecomercio');openDetail('${l.id}')">${l.empresa}</button>`).join('')}
+        ${m.atrasados.length > 8 ? ` e mais ${m.atrasados.length - 8}` : ''}</div>` : ''}
+    </div>`;
+}
+
+function metricasOperacional() {
+  const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado');
+  const comSub = s => fec.filter(l => fecSub(l) === s).length;
+  const naEtapa = e => fec.filter(l => fecEtapa(l) === e).length;
+  return {
+    fec,
+    pendenteCadastro: comSub('Pendente cadastro na plataforma'),
+    emAnalise: comSub('Cadastro em análise'),
+    diagIniciado: comSub('Diagnóstico iniciado'),
+    diagFinalizado: comSub('Diagnóstico finalizado'),
+    capacitacao: comSub('Capacitação de líderes'),
+    canalDenuncias: comSub('Canal de denúncias'),
+    edu: comSub('Flex ON Edu'),
+    conformidade: naEtapa('Conformidade'),
+    concluido: naEtapa('Concluído'),
+  };
+}
+
+function painelOperacional() {
+  const m = metricasOperacional();
+  return `
+    <div class="g-painel">
+      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-grid"/></svg> Operacional — implantação</div>
+        <button class="btn-secondary g-exp" onclick="exportarGestaoOperacional()">Exportar relatório</button></div>
+      <div class="hoje-stats">
+        ${cartao(m.pendenteCadastro, 'Pendente cadastro', '#8a877f')}
+        ${cartao(m.emAnalise, 'Cadastro em análise', '#8a877f')}
+        ${cartao(m.diagIniciado, 'Diagnóstico iniciado', '#e8675b')}
+        ${cartao(m.diagFinalizado, 'Diagnóstico finalizado', '#e8675b')}
+      </div>
+      <div class="g-sub">Conformidade entregue</div>
+      <div class="hoje-stats">
+        ${cartao(m.capacitacao, 'Capacitação de líderes', '#d99a2b')}
+        ${cartao(m.canalDenuncias, 'Canal de denúncias', '#d99a2b')}
+        ${cartao(m.edu, 'Flex ON Edu', '#d99a2b')}
+        ${cartao(m.concluido, 'Implantação concluída', '#1f9d6b')}
+      </div>
+    </div>`;
+}
+
+function metricasGestao() {
+  const clientes = leads.filter(l => (l.status === 'Fechado' || l.canal === 'FECOMERCIO') && l.status !== 'Desqualificado');
+  const vidas = clientes.reduce((s, l) => s + (Number(l.vidas) || 0), 0);
+  const novos = clientes.filter(l => dentroPeriodo(l.data_contratacao || l.data_adicao));
+  const receita = clientes.reduce((s, l) => s + (Number(l.valor_fechado) || 0), 0);
+  const porPlano = {};
+  clientes.forEach(l => {
+    const p = l.pacote || 'A definir';
+    porPlano[p] = porPlano[p] || { n: 0, receita: 0, vidas: 0 };
+    porPlano[p].n++; porPlano[p].receita += Number(l.valor_fechado) || 0;
+    porPlano[p].vidas += Number(l.vidas) || 0;
+  });
+  const comVidas = clientes.filter(l => Number(l.vidas) > 0).length;
+  return { clientes, vidas, novos, receita, porPlano, comVidas,
+           ticket: clientes.length ? Math.round(receita / clientes.length) : 0 };
+}
+
+function painelGestaoBemEstar() {
+  const m = metricasGestao();
+  const planos = Object.entries(m.porPlano).sort((a, b) => b[1].n - a[1].n);
+  return `
+    <div class="g-painel">
+      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-flag"/></svg> Gestão e bem-estar</div>
+        <button class="btn-secondary g-exp" onclick="exportarGestaoClientes()">Exportar relatório</button></div>
+      <div class="hoje-stats">
+        ${cartao(m.clientes.length, 'Clientes ativos', 'var(--primary)')}
+        ${cartao(m.vidas.toLocaleString('pt-BR'), 'Vidas cobertas', '#2faa86', m.comVidas < m.clientes.length ? `${m.clientes.length - m.comVidas} sem vidas informadas` : '')}
+        ${cartao(m.novos.length, 'Novos no período', '#5b8fd0')}
+        ${cartao(brl(m.receita), 'Receita contratada', '#1f9d6b')}
+        ${cartao(brl(m.ticket), 'Ticket médio', 'var(--text2)')}
+      </div>
+      <div class="g-sub">Por plano</div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Plano</th><th>Clientes</th><th>Vidas</th><th>Receita</th></tr></thead>
+        <tbody>${planos.map(([p, v]) => `<tr><td>${p}</td><td>${v.n}</td><td>${v.vidas.toLocaleString('pt-BR')}</td><td>${brl(v.receita)}</td></tr>`).join('')
+          || '<tr><td colspan="4">Sem cliente com plano definido.</td></tr>'}</tbody></table>
+      </div>
+    </div>`;
+}
+
+function exportarGestaoSDR() {
+  const m = metricasSDR();
+  const marca = (l, t) => temEvento(l, t) ? 'sim' : '';
+  exportarCSV('Metricas_SDR_FlexON', COLS_LEAD.concat([
+    { titulo: 'Abordado',   valor: l => marca(l, 'Contatado') },
+    { titulo: 'Respondeu',  valor: l => marca(l, EV_RESPONDEU) },
+    { titulo: 'SQL',        valor: l => marca(l, EV_SQL) },
+    { titulo: 'Reunião realizada', valor: l => marca(l, EV_REU_OK) },
+    { titulo: 'Não compareceu',    valor: l => marca(l, EV_REU_NAO) },
+  ]), m.abordados);
+}
+function exportarGestaoOperacional() { exportarCSV('Operacional_FlexON', COLS_FEC, metricasOperacional().fec); }
+function exportarGestaoClientes() {
+  exportarCSV('Clientes_FlexON', COLS_LEAD.concat([
+    { titulo: 'Contratado em', valor: l => String(l.data_contratacao || '').slice(0, 10) },
+  ]), metricasGestao().clientes);
+}
+
+function renderGestao() {
+  const el = document.getElementById('gestaoBody'); if (!el) return;
+  const sel = document.getElementById('gestaoPeriodo');
+  if (sel && sel.options.length === 0) {
+    Object.entries(PERIODOS).forEach(([k, v]) => sel.add(new Option(v, k)));
+    sel.value = _gestaoPeriodo;
+  }
+  el.innerHTML = painelSDR() + painelCS() + painelOperacional() + painelGestaoBemEstar();
+}
+
+// ── 5. KANBAN DA FECOMERCIO ─────────────────────────────────────────────────
+let _fecModo = 'tabela';
+function setFecModo(m) {
+  _fecModo = m;
+  ['tabela', 'kanban'].forEach(x => {
+    const b = document.getElementById('fecModo-' + x);
+    if (b) b.classList.toggle('active', x === m);
+  });
+  renderFecomercio();
+}
+
+function cardKanbanFec(l) {
+  const atrasado = slaAtrasos(l).length > 0;
+  return `<div class="kanban-card ${atrasado ? 'sla-alerta' : ''}" onclick="openDetail('${l.id}')">
+    <div class="kc-nome">${l.empresa || '(sem nome)'}</div>
+    <div class="kc-meta">${l.cidade || '—'} · ${fecPlano(l)}</div>
+    ${fecSub(l) ? `<div class="kc-sub">${fecSub(l)}</div>` : ''}
+    <div class="kc-sla">${seloSlaFec(l)}</div>
+    <div class="kc-dono">${nomeResponsavel(l.dono)}</div>
+  </div>`;
+}
+
+function renderKanbanFec(lista) {
+  const wrap = document.getElementById('fecKanban'); if (!wrap) return;
+  wrap.innerHTML = FEC_ETAPAS.map(e => {
+    const itens = lista.filter(l => fecEtapa(l) === e);
+    const atrasados = itens.filter(l => slaAtrasos(l).length).length;
+    return `<div class="kanban-col">
+      <div class="kanban-header" style="border-bottom-color:${FEC_COR_ETAPA[e]}">
+        <span style="color:${FEC_COR_ETAPA[e]}">${e}</span>
+        <span class="kanban-count">${itens.length}</span>
+        ${atrasados ? `<span class="sla-badge atrasado" style="margin-left:auto">${atrasados} atrasado${atrasados > 1 ? 's' : ''}</span>` : ''}
+      </div>
+      <div class="kanban-body">${itens.map(cardKanbanFec).join('') || '<div class="kanban-vazio">Nenhuma empresa nesta etapa.</div>'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── liga as peças novas ao que já existia, sem reescrever as funções grandes ──
+function fecFiltrados() {
+  const bq  = (document.getElementById('fecBusca')?.value || '').trim().toLowerCase();
+  const fPl = document.getElementById('fecFiltroPlano')?.value || '';
+  const fDo = document.getElementById('fecFiltroDono')?.value || '';
+  const fMe = document.getElementById('fecFiltroMes')?.value || '';
+  return leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado'
+    && (!_soMeusLeads || souDono(l))
+    && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
+    && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
+    && (!_soNovosFec || ehClienteNovo(l))
+    && (!_fecEtapasSel.size || _fecEtapasSel.has(fecEtapa(l)))
+    && (!fPl || fecPlano(l) === fPl)
+    && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
+             || (l.cidade||'').toLowerCase().includes(bq) || (l.email||'').toLowerCase().includes(bq)
+             || (l.notas||'').toLowerCase().includes(bq)));
+}
+
+function aplicarModoFec() {
+  const tab = document.getElementById('fecTabelaWrap');
+  const kan = document.getElementById('fecKanban');
+  if (!tab || !kan) return;
+  const kanbanOn = _fecModo === 'kanban';
+  tab.style.display = kanbanOn ? 'none' : '';
+  kan.style.display = kanbanOn ? 'flex' : 'none';
+  if (kanbanOn) renderKanbanFec(fecFiltrados());
+}
+
+(function ligarExtras() {
+  const _rf = renderFecomercio;
+  renderFecomercio = function () { _rf.apply(this, arguments); try { aplicarModoFec(); } catch (e) { console.warn('modo fec', e); } };
+  const _od = openDetail;
+  openDetail = function () { _od.apply(this, arguments); try { renderMarcacoesSDR(); } catch (e) { console.warn('marcas sdr', e); } };
+})();
 
 // ── START ─────────────────────────────────────────────────────────────────────
 if (window.CAPTURA_CLOUD) { bootCaptura(); } else { init(); }
