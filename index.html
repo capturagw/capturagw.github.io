@@ -1643,6 +1643,58 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   .login-btn:hover { transform: translateY(-1px); } .login-btn:disabled { opacity: .6; cursor: wait; }
   .btn-sair { background: none; border: 1px solid var(--border2); color: var(--text2); font-family: inherit; font-size: 11.5px; font-weight: 600; padding: 6px 11px; border-radius: 8px; cursor: pointer; margin-left: 8px; }
   .btn-sair:hover { border-color: var(--primary); color: var(--primary-h); }
+  /* ─── Painel de contexto (24/11/2026) ─────────────────────────────────
+     O detalhe do lead deixa de ser modal e vira doca fixa à direita: fica
+     aberta enquanto você percorre a lista, e clicar em outra empresa troca
+     o conteúdo em vez de fechar e reabrir. Em tela estreita volta a ser
+     modal, senão não sobra lista nenhuma do lado.                        */
+  :root { --ctx-larg: 440px; }
+  #detailModal { inset:0 0 0 auto; width:var(--ctx-larg); background:transparent;
+    backdrop-filter:none; -webkit-backdrop-filter:none; z-index:900;
+    align-items:stretch; justify-content:stretch; }
+  #detailModal .modal { width:100%; max-width:none; height:100%; max-height:none;
+    border-radius:0; border:0; border-left:1px solid var(--border);
+    box-shadow:-14px 0 34px rgba(15,23,42,.10); padding:22px 22px 30px;
+    overflow-y:auto; animation:ctxEntra .18s cubic-bezier(.16,1,.3,1); }
+  @keyframes ctxEntra { from { transform:translateX(18px); opacity:0 }
+                        to   { transform:none; opacity:1 } }
+  body.ctx-aberto { padding-right:var(--ctx-larg); }
+  #detailModal .modal-header { position:sticky; top:-22px; z-index:2;
+    background:var(--white); margin:-22px -22px 0; padding:22px 22px 12px; }
+  /* Na doca estreita as abas não cabem lado a lado: elas param de esticar
+     e a faixa rola na horizontal, em vez de quebrar o rótulo em três linhas. */
+  #detailModal .modal-tabs { overflow-x:auto; scrollbar-width:none; }
+  #detailModal .modal-tabs::-webkit-scrollbar { display:none; }
+  #detailModal .mtab { flex:0 0 auto; white-space:nowrap; font-size:11.5px; padding:7px 10px; }
+  @media (max-width:1280px) { :root { --ctx-larg:380px; } }
+  @media (max-width:1020px) {
+    #detailModal { inset:0; width:auto; background:rgba(34,42,52,.42);
+      backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+      align-items:center; justify-content:center; }
+    #detailModal .modal { width:95%; max-width:680px; height:auto; max-height:90vh;
+      border-radius:12px; border:1px solid var(--border); padding:28px; }
+    #detailModal .modal-header { position:static; margin:0; padding:0; }
+    body.ctx-aberto { padding-right:0; }
+  }
+
+  .hist-corpo { display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+  .hist-mudou { font-size:11.5px; color: var(--text2); }
+  .hist-mudou b { color: var(--text3); font-weight:700; padding:0 2px; }
+  .hist-quem  { font-size:10.5px; color: var(--text3); }
+
+  /* ─── Perfil só leitura (sócios) ──────────────────────────────────── */
+  body.so-leitura .btn-primary,
+  body.so-leitura select:not(.filter):not(#gestaoPeriodo):not(#fecOrdem):not(#resFiltroStatus):not(#resFiltroCidade):not(#b2gFiltroStatus):not(#b2gFiltroUF):not(#b2gFiltroPortal):not(#b2gFiltroMes):not(#fecFiltroDono):not(#fecFiltroPlano):not(#fecFiltroMes):not(#parcFiltroTipo):not(#parcFiltroStatus),
+  body.so-leitura .sla-btn,
+  body.so-leitura .b2g-status, body.so-leitura .b2g-prox,
+  body.so-leitura input[type="date"], body.so-leitura textarea {
+    opacity:.5; pointer-events:none;
+  }
+  .leitura-aviso { display:flex; align-items:center; gap:9px; margin:0 0 14px;
+    padding:10px 14px; border-radius:10px; font-size:12.5px; line-height:1.5;
+    background: var(--surface2); color: var(--text2); border:1px solid var(--border); }
+  .leitura-aviso b { color: var(--text); }
+
   .papel-badge { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 8px; background: var(--primary-l); color: var(--primary-h); margin-left: 6px; }
 
   /* ─── Dashboard da gestão + cadência FECOMERCIO (19/11/2026) ─────────── */
@@ -3144,9 +3196,54 @@ const STATUS_COLORS = {
 
 // ══ HISTÓRICO (data/hora por etapa) ═══════════════════════════════════════════
 function agoraISO(){ return new Date().toISOString(); }
-function logEvento(l, tipo){
+/** Registro de eventos do lead.
+ *  Antes guardava só {tipo, quando}: dava para saber O QUE aconteceu, nunca
+ *  QUEM fez nem DE ONDE PARA ONDE. Sem isso o Captura só conhecia o estado
+ *  de hoje, e qualquer métrica de tempo nascia vazia. Eventos antigos, sem
+ *  `quem`, continuam válidos — tudo que lê o histórico trata o campo como
+ *  opcional. */
+function logEvento(l, tipo, mudanca){
   if (!l.historico) l.historico = [];
-  l.historico.push({ tipo, quando: agoraISO() });
+  const ev = { tipo, quando: agoraISO() };
+  const id = meuId(); if (id) { ev.quem = id; ev.nome = meuNome(); }
+  if (mudanca) {
+    if (mudanca.campo) ev.campo = mudanca.campo;
+    if (mudanca.de)    ev.de    = mudanca.de;
+    if (mudanca.para)  ev.para  = mudanca.para;
+  }
+  l.historico.push(ev);
+  return ev;
+}
+
+/** Rótulos dos campos que passam pelo registro de eventos. */
+const EV_CAMPOS = { etapa:'Etapa', subetapa:'Substatus', plano:'Plano',
+                    dono:'Responsável', status:'Status' };
+
+/** Eventos de mudança de um campo, em ordem cronológica. */
+const eventosDe = (l, campo) =>
+  (l.historico || []).filter(h => h.campo === campo && h.quando)
+                     .sort((a, b) => String(a.quando).localeCompare(String(b.quando)));
+
+/** Dias que o lead passou em cada valor de um campo, fechando o período
+ *  aberto com a data de hoje. Só conta trechos com começo e fim conhecidos. */
+function temposPorValor(lista, campo) {
+  const acc = {};
+  const agora = Date.now();
+  lista.forEach(l => {
+    const evs = eventosDe(l, campo);
+    if (!evs.length) return;
+    evs.forEach((ev, i) => {
+      const valor = ev.para; if (!valor) return;
+      const fim = i + 1 < evs.length ? new Date(evs[i + 1].quando).getTime() : agora;
+      const ini = new Date(ev.quando).getTime();
+      if (isNaN(ini) || isNaN(fim) || fim < ini) return;
+      const dias = (fim - ini) / 86400000;
+      acc[valor] = acc[valor] || { total: 0, n: 0 };
+      acc[valor].total += dias; acc[valor].n++;
+    });
+  });
+  return Object.entries(acc).map(([valor, v]) =>
+    ({ valor, media: Math.round(v.total / v.n), n: v.n }));
 }
 function fmtDataHora(iso){
   if (!iso) return '—';
@@ -3426,6 +3523,54 @@ function meuNome(){ return (window.CAPTURA.user && window.CAPTURA.user.nome) || 
 function souDono(l){ return !!(l && l.dono && meuId() && l.dono === meuId()); } // lead que EU assumi
 function podeB2G(){ return ['giovanna@flexon.fit','comercial@flexon.fit'].includes(meuEmail()); }
 function souGiovanna(){ return meuEmail() === 'giovanna@flexon.fit'; }
+
+/** Perfil de permissão.
+ *  'leitura' é o perfil dos sócios: veem tudo e não mudam nada. Vale como
+ *  trava de interface; a trava de verdade é a RLS no Supabase, que precisa
+ *  negar UPDATE para quem tem papel 'leitura'. Enquanto a política não
+ *  existir, isto evita o engano, não um usuário mal-intencionado. */
+const PAPEIS = { master:'Master', vendedor:'Vendedor(a)', leitura:'Acompanhamento' };
+function meuPapel(){ return (window.CAPTURA.user && window.CAPTURA.user.papel) || 'vendedor'; }
+function souMaster(){ return ['master','admin'].includes(meuPapel()); }
+
+/** Só o master troca o papel de alguém. 'leitura' é o perfil dos sócios. */
+async function setPapel(id, papel){
+  if (!souMaster()) { showToast('Apenas o master muda o perfil de acesso'); return; }
+  if (id === meuId() && papel !== 'master') {
+    showToast('Você não pode tirar o seu próprio acesso de master'); renderEquipe(); return;
+  }
+  try {
+    if (sb) { const { error } = await sb.from('perfis').update({ papel }).eq('id', id); if (error) throw error; }
+    // não existe uma lista global de perfis: quem guarda é o cache da aba
+    const pf = ((_equipeCache && _equipeCache.perfis) || []).find(x => x.id === id);
+    if (pf) pf.papel = papel;
+    if (id === meuId() && window.CAPTURA.user) { window.CAPTURA.user.papel = papel; aplicarPermissoes(); }
+    showToast('✓ Perfil atualizado para ' + (PAPEIS[papel] || papel));
+  } catch (e) {
+    console.warn(e);
+    showToast('Não foi possível mudar o perfil — confira se a política do Supabase permite.');
+  }
+  renderEquipe();
+}
+function soLeitura(){ return meuPapel() === 'leitura'; }
+function podeEditar(avisar){
+  if (!soLeitura()) return true;
+  if (avisar) showToast('Seu acesso é de acompanhamento: você vê tudo, mas não altera.');
+  return false;
+}
+/** Liga a trava de interface e mostra o aviso no topo das telas. */
+function aplicarPermissoes(){
+  document.body.classList.toggle('so-leitura', soLeitura());
+  document.querySelectorAll('.leitura-aviso').forEach(el => el.remove());
+  if (!soLeitura()) return;
+  document.querySelectorAll('.app-view').forEach(v => {
+    const aviso = document.createElement('div');
+    aviso.className = 'leitura-aviso';
+    aviso.innerHTML = '<svg class="ic" style="width:15px;height:15px;flex:0 0 15px"><use href="#i-id"/></svg>' +
+      '<span><b>Acesso de acompanhamento.</b> Você vê a base inteira e os indicadores; alterações ficam com a equipe.</span>';
+    v.insertBefore(aviso, v.firstChild);
+  });
+}
 
 function renderPlanodeHoje() {
   // Calcular dias desde NR-1 obrigatória (26/05/2026)
@@ -3761,10 +3906,30 @@ function renderHoje() {
     }
   });
 
-  // Atrasados primeiro; leads por score, parceiros por nome
+  // Cadência da FECOMERCIO: marco vencido ou vencendo hoje é trabalho de hoje.
+  // Entram os meus e os que estão no pool, porque ninguém assumiu ainda.
+  leads.forEach(l => {
+    if (l.canal !== 'FECOMERCIO' || l.status === 'Desqualificado') return;
+    if (l.dono && l.dono !== meuId()) return;
+    if (slaConcluido(l)) return;
+    const marcos = slaFec(l);
+    const atrasados = marcos.filter(m => m.estado === 'atrasado');
+    const hojeM = marcos.filter(m => m.estado === 'vence_hoje');
+    const alvo = atrasados[atrasados.length - 1] || hojeM[0];
+    if (!alvo) return;
+    itens.push({ tipo: 'sla_fec', lead: l, marco: alvo,
+      prazo: atrasados.length ? 'overdue' : 'today',
+      dias: atrasados.length ? Math.abs(alvo.restam || 0) : 0,
+      semDono: !l.dono });
+  });
+
+  // Ordem pelo PRAZO: o mais atrasado primeiro, depois o que vence hoje.
+  // O score só desempata — antes ele mandava, e um lead de score alto com
+  // 1 dia de atraso passava na frente de outro com 20.
   itens.sort((a, b) => {
-    if (b.prazo === 'overdue' && a.prazo !== 'overdue') return 1;
-    if (a.prazo === 'overdue' && b.prazo !== 'overdue') return -1;
+    const peso = i => i.prazo === 'overdue' ? 0 : 1;
+    if (peso(a) !== peso(b)) return peso(a) - peso(b);
+    if ((b.dias || 0) !== (a.dias || 0)) return (b.dias || 0) - (a.dias || 0);
     const sa = a.lead ? calcScore(a.lead) : 0;
     const sb = b.lead ? calcScore(b.lead) : 0;
     return sb - sa;
@@ -3801,6 +3966,18 @@ function renderHoje() {
         <div class="hoje-main">
           <div class="hoje-empresa">${l.empresa} <span style="font-weight:400;color:var(--text3);font-size:12px">· ${l.nome_contato||''}</span></div>
           <div class="hoje-acao">${t.tipo} · score ${calcScore(l)}</div>
+        </div>
+        <span class="hoje-prazo prazo-${it.prazo}">${prazoTxt}</span>
+      </div>`;
+    } else if (it.tipo === 'sla_fec') {
+      const l = it.lead, m = it.marco;
+      const prazoTxt = it.prazo === 'overdue' ? `${it.dias}d atrasado` : 'Vence hoje';
+      return `
+      <div class="hoje-item ${it.prazo}" onclick="openDetail('${l.id}');showModalTab('cadencia')">
+        <div class="hoje-icon"><svg class="ic" style="width:16px;height:16px"><use href="#i-briefcase"/></svg></div>
+        <div class="hoje-main">
+          <div class="hoje-empresa">${l.empresa} <span style="font-weight:400;color:var(--text3);font-size:12px">· FECOMERCIO${it.semDono ? ' · sem responsável' : ''}</span></div>
+          <div class="hoje-acao">Cadência: ${m.rotulo} · meta ${m.dias} dias</div>
         </div>
         <span class="hoje-prazo prazo-${it.prazo}">${prazoTxt}</span>
       </div>`;
@@ -4595,15 +4772,25 @@ function openDetail(id) {
   const hl = document.getElementById('histList');
   const hist = (l.historico||[]).slice().reverse();
   hl.innerHTML = hist.length
-    ? hist.map(h => `<div class="hist-item"><span class="hist-dot"></span><span class="hist-tipo">${h.tipo}</span><span class="hist-when">${fmtDataHora(h.quando)}</span></div>`).join('')
-    : '<div class="hist-vazio">Ainda sem etapas registradas. Cada mudança de status passa a registrar data e hora aqui.</div>';
+    ? hist.map(h => `<div class="hist-item">
+        <span class="hist-dot"></span>
+        <div class="hist-corpo">
+          <span class="hist-tipo">${esc(h.tipo)}</span>
+          ${h.de || h.para ? `<span class="hist-mudou">${esc(h.de || '—')} <b>→</b> ${esc(h.para || '—')}</span>` : ''}
+          ${h.nome ? `<span class="hist-quem">por ${esc(h.nome)}</span>` : ''}
+        </div>
+        <span class="hist-when">${fmtDataHora(h.quando)}</span>
+      </div>`).join('')
+    : '<div class="hist-vazio">Ainda sem eventos registrados. Cada mudança de status, etapa, substatus, plano e responsável passa a gravar data, hora e autor aqui.</div>';
 
   // Abrir sempre na aba Perfil
   showModalTab('perfil');
   document.getElementById('detailModal').classList.add('open');
+  document.body.classList.add('ctx-aberto');
 }
 
 async function saveLead() {
+  if (!podeEditar(true)) return;
   const l = leads.find(x => x.id === currentLeadId);
   if (!l) return;
   const statusAntigo = l.status;
@@ -4636,7 +4823,7 @@ async function saveLead() {
   l.notas = document.getElementById('editNotas').value;
 
   // Histórico: registra mudança de status com data/hora
-  if (novoStatus !== statusAntigo) { logEvento(l, novoStatus); l.ultima_interacao = hojeStr(); }
+  if (novoStatus !== statusAntigo) { logEvento(l, novoStatus, { campo: 'status', de: statusAntigo, para: novoStatus }); l.ultima_interacao = hojeStr(); }
 
   // Reunião / Google Meet
   const link = document.getElementById('editReuniaoLink').value.trim();
@@ -4759,8 +4946,9 @@ async function avancarStatus(status) {
   if (status === 'Proposta Enviada') { abrirPacoteModal('proposta'); return; }
   if (status === 'Fechado') { abrirPacoteModal('fechar'); return; }
   if (l.status === status) { showToast('Já está em ' + status); return; }
+  const anteriorStatus = l.status;
   l.status = status;
-  logEvento(l, status);
+  logEvento(l, status, { campo: 'status', de: anteriorStatus, para: status });
   l.ultima_interacao = hojeStr();
   save();
   if (sb && window.CAPTURA.user) await pushLead(l);
@@ -5146,7 +5334,21 @@ function importSelected() {
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  // o painel de contexto empurra a lista; fechá-lo devolve a largura
+  if (id === 'detailModal') {
+    document.body.classList.remove('ctx-aberto');
+    currentLeadId = null;
+    document.querySelectorAll('.ctx-sel').forEach(el => el.classList.remove('ctx-sel'));
+  }
+}
+
+// Esc fecha o painel de contexto
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('detailModal')?.classList.contains('open'))
+    closeModal('detailModal');
+});
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -5525,37 +5727,67 @@ async function carregarPerfisFec() {
   } catch (e) { console.warn('perfis', e); _perfisFec = []; }
 }
 async function setFecCampo(id, campo, valor) {
+  if (!podeEditar(true)) { renderFecomercio(); return; }
   const l = leads.find(x => x.id === id); if (!l) return;
+  const histAntes = (l.historico || []).slice();
+  const pacoteAntes = l.pacote;
+  const onboardingAntes = l.onboarding;
   try {
     if (campo === 'dono') {
       const anterior = l.dono;
+      if ((anterior || '') === (valor || '')) return;
       l.dono = valor || null;
+      logEvento(l, 'Responsável: ' + nomeResponsavel(l.dono), {
+        campo: 'dono', de: nomeResponsavel(anterior), para: nomeResponsavel(l.dono) });
       if (sb) {
-        const { data, error } = await sb.from('leads').update({ dono: l.dono }).eq('id', id).select('id');
-        if (error || !data || !data.length) { l.dono = anterior; throw (error || new Error('sem permissão')); }
+        const { data, error } = await sb.from('leads')
+          .update({ dono: l.dono, historico: l.historico }).eq('id', id).select('id');
+        if (error || !data || !data.length) { l.dono = anterior; l.historico = histAntes; throw (error || new Error('sem permissão')); }
       }
       save(); renderFecomercio(); return;
     }
     if (campo === 'plano') {
+      const de = fecPlano(l);
+      if (de === valor) return;
       l.pacote = valor;
-      if (sb) { const { error } = await sb.from('leads').update({ pacote: valor }).eq('id', id); if (error) throw error; }
+      logEvento(l, 'Plano: ' + valor, { campo: 'plano', de, para: valor });
+      // .select('id') é o que denuncia a recusa da RLS: sem ele o PostgREST
+      // responde 200 com zero linhas e a tela mostra um evento que nunca
+      // foi gravado. Só o update de dono checava isso.
+      if (sb) { const { data, error } = await sb.from('leads')
+        .update({ pacote: valor, historico: l.historico }).eq('id', id).select('id');
+        if (error || !data || !data.length) throw (error || new Error('sem permissão')); }
     } else {
+      const deEtapa = fecEtapa(l), deSub = fecSub(l);
       l.onboarding = Object.assign({}, l.onboarding);
       if (campo === 'etapa') {
+        if (deEtapa === valor) return;
         l.onboarding.etapa = valor;
         const subs = FEC_SUBETAPAS[valor] || [];
         if (!subs.includes(l.onboarding.subetapa)) l.onboarding.subetapa = subs[0] || '';
+        logEvento(l, 'Etapa: ' + valor, { campo: 'etapa', de: deEtapa, para: valor });
+        // trocar a etapa troca o substatus junto: os dois viram evento
+        if (l.onboarding.subetapa !== deSub)
+          logEvento(l, 'Substatus: ' + (l.onboarding.subetapa || '—'),
+                    { campo: 'subetapa', de: deSub, para: l.onboarding.subetapa });
       } else {
+        if (deSub === valor) return;
         l.onboarding.subetapa = valor;
+        logEvento(l, 'Substatus: ' + valor, { campo: 'subetapa', de: deSub, para: valor });
       }
-      if (sb) { const { error } = await sb.from('leads').update({ onboarding: l.onboarding }).eq('id', id); if (error) throw error; }
+      if (sb) { const { data, error } = await sb.from('leads')
+        .update({ onboarding: l.onboarding, historico: l.historico }).eq('id', id).select('id');
+        if (error || !data || !data.length) throw (error || new Error('sem permissão')); }
     }
     save();
   } catch (e) {
     console.warn(e);
+    l.historico = histAntes;
+    l.pacote = pacoteAntes;
+    l.onboarding = onboardingAntes;
     showToast('Não foi possível salvar na nuvem — recarregue e tente de novo');
   }
-  renderFecomercio();
+  renderFecomercio(); renderGestao();
 }
 
 let _fecPagina = 1;
@@ -5637,7 +5869,7 @@ function renderFecomercio() {
   const box = document.getElementById('fecAcoesLote');
   if (box) {
     const semDono = fec.filter(l => !l.dono).length;
-    box.innerHTML = (semDono && window.CAPTURA.user)
+    box.innerHTML = (semDono && window.CAPTURA.user && podeEditar())
       ? `<button class="btn-secondary" style="padding:7px 12px;font-size:12px" onclick="assumirFiltradosFec()">Assumir ${semDono === 1 ? 'a empresa sem responsável deste filtro' : 'as ' + semDono + ' empresas sem responsável deste filtro'}</button>`
       : '';
   }
@@ -5703,6 +5935,7 @@ function irParaPaginaFec(p) { _fecPagina = p; renderFecomercio(); }
 
 // assume, de uma vez, todas as empresas SEM responsável que estão no filtro atual
 async function assumirFiltradosFec() {
+  if (!podeEditar(true)) return;
   const u = window.CAPTURA.user; if (!u || !sb) return;
   const bq = (document.getElementById('fecBusca')?.value || '').trim().toLowerCase();
   const fPl = document.getElementById('fecFiltroPlano')?.value || '';
@@ -6245,7 +6478,11 @@ async function renderEquipe() {
           <div class="td-empresa" style="font-size:15px">${p.nome || p.email}</div>
           <div class="td-contato">${p.email}</div>
         </div>
-        <span class="badge badge-${p.papel === 'master' ? 'fechado' : 'novo'}">${p.papel === 'master' ? 'Master' : 'Vendedor'}</span>
+        ${souMaster()
+          ? `<select class="filter" onclick="event.stopPropagation()" onchange="event.stopPropagation();setPapel('${p.id}', this.value)" style="font-size:11.5px">
+               ${Object.entries(PAPEIS).map(([k, v]) => `<option value="${k}" ${(p.papel||'vendedor') === k ? 'selected' : ''}>${v}</option>`).join('')}
+             </select>`
+          : `<span class="badge badge-${p.papel === 'master' ? 'fechado' : 'novo'}">${PAPEIS[p.papel] || 'Vendedor(a)'}</span>`}
       </div>
       <div class="vendor-card-stats">
         <div class="vendor-stat"><div class="n">${m.cf}</div><div class="l">Leads C.F</div></div>
@@ -6529,6 +6766,7 @@ async function carregarLicitacoes() {
   catch (e) { console.warn('Captura: erro ao carregar licitações —', e.message); }
 }
 async function setB2GStatus(id, status) {
+  if (!podeEditar(true)) return;
   const x = LICITACOES.find(l => l.id === id); if (x) x.status = status;
   renderB2G();
   if (sb) { try { await sb.from('licitacoes').update({ status }).eq('id', id); } catch (e) { console.warn(e); } }
@@ -6537,6 +6775,7 @@ async function setB2GStatus(id, status) {
 }
 let _b2gProxT;
 function setB2GCampo(id, campo, valor) {
+  if (!podeEditar(true)) return;
   const col = campo === 'prox' ? 'prox_passo' : campo;
   const x = LICITACOES.find(l => l.id === id); if (x) x[col] = valor;
   if (sb) { clearTimeout(_b2gProxT); _b2gProxT = setTimeout(async () => { try { await sb.from('licitacoes').update({ [col]: valor }).eq('id', id); } catch (e) {} }, 800); }
@@ -7855,6 +8094,7 @@ async function aposLogin(session) {
     if (pm && pm.metas) metas = pm.metas;
   } catch (e) {}
   window.CAPTURA.user = { id: session.user.id, email: session.user.email, nome, papel, foto, metas };
+  aplicarPermissoes();
 
   // carrega leads da nuvem; se vazio e há dados locais, migra
   let cloud = [];
@@ -7988,6 +8228,7 @@ const slaConcluido  = l => !!((l.onboarding && l.onboarding.sla) || {}).concluid
 
 /** Marca (ou desmarca) um marco da cadência e grava na nuvem. */
 async function marcarSlaFec(id, chave) {
+  if (!podeEditar(true)) return;
   const l = leads.find(x => x.id === id); if (!l) return;
   const m = FEC_SLA.find(x => x.chave === chave); if (!m) return;
   l.onboarding = Object.assign({}, l.onboarding);
@@ -8459,6 +8700,15 @@ function painelCS() {
     .concat(semEtapa ? [{ nome: 'Sem etapa definida', valor: semEtapa, cor: COR_AUSENTE }] : []);
   const venceHoje = fec.filter(l => !slaConcluido(l) && !slaAtrasos(l).length
                                     && slaFec(l).some(x => x.estado === 'vence_hoje')).length;
+  // Tempo em cada etapa vem do registro de eventos, não do estado atual:
+  // o estado diz ONDE o cliente está, só o evento diz QUANDO ele chegou.
+  const tempos = temposPorValor(fec, 'etapa');
+  const porEtapa = FEC_ETAPAS.map(e => tempos.find(t => t.valor === e))
+    .filter(Boolean)
+    .map((t, i) => ({ nome: t.valor, valor: t.media,
+                      exibicao: t.media + (t.media === 1 ? ' dia' : ' dias'),
+                      nota: t.n + (t.n === 1 ? ' passagem registrada' : ' passagens registradas'),
+                      cor: RAMPA5[Math.min(i + 1, 4)] }));
   const prazos = m.medias.filter(x => x.media !== null).map(x => ({
     nome: x.curto, valor: x.media, exibicao: x.media + (x.media === 1 ? ' dia' : ' dias'),
     nota: 'meta ' + x.dias + ' dias · ' + x.n + (x.n === 1 ? ' registro' : ' registros'),
@@ -8484,6 +8734,9 @@ function painelCS() {
         vazio: 'Nenhum cliente na carteira FECOMERCIO.' })}
       ${prazos.length ? `<div class="g-sub">Tempo médio até cada marco</div>${graficoBarras(prazos, { titulo: 'Dias médios até cada marco da cadência' })}`
         : `<div class="g-sub">Tempo médio até cada marco</div>${vazioChart('Nenhum marco registrado ainda. Marque na coluna “Cadência” da aba FECOMERCIO e o tempo médio aparece aqui.')}`}
+      <div class="g-sub">Tempo médio em cada etapa</div>
+      ${porEtapa.length ? graficoBarras(porEtapa, { titulo: 'Dias médios em cada etapa da implantação' })
+        : vazioChart('O registro de eventos começou agora. Cada mudança de etapa grava data, hora e autor — o tempo médio aparece aqui conforme a carteira se mexe.')}
     </div>`;
 }
 
@@ -8803,7 +9056,7 @@ document.addEventListener('keydown', e => {
 // liga o rail ao que já existia, sem reescrever as funções grandes
 (function ligarRailV2(){
   const _s = switchAppView;
-  switchAppView = function(view){ _s.apply(this, arguments); try { v2Ativo(view); v2Contagens(); } catch(e){ console.warn('rail v2', e); } };
+  switchAppView = function(view){ _s.apply(this, arguments); try { v2Ativo(view); v2Contagens(); aplicarPermissoes(); } catch(e){ console.warn('rail v2', e); } };
   const _r = renderLeads;
   renderLeads = function(){ _r.apply(this, arguments); try { v2Contagens(); } catch(e){} };
 })();
