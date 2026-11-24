@@ -2169,8 +2169,8 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
         <button class="btn-primary" style="margin-top:10px" onclick="openAddLicitacao()">+ Nova licitação</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input class="filter filter-search" id="b2gBusca" type="text" placeholder="Buscar licitação..." oninput="renderB2G()" style="min-width:170px">
-        <select class="filter" id="b2gFiltroMes" onchange="renderB2G()"><option value="">Todos os prazos</option></select>
+        <input class="filter filter-search" id="b2gBusca" type="text" placeholder="Buscar licitação..." oninput="_b2gPagina=1;renderB2G()" style="min-width:170px">
+        <select class="filter" id="b2gFiltroMes" onchange="_b2gPagina=1;renderB2G()"><option value="">Todos os prazos</option></select>
         <button class="btn-primary" onclick="toggleCredVault()"><svg class="ic" style="stroke:#fff"><use href="#i-id"/></svg> Credenciais Flex ON</button>
       </div>
     </div>
@@ -6315,11 +6315,13 @@ const B2G_KEY = 'flexon_b2g_prog_v1';
 const B2G_STATUS_LABELS = {
   'nova': 'Nova', 'analisando': 'Analisando edital', 'vou_participar': 'Vou participar',
   'documentacao': 'Montando documentação', 'proposta_enviada': 'Proposta enviada',
-  'ganha': 'Ganhamos', 'perdida': 'Perdida', 'descartada': 'Sem fit / descartada'
+  'ganha': 'Ganhamos', 'perdida': 'Perdida', 'descartada': 'Sem fit / descartada',
+  'vencida': 'Prazo vencido'
 };
 const B2G_STATUS_COR = {
   'nova':'#8a93a6','analisando':'#5b8fd0','vou_participar':'#e8973d','documentacao':'#9b6cff',
-  'proposta_enviada':'#7a5cff','ganha':'#2faa86','perdida':'#e0554a','descartada':'#a7adb6'
+  'proposta_enviada':'#7a5cff','ganha':'#2faa86','perdida':'#e0554a','descartada':'#a7adb6',
+  'vencida':'#8a877f'
 };
 let LICITACOES = [];
 async function carregarLicitacoes() {
@@ -6340,14 +6342,24 @@ function setB2GCampo(id, campo, valor) {
   const x = LICITACOES.find(l => l.id === id); if (x) x[col] = valor;
   if (sb) { clearTimeout(_b2gProxT); _b2gProxT = setTimeout(async () => { try { await sb.from('licitacoes').update({ [col]: valor }).eq('id', id); } catch (e) {} }, 800); }
 }
-function b2gPrazoChip(prazo) {
-  const m = (prazo || '').match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
-  if (!m) return `<span style="color:var(--text3);font-size:12px">${prazo || '—'}</span>`;
-  const hoje = new Date(); const hoje0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-  // usa o ano do prazo se vier (DD/MM/AAAA); senão assume o ano corrente (NÃO rola para o ano seguinte — prazo de licitação é fixo)
-  let ano = hoje.getFullYear();
+/** Converte o prazo em Date. Aceita AAAA-MM-DD (como o radar grava) e
+ *  DD/MM[/AAAA] (como alguem digita na mao). Devolve null se nao der. */
+function prazoParaData(prazo) {
+  const t = String(prazo || '').trim();
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  m = t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+  if (!m) return null;
+  // sem ano, assume o corrente — prazo de licitacao e fixo, nao rola para o ano seguinte
+  let ano = new Date().getFullYear();
   if (m[3]) { ano = parseInt(m[3]); if (ano < 100) ano += 2000; }
-  const alvo = new Date(ano, parseInt(m[2]) - 1, parseInt(m[1]));
+  return new Date(ano, parseInt(m[2]) - 1, parseInt(m[1]));
+}
+
+function b2gPrazoChip(prazo) {
+  const alvo = prazoParaData(prazo);
+  if (!alvo) return `<span style="color:var(--text3);font-size:12px">${prazo || '—'}</span>`;
+  const hoje = new Date(); const hoje0 = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
   const dias = Math.round((alvo - hoje0) / 86400000);
   let cor, txt;
   if (dias < 0) { cor = 'var(--text3)'; txt = dias === -1 ? 'encerrou ontem' : `encerrada há ${-dias} dias`; }
@@ -6365,16 +6377,25 @@ function renderB2G() {
   // ── RESUMO DO B2G (quantitativo por status + rosca + prazos) ──────────────────
   const porSt = {};
   lics.forEach(x => { const s = x.status || 'nova'; porSt[s] = (porSt[s] || 0) + 1; });
-  const emAndamento = lics.length - (porSt['ganha']||0) - (porSt['perdida']||0) - (porSt['descartada']||0);
+  const emAndamento = lics.length - (porSt['ganha']||0) - (porSt['perdida']||0)
+                      - (porSt['descartada']||0) - (porSt['vencida']||0);
   // valor estimado total (soma dos números encontrados no campo valor)
   const valorTotal = lics.reduce((s, x) => { const n = parseFloat(String(x.valor||'').replace(/[^\d,]/g,'').replace(/\./g,'').replace(',', '.')); return s + (isNaN(n)?0:n); }, 0);
   // prazos nos próximos 7 dias
-  const prazoProx = lics.filter(x => { const m = (x.prazo||'').match(/^(\d{1,2})\/(\d{1,2})/); if (!m) return false; const hj = new Date(); const alvo = new Date(hj.getFullYear(), +m[2]-1, +m[1]); if (alvo < new Date(hj.getFullYear(),hj.getMonth(),hj.getDate())) alvo.setFullYear(hj.getFullYear()+1); const d = Math.ceil((alvo-new Date(hj.getFullYear(),hj.getMonth(),hj.getDate()))/86400000); return d >= 0 && d <= 7; }).length;
+  // so conta prazo de licitacao ainda viva: vencida/descartada/perdida nao sao urgencia
+  const VIVAS = new Set(['nova','analisando','vou_participar','documentacao','proposta_enviada']);
+  const prazoProx = lics.filter(x => {
+    if (!VIVAS.has(x.status || 'nova')) return false;
+    const alvo = prazoParaData(x.prazo); if (!alvo) return false;
+    const hj = new Date(); const hj0 = new Date(hj.getFullYear(), hj.getMonth(), hj.getDate());
+    const d = Math.round((alvo - hj0) / 86400000);
+    return d >= 0 && d <= 7;
+  }).length;
   const stEl = document.getElementById('b2gStats');
   if (!lics.length) {
     stEl.innerHTML = `<div class="cover-card" style="flex:1"><div style="padding:16px;color:var(--text3);font-size:13px">Nenhuma licitação no radar ainda. A máquina busca 2×/dia nos portais públicos — ou cadastre uma manualmente em "+ Nova licitação".</div></div>`;
   } else {
-    const ordem = ['ganha','proposta_enviada','documentacao','vou_participar','analisando','nova','perdida','descartada'];
+    const ordem = ['ganha','proposta_enviada','documentacao','vou_participar','analisando','nova','perdida','descartada','vencida'];
     const tot = lics.length; let acc = 0; const segs = [];
     ordem.filter(k => porSt[k]).forEach(k => { const n = porSt[k]; segs.push({k,n,ini:acc/tot*100,fim:(acc+n)/tot*100,cor:B2G_STATUS_COR[k]||'#8a93a6'}); acc += n; });
     const grad = segs.length ? segs.map(s => `${s.cor} ${s.ini}% ${s.fim}%`).join(', ') : '#e5e7eb 0% 100%';
@@ -6407,7 +6428,18 @@ function renderB2G() {
     body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">${bq || fMes ? 'Nenhuma licitação com esse filtro.' : 'Nenhuma licitação ainda. A máquina busca 2×/dia (6h30 e 17h) nos portais públicos — aparecem aqui automaticamente.'}</td></tr>`;
     return;
   }
-  body.innerHTML = licsTab.map(x => {
+
+  // Mais recente primeiro: ordena pela entrada no radar (criado_em).
+  licsTab.sort((a, b) => String(b.criado_em || '').localeCompare(String(a.criado_em || '')));
+
+  const B2G_PAGE_SIZE = 15;
+  const totalPaginasB2G = Math.ceil(licsTab.length / B2G_PAGE_SIZE);
+  if (!_b2gPagina) _b2gPagina = 1;
+  if (_b2gPagina > totalPaginasB2G) _b2gPagina = totalPaginasB2G;
+  const iniB2G = (_b2gPagina - 1) * B2G_PAGE_SIZE;
+  const visiveisB2G = licsTab.slice(iniB2G, iniB2G + B2G_PAGE_SIZE);
+
+  body.innerHTML = visiveisB2G.map(x => {
     const st = x.status || 'nova';
     const opts = Object.entries(B2G_STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${st === k ? 'selected' : ''}>${v}</option>`).join('');
     const esc = s => (s||'').replace(/"/g,'&quot;');
@@ -6429,8 +6461,18 @@ function renderB2G() {
         <input class="b2g-prox" style="flex:3;min-width:220px" value="${esc(x.observacoes)}" placeholder="Observações (requisitos, garantia, documentação…)" onchange="setB2GCampo('${x.id}','observacoes',this.value)" onclick="event.stopPropagation()">
       </div>
     </td></tr>`;
-  }).join('');
+  }).join('') + (totalPaginasB2G > 1 ? `<tr><td colspan="7" style="padding:14px">
+    <div style="display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:11.5px;color:var(--text3);margin-right:6px">${licsTab.length} licitações · página ${_b2gPagina} de ${totalPaginasB2G}</span>
+      <button class="btn-secondary" style="padding:6px 10px" ${_b2gPagina<=1?'disabled':''} onclick="irParaPaginaB2G(${_b2gPagina-1})">‹ Anterior</button>
+      ${Array.from({length: totalPaginasB2G}, (_, i) => i+1).map(pg => `<button class="btn-secondary" style="padding:6px 11px;${pg===_b2gPagina?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="irParaPaginaB2G(${pg})">${pg}</button>`).join('')}
+      <button class="btn-secondary" style="padding:6px 10px" ${_b2gPagina>=totalPaginasB2G?'disabled':''} onclick="irParaPaginaB2G(${_b2gPagina+1})">Próxima ›</button>
+    </div>
+  </td></tr>` : '');
 }
+
+let _b2gPagina = 1;
+function irParaPaginaB2G(pg) { _b2gPagina = pg; renderB2G(); }
 
 // ══ DATA DE HOJE + CONTAGEM REGRESSIVA DO MÊS ═════════════════════════════════
 const MESES_BR = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
