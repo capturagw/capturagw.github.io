@@ -1672,7 +1672,19 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   .sla-badge.atrasado { background:#fcebe5; color:#a8381a; }
   .sla-badge.neutro   { background: var(--surface2); color: var(--text3); }
 
-  .sla-btns { display:flex; flex-direction:column; gap:4px; }
+  /* A tabela da FECOMERCIO tem 8 colunas e a Cadência é larga. Em vez de
+     espremer o Substatus até cortar o texto, as colunas ficam no tamanho
+     natural e o quadro rola na horizontal quando a tela é estreita.
+     A partir de ~1500px de tela tudo cabe sem rolar.                     */
+  #fecTabelaWrap { overflow-x:auto; }
+  #fecTabelaWrap table { min-width:1240px; }
+  #fecTabelaWrap th, #fecTabelaWrap td { white-space:nowrap; }
+  #fecTabelaWrap .td-empresa, #fecTabelaWrap .td-contato { white-space:normal; }
+  .sla-btns { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:4px; }
+  @media (max-width:1320px) { .sla-btns { grid-template-columns:1fr; } }
+  .fec-contato a { color: var(--text3); }
+  .fec-sub select { width:auto; max-width:none !important; }
+  #fecTabelaWrap td { vertical-align:top; }
   .sla-btn { display:flex; justify-content:space-between; align-items:center; gap:10px;
              width:100%; text-align:left; font-size:11.5px; font-weight:600; cursor:pointer;
              padding:6px 10px; border-radius:8px; border:1px solid var(--border);
@@ -1696,11 +1708,42 @@ window.PARCEIROS_DATA = { "pitch_por_tipo": {
   #fecKanban .kanban-col { min-width:260px; flex:1 1 260px; }
 
   /* ─── Quatro banners dividindo a tela (19/11/2026) ──────────────────── */
-  #gestaoBody { display:grid; grid-template-columns:repeat(2, minmax(0,1fr));
-                gap:16px; align-items:start; }
-  #gestaoBody .g-painel { margin-bottom:0; }
-  #gestaoBody .hoje-stat { background:var(--surface2); border-color:var(--border); box-shadow:none; }
+  /* Duas colunas que se preenchem por altura, não por linha: painéis de
+     tamanhos diferentes encostam um no outro em vez de deixar buraco. */
+  #gestaoBody { columns:2; column-gap:16px; }
+  #gestaoBody .g-painel { margin:0 0 16px; break-inside:avoid; -webkit-column-break-inside:avoid; }
+  #gestaoBody .hoje-stat { background:var(--surface2); border-color:var(--border);
+                           box-shadow:none; padding:11px 14px; }
+  #gestaoBody .hoje-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(112px,1fr));
+                            gap:10px; margin:14px 0 4px; }
+  #gestaoBody .hoje-stat .n { font-size:21px; }
   @media (max-width:1180px) { #gestaoBody { grid-template-columns:1fr; } }
+
+  /* ─── Rosca (part-to-whole) — 24/11/2026 ────────────────────────────
+     O anel dá a forma do todo; a legenda em texto dá o nome inteiro, o
+     número e o percentual. Nome em token de texto, nunca na cor da série. */
+  .rc-wrap { display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .rc-svg  { width:136px; height:136px; flex:0 0 136px; display:block; }
+  .rc-svg .rc-c-v { font-size:25px; font-weight:800; fill:var(--text); }
+  .rc-svg .rc-c-r { font-size:9px; font-weight:700; fill:var(--text3);
+                    text-transform:uppercase; letter-spacing:.07em; }
+  .rc-leg  { list-style:none; margin:0; padding:0; flex:1 1 210px; min-width:200px;
+             display:flex; flex-direction:column; gap:8px; }
+  .rc-item { display:grid; grid-template-columns:9px minmax(0,1fr) auto auto;
+             align-items:baseline; gap:9px; }
+  .rc-item i { width:9px; height:9px; border-radius:3px; display:block;
+               position:relative; top:2px; }
+  .rc-nome  { font-size:12px; font-weight:600; color:var(--text2); line-height:1.35; }
+  .rc-valor { font-size:12.5px; font-weight:800; color:var(--text);
+              font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .rc-pct   { font-size:11px; font-style:normal; font-weight:600; color:var(--text3);
+              font-variant-numeric:tabular-nums; min-width:36px; text-align:right; }
+  .rc-item.zero { opacity:.42; }
+  .rc-selos { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .rc-selo  { display:inline-flex; align-items:center; gap:6px; font-size:11.5px;
+              font-weight:600; color:var(--text2); background:var(--surface2);
+              border-radius:20px; padding:4px 11px; white-space:nowrap; }
+  .rc-selo i { width:8px; height:8px; border-radius:50%; display:block; }
 
   /* Gráficos: SVG inline, sem biblioteca. Marcas finas, eixo recessivo,
      texto sempre em token de texto — nunca na cor da série.             */
@@ -1862,19 +1905,18 @@ header .header-right{ margin-left:0 !important; }
   <button class="v2busca" onclick="abrirBuscaGlobal()"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="#99a2ad" stroke-width="1.6"/><path d="M10.5 10.5 14 14" stroke="#99a2ad" stroke-width="1.6" stroke-linecap="round"/></svg>Buscar<kbd>⌘K</kbd></button>
   <div class="v2gp" id="v2gp-meudia"><i></i><span>Meu dia</span></div>
   <button class="v2nv" id="v2nv-hoje" onclick="switchAppView('hoje')">Fila de hoje<b id="v2c-hoje"></b></button>
-  <button class="v2nv" id="v2nv-desq" onclick="switchAppView('desq')">Desqualificados<b id="v2c-desq"></b></button>
+  <button class="v2nv" id="v2nv-quentes" onclick="switchAppView('quentes')">Radar<b id="v2c-quentes"></b></button>
   <div class="v2gp" id="v2gp-prospeccao"><i></i><span>Prospecção</span></div>
   <button class="v2nv" id="v2nv-pipeline" onclick="switchAppView('pipeline')">Pipeline<b id="v2c-pipeline"></b></button>
-  <button class="v2nv" id="v2nv-quentes" onclick="switchAppView('quentes')">Radar<b id="v2c-quentes"></b></button>
+  <button class="v2nv" id="v2nv-b2g" onclick="switchAppView('b2g')">Licitações<b id="v2c-b2g"></b></button>
+  <button class="v2nv" id="v2nv-desq" onclick="switchAppView('desq')">Desqualificados<b id="v2c-desq"></b></button>
   <div class="v2gp" id="v2gp-carteira"><i></i><span>Carteira</span></div>
   <button class="v2nv" id="v2nv-fecomercio" onclick="switchAppView('fecomercio')">FECOMERCIO<b id="v2c-fec"></b></button>
   <button class="v2nv" id="v2nv-residenciais" onclick="switchAppView('residenciais')">Residenciais<b id="v2c-res"></b></button>
   <button class="v2nv" id="v2nv-parceiros" onclick="switchAppView('parceiros')">Parceiros<b id="v2c-parc"></b></button>
-  <div class="v2gp" id="v2gp-entrega"><i></i><span>Entrega</span></div>
   <button class="v2nv" id="v2nv-ativos" onclick="switchAppView('ativos')">Clientes ativos<b id="v2c-ativos"></b></button>
   <div class="v2gp" id="v2gp-gestao"><i></i><span>Gestão</span></div>
   <button class="v2nv" id="v2nv-gestao" onclick="switchAppView('gestao')">Indicadores</button>
-  <button class="v2nv" id="v2nv-b2g" onclick="switchAppView('b2g')">Licitações<b id="v2c-b2g"></b></button>
   <button class="v2nv" id="v2nv-equipe" onclick="switchAppView('equipe')">Equipe</button>
   <button class="v2nv" id="v2nv-financeiro" onclick="switchAppView('financeiro')">Financeiro</button>
   <button class="v2nv" id="v2nv-repositorio" onclick="switchAppView('repositorio')">Repositório</button>
@@ -2184,7 +2226,11 @@ header .header-right{ margin-left:0 !important; }
         <div class="section-sub">Condomínios, administradoras e síndicos — gestão de academia em condomínio (treinadores + sistema).</div>
         <button class="btn-primary" style="margin-top:10px" onclick="openAddResidencial()">+ Novo residencial</button>
       </div>
-      <input class="filter filter-search" id="resBusca" type="text" placeholder="Buscar residencial..." oninput="_resPagina=1;renderResidenciais()" style="min-width:180px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input class="filter filter-search" id="resBusca" type="text" placeholder="Buscar residencial..." oninput="_resPagina=1;renderResidenciais()" style="min-width:180px">
+        <select class="filter" id="resFiltroStatus" onchange="_resPagina=1;renderResidenciais()"><option value="">Todos os status</option></select>
+        <select class="filter" id="resFiltroCidade" onchange="_resPagina=1;renderResidenciais()"><option value="">Todas as cidades</option></select>
+      </div>
       <button class="btn-meus-leads" id="btnMeusLeadsRes" onclick="toggleMeusLeads()"><svg class="ic" style="width:13px;height:13px"><use href="#i-user"/></svg> Meus residenciais</button>
     </div>
     <div class="hoje-stats" id="resStats" style="margin-top:14px"></div>
@@ -2224,10 +2270,16 @@ header .header-right{ margin-left:0 !important; }
       </div>
       <select class="filter" id="fecFiltroPlano" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todos os planos</option></select>
       <select class="filter" id="fecFiltroMes" onchange="_fecPagina=1;renderFecomercio()"><option value="">Todas as datas</option></select>
+      <select class="filter" id="fecOrdem" onchange="_fecPagina=1;renderFecomercio()">
+        <option value="vidas_desc">Mais vidas primeiro</option>
+        <option value="vidas_asc">Menos vidas primeiro</option>
+        <option value="empresa">Empresa A–Z</option>
+        <option value="recente">Entrou por último</option>
+      </select>
     </div>
     <div class="table-wrap" id="fecTabelaWrap" style="margin-top:8px">
       <table>
-        <thead><tr><th>Empresa</th><th>Cidade</th><th>Contato</th><th>Responsável</th><th>Vidas</th><th>Plano</th><th>Etapa</th><th>Substatus</th><th>Cadência</th></tr></thead>
+        <thead><tr><th>Empresa</th><th>Cidade</th><th>Responsável</th><th>Vidas</th><th>Plano</th><th>Etapa</th><th>Substatus</th><th>Cadência</th></tr></thead>
         <tbody id="fecBody"></tbody>
       </table>
     </div>
@@ -2274,7 +2326,11 @@ header .header-right{ margin-left:0 !important; }
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input class="filter filter-search" id="b2gBusca" type="text" placeholder="Buscar licitação..." oninput="_b2gPagina=1;renderB2G()" style="min-width:170px">
+        <select class="filter" id="b2gFiltroStatus" onchange="_b2gPagina=1;renderB2G()"><option value="">Todos os status</option></select>
+        <select class="filter" id="b2gFiltroUF" onchange="_b2gPagina=1;renderB2G()"><option value="">Todas as UFs</option></select>
+        <select class="filter" id="b2gFiltroPortal" onchange="_b2gPagina=1;renderB2G()"><option value="">Todos os portais</option></select>
         <select class="filter" id="b2gFiltroMes" onchange="_b2gPagina=1;renderB2G()"><option value="">Todos os prazos</option></select>
+        <button class="btn-meus-leads" id="btnB2GAbertas" onclick="toggleB2GAbertas()">Só com prazo em aberto</button>
         <button class="btn-primary" onclick="toggleCredVault()"><svg class="ic" style="stroke:#fff"><use href="#i-id"/></svg> Credenciais Flex ON</button>
       </div>
     </div>
@@ -3289,6 +3345,16 @@ const MES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','a
 const rotuloMes = ym => { const [a, m] = String(ym).split('-'); return (MES_PT[+m - 1] || '?') + '/' + a; };
 const mesAtualYM = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
 // o prazo pode vir ISO (robô do PNCP) ou dd/mm[/aaaa] (cadastro manual) — normaliza p/ AAAA-MM
+/** Prazo ainda não venceu? Usado pelo filtro "só com prazo em aberto". */
+function prazoEmAberto(p) {
+  const d = prazoParaData(p);
+  if (!d) return false;
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  return d >= hoje;
+}
+let _b2gSoAbertas = false;
+function toggleB2GAbertas() { _b2gSoAbertas = !_b2gSoAbertas; _b2gPagina = 1; renderB2G(); }
+
 function prazoParaMes(p) {
   const t = String(p || '').trim();
   let m = t.match(/^(\d{4})-(\d{2})-\d{2}/);
@@ -3306,6 +3372,21 @@ function preencherSelectMeses(el, meses, rotuloVazio) {
   if (JSON.stringify(tem) === JSON.stringify(quer)) return;
   el.innerHTML = `<option value="">${rotuloVazio}</option>` +
     meses.map(m => `<option value="${m}">${rotuloMes(m)}${m === mesAtualYM() ? ' (mês atual)' : ''}</option>`).join('');
+  if (quer.includes(atual)) el.value = atual;
+}
+
+/** Preenche um <select> de filtro com os valores que existem na base,
+ *  preservando a escolha atual. A primeira <option> do HTML é o rótulo
+ *  "Todos ..." e nunca é tocada. */
+function preencherSelect(el, valores, rotulos) {
+  if (!el) return;
+  const atual = el.value;
+  const rotulo = el.options.length ? el.options[0].textContent : 'Todos';
+  const quer = [''].concat(valores);
+  const tem = [...el.options].map(o => o.value);
+  if (JSON.stringify(tem) === JSON.stringify(quer)) return;
+  el.innerHTML = `<option value="">${rotulo}</option>` +
+    valores.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">${(rotulos && rotulos[v]) || v}</option>`).join('');
   if (quer.includes(atual)) el.value = atual;
 }
 
@@ -5358,8 +5439,18 @@ function CONTRATO_HTML(d) {
 
 function renderResidenciais() {
   const bq = (document.getElementById('resBusca')?.value || '').trim().toLowerCase();
-  const res = leads.filter(l => l.canal === 'Residencial' && l.status !== 'Desqualificado'
-    && (!_soMeusLeads || souDono(l))
+  const todosRes = leads.filter(l => l.canal === 'Residencial' && l.status !== 'Desqualificado');
+  // Os selects se alimentam do que existe na base: nenhuma opção vazia.
+  preencherSelect(document.getElementById('resFiltroStatus'),
+    [...new Set(todosRes.map(l => l.status).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+  preencherSelect(document.getElementById('resFiltroCidade'),
+    [...new Set(todosRes.map(l => l.cidade).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+  const fSt = document.getElementById('resFiltroStatus')?.value || '';
+  const fCi = document.getElementById('resFiltroCidade')?.value || '';
+  const res = todosRes.filter(l =>
+       (!_soMeusLeads || souDono(l))
+    && (!fSt || l.status === fSt)
+    && (!fCi || l.cidade === fCi)
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq) || (l.cidade||'').toLowerCase().includes(bq)));
   const cnt = document.getElementById('resCount'); if (cnt) cnt.textContent = res.length;
   const st = document.getElementById('resStats');
@@ -5564,7 +5655,7 @@ function renderFecomercio() {
       <div class="hoje-stat"><div class="n" style="color:var(--green);font-size:20px">${todas.reduce((a,l)=>a+(Number(l.vidas)||0),0).toLocaleString('pt-BR')}</div><div class="l">Vidas cobertas</div></div>`;
   }
   const body = document.getElementById('fecBody'); if (!body) return;
-  if (!fec.length) { body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; aplicarModoFec(); return; }
+  if (!fec.length) { body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:34px;color:var(--text3)">Nenhuma empresa da base FECOMERCIO com esse filtro.</td></tr>'; aplicarModoFec(); return; }
   const FEC_PAGE_SIZE = 15;
   const totalPaginas = Math.ceil(fec.length / FEC_PAGE_SIZE);
   if (!_fecPagina) _fecPagina = 1;
@@ -5581,12 +5672,14 @@ function renderFecomercio() {
     const et = fecEtapa(l);
     return `
     <tr onclick="openDetail('${l.id}')">
-      <td><div class="td-empresa">${l.empresa} ${ehClienteNovo(l) ? '<span class="badge badge-novocliente">Novo cliente</span>' : ''}</div><div class="td-contato">${cnpjDe(l)}</div></td>
+      <td><div class="td-empresa">${l.empresa} ${ehClienteNovo(l) ? '<span class="badge badge-novocliente">Novo cliente</span>' : ''}</div>
+        <div class="td-contato">${cnpjDe(l)}</div>
+        <div class="td-contato fec-contato">
+          ${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a>`:''}
+          ${l.telefone && l.email?' · ':''}
+          ${l.email?`<a href="mailto:${l.email}" onclick="event.stopPropagation()">${l.email}</a>`:''}
+        </div></td>
       <td>${l.cidade||'—'}</td>
-      <td style="font-size:12px">
-        ${l.telefone?`<a href="tel:+55${l.telefone.replace(/\D/g,'')}" onclick="event.stopPropagation()">${l.telefone}</a><br>`:''}
-        ${l.email?`<a href="mailto:${l.email}" onclick="event.stopPropagation()" style="color:var(--text3)">${l.email}</a>`:(l.telefone?'':'—')}
-      </td>
       <td><select onclick="event.stopPropagation()" onchange="event.stopPropagation();setFecCampo('${l.id}','dono',this.value)"
             style="padding:5px 7px;font-size:11.5px;border-radius:7px;border:1.5px solid var(--border);background:var(--card);color:${l.dono?'var(--text)':'var(--text3)'};max-width:150px">
             <option value="" ${!l.dono?'selected':''}>— pool —</option>
@@ -5596,9 +5689,9 @@ function renderFecomercio() {
       <td class="fec-vidas">${l.vidas ? `<b>${Number(l.vidas).toLocaleString('pt-BR')}</b>` : '<span class="sem">—</span>'}</td>
       <td>${selHTML(l.id,'plano',FEC_PLANOS,fecPlano(l), fecPlano(l)==='A definir'?'':'var(--text)')}</td>
       <td>${selHTML(l.id,'etapa',FEC_ETAPAS,et,FEC_COR_ETAPA[et])}</td>
-      <td>${selHTML(l.id,'subetapa',FEC_SUBETAPAS[et]||[],fecSub(l))}</td>
+      <td class="fec-sub">${selHTML(l.id,'subetapa',FEC_SUBETAPAS[et]||[],fecSub(l))}</td>
       <td onclick="event.stopPropagation()"><div class="kc-sla">${seloSlaFec(l)}</div><div class="sla-btns" style="margin-top:6px">${botoesSlaFec(l)}</div></td>
-    </tr>`;}).join('') + (totalPaginas > 1 ? `<tr><td colspan="9" style="padding:14px">
+    </tr>`;}).join('') + (totalPaginas > 1 ? `<tr><td colspan="8" style="padding:14px">
       <div style="display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap">
         <button class="btn-secondary" style="padding:6px 10px" ${_fecPagina<=1?'disabled':''} onclick="event.stopPropagation();irParaPaginaFec(${_fecPagina-1})">‹ Anterior</button>
         ${Array.from({length: totalPaginas}, (_, i) => i+1).map(p => `<button class="btn-secondary" style="padding:6px 11px;${p===_fecPagina?'background:var(--primary);color:#fff;border-color:var(--primary)':''}" onclick="event.stopPropagation();irParaPaginaFec(${p})">${p}</button>`).join('')}
@@ -6527,11 +6620,27 @@ function renderB2G() {
   const mesesB2G = [...new Set(lics.map(x => prazoParaMes(x.prazo)).filter(Boolean))].sort();
   preencherSelectMeses(document.getElementById('b2gFiltroMes'), mesesB2G, 'Todos os prazos');
   const fMes = document.getElementById('b2gFiltroMes')?.value || '';
+  // selects alimentados pelo que existe na base
+  preencherSelect(document.getElementById('b2gFiltroStatus'),
+    Object.keys(B2G_STATUS_LABELS).filter(k => lics.some(x => (x.status || 'nova') === k)), B2G_STATUS_LABELS);
+  preencherSelect(document.getElementById('b2gFiltroUF'),
+    [...new Set(lics.map(x => x.uf).filter(Boolean))].sort());
+  preencherSelect(document.getElementById('b2gFiltroPortal'),
+    [...new Set(lics.map(x => x.portal).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+  const fSt = document.getElementById('b2gFiltroStatus')?.value || '';
+  const fUF = document.getElementById('b2gFiltroUF')?.value || '';
+  const fPo = document.getElementById('b2gFiltroPortal')?.value || '';
+  const btnAb = document.getElementById('btnB2GAbertas');
+  if (btnAb) btnAb.classList.toggle('active', _b2gSoAbertas);
   const licsTab = lics.filter(x =>
     (!fMes || prazoParaMes(x.prazo) === fMes) &&
+    (!fSt || (x.status || 'nova') === fSt) &&
+    (!fUF || x.uf === fUF) &&
+    (!fPo || x.portal === fPo) &&
+    (!_b2gSoAbertas || prazoEmAberto(x.prazo)) &&
     (!bq || ((x.orgao||'')+' '+(x.objeto||'')+' '+(x.uf||'')+' '+(x.numero_edital||'')).toLowerCase().includes(bq)));
   if (!licsTab.length) {
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">${bq || fMes ? 'Nenhuma licitação com esse filtro.' : 'Nenhuma licitação ainda. A máquina busca 2×/dia (6h30 e 17h) nos portais públicos — aparecem aqui automaticamente.'}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:34px;color:var(--text3)">${bq || fMes || fSt || fUF || fPo || _b2gSoAbertas ? 'Nenhuma licitação com esse filtro.' : 'Nenhuma licitação ainda. A máquina busca 2×/dia (6h30 e 17h) nos portais públicos — aparecem aqui automaticamente.'}</td></tr>`;
     return;
   }
 
@@ -8103,12 +8212,16 @@ function caminhoBarra(x, y, w, h) {
  * O valor fica SEMPRE fora da barra — assim nunca é cortado por barra curta.
  * linhas: [{ nome, valor, exibicao, nota, cor }]
  */
+/** Nome comprido não encosta no valor: corta e o <title> guarda o inteiro. */
+const corta = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+
 function graficoBarras(linhas, opcoes) {
   // Cada linha tem até três andares: nome+valor, barra, e a nota embaixo.
   // O passo padrão sai da presença de nota — com nota a linha precisa ser
   // mais alta, senão o texto encosta na barra (foi o que aconteceu em 19/11).
   const temNota = linhas.some(l => l.nota);
-  const o = Object.assign({ alturaBarra: 9, passo: temNota ? 50 : 36, largura: 400, trilha: true }, opcoes || {});
+  const o = Object.assign({ alturaBarra: 9, passo: temNota ? 44 : 36, largura: 400,
+                            trilha: true }, opcoes || {});
   if (!linhas.length) return '';
   const max = Math.max(...linhas.map(l => Number(l.valor) || 0), 1);
   const H = linhas.length * o.passo + 2;
@@ -8117,13 +8230,13 @@ function graficoBarras(linhas, opcoes) {
     const y = i * o.passo;
     const v = Math.max(0, Number(l.valor) || 0);
     const w = max > 0 ? (v / max) * larguraMax : 0;
-    const yb = y + 18;
+    const yb = y + 16;
     const cor = l.cor || COR_BARRA;
     const titulo = `${l.nome}: ${l.exibicao != null ? l.exibicao : v}${l.nota ? ' · ' + l.nota : ''}`;
     return `<g><title>${esc(titulo)}</title>
-      <text class="gc-nome" x="0" y="${y + 11}">${esc(l.nome)}</text>
+      <text class="gc-nome" x="0" y="${y + 11}">${esc(corta(l.nome, 28))}</text>
       <text class="gc-valor" x="${larguraMax}" y="${y + 11}" text-anchor="end">${esc(l.exibicao != null ? l.exibicao : v)}</text>
-      ${l.nota ? `<text class="gc-nota" x="${larguraMax}" y="${y + 41}" text-anchor="end">${esc(l.nota)}</text>` : ''}
+      ${l.nota ? `<text class="gc-nota" x="${larguraMax}" y="${y + 38}" text-anchor="end">${esc(l.nota)}</text>` : ''}
       ${o.trilha ? `<path class="gc-trilha" d="${caminhoBarra(xBarra, yb, larguraMax, o.alturaBarra)}"/>` : ''}
       <path d="${caminhoBarra(xBarra, yb, w, o.alturaBarra)}" fill="${cor}"/>
     </g>`;
@@ -8175,38 +8288,6 @@ function metricasSDR() {
   return { abordados, responderam, sqls, agendadas, feitas, faltaram, comparecimento };
 }
 
-function painelSDR() {
-  const m = metricasSDR();
-  const semDado = m.responderam.length === 0 && m.sqls.length === 0 && m.comparecimento === 0;
-  const taxa = pct(m.responderam.length, m.abordados.length);
-  const show = m.comparecimento ? pct(m.feitas.length, m.comparecimento) : null;
-  // Funil: escala ORDENADA, então rampa de um matiz mostrando a progressão.
-  const linhas = [
-    { nome: 'Leads abordados',    valor: m.abordados.length,  exibicao: m.abordados.length,  cor: RAMPA_ORDINAL[0] },
-    { nome: 'Responderam',        valor: m.responderam.length, exibicao: m.responderam.length, nota: 'taxa de resposta ' + taxa + '%', cor: RAMPA_ORDINAL[1] },
-    { nome: 'Qualificados (SQL)', valor: m.sqls.length,        exibicao: m.sqls.length,        nota: pct(m.sqls.length, m.abordados.length) + '% dos abordados', cor: RAMPA_ORDINAL[2] },
-    { nome: 'Reuniões realizadas',valor: m.feitas.length,      exibicao: m.feitas.length,
-      nota: show === null ? 'sem reunião encerrada' : 'show rate ' + show + '% (' + m.feitas.length + ' de ' + m.comparecimento + ')', cor: RAMPA_ORDINAL[3] },
-  ];
-  const temAlgo = m.abordados.length || m.responderam.length || m.sqls.length || m.feitas.length;
-  return `
-    <div class="g-painel">
-      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-flame"/></svg> SDR — prospecção</div>
-        <button class="btn-secondary g-exp" onclick="exportarGestaoSDR()">Exportar</button></div>
-      <div class="hoje-stats">
-        ${cartao(m.abordados.length, 'Leads abordados', 'var(--primary)')}
-        ${cartao(taxa + '%', 'Taxa de resposta', 'var(--text)')}
-        ${cartao(m.sqls.length, 'SQL', 'var(--text)')}
-        ${cartao(show === null ? '—' : show + '%', 'Show rate', 'var(--text)')}
-      </div>
-      ${temAlgo ? graficoBarras(linhas, { titulo: 'Funil do SDR, do lead abordado à reunião realizada' })
-                : vazioChart('Nenhum lead abordado no período escolhido.')}
-      <div class="g-chart-legenda">Do mais claro ao mais escuro: cada passo do funil. O tom escurece conforme o lead avança.</div>
-      ${semDado ? `<div class="g-aviso">Resposta, SQL e show rate contam as marcações novas: no modal do lead,
-        bloco "Registrar para a métrica do SDR". Só entra aqui o que for marcado de hoje em diante.</div>` : ''}
-    </div>`;
-}
-
 function metricasCS() {
   const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado');
   const porEtapa = {}; FEC_ETAPAS.forEach(e => porEtapa[e] = fec.filter(l => fecEtapa(l) === e).length);
@@ -8225,37 +8306,6 @@ function metricasCS() {
   return { fec, porEtapa, atrasados, emDia, concluidosPeriodo, medias };
 }
 
-function painelCS() {
-  const m = metricasCS();
-  // Etapa é escala ORDENADA (Cadastro → ... → Concluído): rampa de um matiz.
-  const etapas = FEC_ETAPAS.map((e, i) => ({
-    nome: e, valor: m.porEtapa[e], exibicao: m.porEtapa[e],
-    nota: pct(m.porEtapa[e], m.fec.length) + '% da carteira', cor: RAMPA_ORDINAL[i]
-  }));
-  const prazos = m.medias.map((x, i) => ({
-    nome: 'Até ' + x.curto.toLowerCase(), valor: x.media === null ? 0 : x.media,
-    exibicao: x.media === null ? '—' : x.media + 'd',
-    nota: x.media === null ? 'ainda sem marco registrado' : 'prazo ' + x.dias + 'd · ' + x.n + (x.n > 1 ? ' empresas' : ' empresa'),
-    cor: RAMPA_ORDINAL[i]
-  }));
-  const temPrazo = m.medias.some(x => x.media !== null);
-  return `
-    <div class="g-painel">
-      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> CS — carteira FECOMERCIO</div>
-        <button class="btn-secondary g-exp" onclick="exportarFecomercio()">Exportar</button></div>
-      <div class="hoje-stats">
-        ${cartao(m.fec.length, 'Clientes na carteira', 'var(--primary)')}
-        ${cartao(pct(m.emDia.length, m.fec.length) + '%', 'Cadência em dia', 'var(--text)', m.atrasados.length + ' com prazo vencido')}
-        ${cartao(m.concluidosPeriodo.length, 'Concluídos no período', 'var(--text)')}
-      </div>
-      ${m.fec.length ? graficoBarras(etapas, { titulo: 'Clientes em cada etapa da implantação' })
-                     : vazioChart('Nenhum cliente na carteira FECOMERCIO.')}
-      <div class="g-sub">Tempo médio até cada marco</div>
-      ${temPrazo ? graficoBarras(prazos, { titulo: 'Dias médios até cada marco da cadência' })
-                 : vazioChart('Nenhum marco da cadência foi registrado ainda. Marque na coluna "Cadência" da aba FECOMERCIO e o tempo médio aparece aqui.')}
-    </div>`;
-}
-
 function metricasOperacional() {
   const fec = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado');
   const comSub = s => fec.filter(l => fecSub(l) === s).length;
@@ -8272,33 +8322,6 @@ function metricasOperacional() {
     conformidade: naEtapa('Conformidade'),
     concluido: naEtapa('Concluído'),
   };
-}
-
-function painelOperacional() {
-  const m = metricasOperacional();
-  const total = m.fec.length;
-  // Substatus são categorias SEM ordem natural entre si: um matiz só.
-  const linhas = [
-    { nome: 'Pendente cadastro',      valor: m.pendenteCadastro },
-    { nome: 'Cadastro em análise',    valor: m.emAnalise },
-    { nome: 'Diagnóstico iniciado',   valor: m.diagIniciado },
-    { nome: 'Diagnóstico finalizado', valor: m.diagFinalizado },
-    { nome: 'Capacitação de líderes', valor: m.capacitacao },
-    { nome: 'Canal de denúncias',     valor: m.canalDenuncias },
-    { nome: 'Flex ON Edu',            valor: m.edu },
-  ].map(l => ({ ...l, exibicao: l.valor, nota: total ? pct(l.valor, total) + '% da carteira' : '', cor: COR_BARRA }));
-  const algum = linhas.some(l => l.valor > 0);
-  return `
-    <div class="g-painel">
-      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-grid"/></svg> Operacional — implantação</div>
-        <button class="btn-secondary g-exp" onclick="exportarGestaoOperacional()">Exportar</button></div>
-      <div class="hoje-stats">
-        ${cartao(m.conformidade, 'Em conformidade', 'var(--primary)')}
-        ${cartao(m.concluido, 'Implantação concluída', 'var(--text)')}
-      </div>
-      ${algum ? graficoBarras(linhas, { titulo: 'Onde está cada cliente da implantação' })
-              : vazioChart('Nenhum substatus preenchido na carteira. O substatus é definido na aba FECOMERCIO.')}
-    </div>`;
 }
 
 function metricasGestao() {
@@ -8321,30 +8344,209 @@ function metricasGestao() {
            ticket: comReceita.length ? Math.round(receita / comReceita.length) : 0 };
 }
 
+// ── Paleta dos gráficos ─────────────────────────────────────────────────
+// Validada com scripts/validate_palette.js da skill dataviz contra a
+// superfície branca dos painéis (#ffffff), em 24/11/2026:
+//  · RAMPA5    (ordinal, escalas COM ordem: funil, etapas, planos)
+//    5 passos, ΔL >= 0.06 em todos os pares, ponta clara 2.00:1 — PASS
+//  · CATEGORICA (identidade, sem ordem: substatus da implantação)
+//    pior par adjacente ΔE 9.1 protan / 19.6 visão normal — PASS, com
+//    WARN de contraste: três matizes ficam abaixo de 3:1, então a regra
+//    de alívio exige rótulo visível — é o que a legenda em texto faz.
+//  · ESTADO    status reservado (bom/atenção/grave/crítico), sempre com
+//    rótulo escrito do lado; cor nunca carrega o sentido sozinha.
+const RAMPA5     = ['#f2a399', '#e88a7c', '#dd6354', '#bc4530', '#8e2d1d'];
+const CATEGORICA = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6'];
+const ESTADO     = { bom: '#0ca30c', atencao: '#fab219', grave: '#ec835a', critico: '#d03b3b' };
+const COR_AUSENTE = '#e0ddd8';   // ausência de dado — não é categoria
+
+/** Rosca (part-to-whole). O anel mostra a forma do todo; a legenda em
+ *  texto carrega nome, número e percentual — é ela que torna legível o
+ *  que não cabia escrito no gráfico de barras. */
+function graficoRosca(fatias, opcoes) {
+  const o = Object.assign({ raio: 52, espessura: 15, centro: '', centroRotulo: '',
+                            vazio: 'Sem dados no período.' }, opcoes || {});
+  const comValor = fatias.filter(f => (Number(f.valor) || 0) > 0);
+  const total = comValor.reduce((s, f) => s + (Number(f.valor) || 0), 0);
+  if (!total) return vazioChart(o.vazio);
+  const fmt = o.formato || (v => Number(v).toLocaleString('pt-BR'));
+  const C = 2 * Math.PI * o.raio;
+  const lado = (o.raio + o.espessura / 2 + 1) * 2;
+  let acc = 0;
+  const arcos = comValor.map(f => {
+    const v = Number(f.valor) || 0;
+    const len = (v / total) * C;
+    // 2px de folga na cor da superfície entre fatias vizinhas
+    const vis = comValor.length > 1 ? Math.max(len - 2, 0.8) : len;
+    const el = `<circle r="${o.raio}" cx="0" cy="0" fill="none" stroke="${f.cor}"
+      stroke-width="${o.espessura}" stroke-dasharray="${vis.toFixed(2)} ${(C - vis).toFixed(2)}"
+      stroke-dashoffset="${(-acc).toFixed(2)}"
+      ><title>${esc(f.nome + ': ' + fmt(v) + ' · ' + pct(v, total) + '%')}</title></circle>`;
+    acc += len;
+    return el;
+  }).join('');
+  const legenda = fatias.map(f => {
+    const v = Number(f.valor) || 0;
+    return `<li class="rc-item${v ? '' : ' zero'}"><i style="background:${f.cor}"></i>
+      <span class="rc-nome">${esc(f.nome)}</span>
+      <b class="rc-valor">${fmt(v)}</b>
+      <em class="rc-pct">${pct(v, total)}%</em></li>`;
+  }).join('');
+  return `<div class="rc-wrap">
+    <svg class="rc-svg" viewBox="${-lado / 2} ${-lado / 2} ${lado} ${lado}"
+      role="img" aria-label="${esc(o.titulo || 'gráfico de rosca')}">
+      <g transform="rotate(-90)">${arcos}</g>
+      ${o.centro ? `<text class="rc-c-v" y="3" text-anchor="middle">${esc(o.centro)}</text>` : ''}
+      ${o.centroRotulo ? `<text class="rc-c-r" y="19" text-anchor="middle">${esc(o.centroRotulo)}</text>` : ''}
+    </svg>
+    <ul class="rc-leg">${legenda}</ul>
+  </div>`;
+}
+
+/** Linha de selos de estado: cor + rótulo escrito, nunca cor sozinha. */
+function selosEstado(itens) {
+  const vis = itens.filter(i => i.valor > 0);
+  if (!vis.length) return '';
+  return `<div class="rc-selos">${vis.map(i =>
+    `<span class="rc-selo"><i style="background:${i.cor}"></i>${i.valor} ${esc(i.rotulo)}</span>`).join('')}</div>`;
+}
+
+function painelSDR() {
+  const m = metricasSDR();
+  const taxa = pct(m.responderam.length, m.abordados.length);
+  const show = m.comparecimento ? pct(m.feitas.length, m.comparecimento) : null;
+  // O funil NÃO é part-to-whole: cada etapa está contida na anterior, e
+  // somar as fatias daria mais que o total. A rosca mostra em que ponto
+  // PAROU cada lead abordado — aí sim as partes fecham o todo.
+  const idsDe = a => new Set(a.map(l => l.id));
+  const iFeita = idsDe(m.feitas), iSql = idsDe(m.sqls), iResp = idsDe(m.responderam);
+  const A = m.abordados;
+  const fFeita = A.filter(l => iFeita.has(l.id)).length;
+  const fSql   = A.filter(l => !iFeita.has(l.id) && iSql.has(l.id)).length;
+  const fResp  = A.filter(l => !iFeita.has(l.id) && !iSql.has(l.id) && iResp.has(l.id)).length;
+  const fNada  = A.length - fFeita - fSql - fResp;
+  const fatias = [
+    { nome: 'Reunião realizada',        valor: fFeita, cor: RAMPA5[4] },
+    { nome: 'Qualificado, sem reunião', valor: fSql,   cor: RAMPA5[3] },
+    { nome: 'Respondeu, sem qualificar',valor: fResp,  cor: RAMPA5[1] },
+    { nome: 'Sem resposta',             valor: Math.max(fNada, 0), cor: COR_AUSENTE },
+  ];
+  return `
+    <div class="g-painel">
+      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-flame"/></svg> SDR — prospecção</div>
+        <button class="btn-secondary g-exp" onclick="exportarGestaoSDR()">Exportar</button></div>
+      <div class="hoje-stats">
+        ${cartao(m.abordados.length, 'Leads abordados', 'var(--primary)')}
+        ${cartao(m.abordados.length ? taxa + '%' : '—', 'Taxa de resposta', 'var(--text)',
+          m.abordados.length ? m.responderam.length + ' de ' + m.abordados.length : 'nenhum lead abordado no período')}
+        ${cartao(show === null ? '—' : show + '%', 'Show rate', 'var(--text)',
+          show === null ? 'nenhuma reunião encerrada' : m.feitas.length + ' de ' + m.comparecimento + ' reuniões')}
+      </div>
+      ${graficoRosca(fatias, {
+        titulo: 'Onde parou cada lead abordado',
+        centro: String(m.abordados.length), centroRotulo: 'abordados',
+        vazio: 'Nenhum lead abordado no período. Os eventos de SDR são registrados no modal do lead.' })}
+    </div>`;
+}
+
+function painelCS() {
+  const m = metricasCS();
+  const fec = m.fec;
+  const semEtapa = fec.filter(l => !FEC_ETAPAS.includes(fecEtapa(l))).length;
+  // Etapas da implantação têm ordem natural: rampa de um matiz, do início
+  // ao fim, e não paleta categórica.
+  const fatias = FEC_ETAPAS.map((e, i) => ({ nome: e, valor: m.porEtapa[e] || 0, cor: RAMPA5[i + 1] }))
+    .concat(semEtapa ? [{ nome: 'Sem etapa definida', valor: semEtapa, cor: COR_AUSENTE }] : []);
+  const venceHoje = fec.filter(l => !slaConcluido(l) && !slaAtrasos(l).length
+                                    && slaFec(l).some(x => x.estado === 'vence_hoje')).length;
+  const prazos = m.medias.filter(x => x.media !== null).map(x => ({
+    nome: x.curto, valor: x.media, exibicao: x.media + (x.media === 1 ? ' dia' : ' dias'),
+    nota: 'meta ' + x.dias + ' dias · ' + x.n + (x.n === 1 ? ' registro' : ' registros'),
+    cor: x.media <= x.dias ? ESTADO.bom : ESTADO.critico,
+  }));
+  return `
+    <div class="g-painel">
+      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-briefcase"/></svg> CS — carteira FECOMERCIO</div>
+        <button class="btn-secondary g-exp" onclick="exportarFecomercio()">Exportar</button></div>
+      <div class="hoje-stats">
+        ${cartao(fec.length, 'Clientes na carteira', 'var(--primary)')}
+        ${cartao(fec.length ? pct(m.emDia.length, fec.length) + '%' : '—', 'Cadência em dia', 'var(--text)')}
+        ${cartao(m.concluidosPeriodo.length, 'Concluídos no período', 'var(--text)')}
+      </div>
+      ${selosEstado([
+        { rotulo: 'em dia',       valor: m.emDia.length - venceHoje, cor: ESTADO.bom },
+        { rotulo: 'vencem hoje',  valor: venceHoje,                  cor: ESTADO.atencao },
+        { rotulo: 'com prazo vencido', valor: m.atrasados.length,    cor: ESTADO.critico },
+      ])}
+      ${graficoRosca(fatias, {
+        titulo: 'Clientes em cada etapa da implantação',
+        centro: String(fec.length), centroRotulo: 'clientes',
+        vazio: 'Nenhum cliente na carteira FECOMERCIO.' })}
+      ${prazos.length ? `<div class="g-sub">Tempo médio até cada marco</div>${graficoBarras(prazos, { titulo: 'Dias médios até cada marco da cadência' })}`
+        : `<div class="g-sub">Tempo médio até cada marco</div>${vazioChart('Nenhum marco registrado ainda. Marque na coluna “Cadência” da aba FECOMERCIO e o tempo médio aparece aqui.')}`}
+    </div>`;
+}
+
+function painelOperacional() {
+  const m = metricasOperacional();
+  const total = m.fec.length;
+  // Substatus são categorias SEM ordem entre si: paleta categórica, na
+  // ordem fixa dos slots, e o nome inteiro escrito na legenda.
+  const nomes = ['Pendente cadastro', 'Cadastro em análise', 'Diagnóstico iniciado',
+                 'Diagnóstico finalizado', 'Capacitação de líderes', 'Canal de denúncias', 'Flex ON Edu'];
+  const valores = [m.pendenteCadastro, m.emAnalise, m.diagIniciado, m.diagFinalizado,
+                   m.capacitacao, m.canalDenuncias, m.edu];
+  const soma = valores.reduce((a, b) => a + b, 0);
+  const fatias = nomes.map((n, i) => ({ nome: n, valor: valores[i], cor: CATEGORICA[i] }))
+    .concat(total - soma > 0 ? [{ nome: 'Sem substatus preenchido', valor: total - soma, cor: COR_AUSENTE }] : []);
+  return `
+    <div class="g-painel">
+      <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-grid"/></svg> Operacional — implantação</div>
+        <button class="btn-secondary g-exp" onclick="exportarGestaoOperacional()">Exportar</button></div>
+      <div class="hoje-stats">
+        ${cartao(m.conformidade, 'Em conformidade', 'var(--primary)')}
+        ${cartao(m.concluido, 'Implantação concluída', 'var(--text)')}
+        ${cartao(total ? pct(soma, total) + '%' : '—', 'Com substatus', 'var(--text)',
+          total - soma > 0 ? (total - soma) + ' ainda sem preencher' : '')}
+      </div>
+      ${graficoRosca(fatias, {
+        titulo: 'Onde está cada cliente da implantação',
+        centro: String(total), centroRotulo: 'na carteira',
+        vazio: 'Nenhum cliente na carteira. O substatus é definido na aba FECOMERCIO.' })}
+    </div>`;
+}
+
 function painelGestaoBemEstar() {
   const m = metricasGestao();
-  // Plano é categoria SEM ordem natural: barras ordenadas por valor, um matiz só.
-  const linhas = Object.entries(m.porPlano)
-    .sort((a, b) => b[1].receita - a[1].receita || b[1].n - a[1].n)
-    .map(([plano, v]) => ({
-      nome: plano, valor: v.receita, exibicao: brl(v.receita),
-      nota: v.n + (v.n > 1 ? ' clientes' : ' cliente') + (v.vidas ? ' · ' + v.vidas.toLocaleString('pt-BR') + ' vidas' : ''),
-      cor: COR_BARRA
-    }));
-  const temReceita = linhas.some(l => l.valor > 0);
+  // Vidas por plano: os planos têm ordem de porte, então rampa ordinal;
+  // "A definir" é ausência de plano e fica no cinza neutro.
+  const planos = Object.entries(m.porPlano).filter(([p]) => p !== 'A definir')
+    .sort((a, b) => b[1].vidas - a[1].vidas || b[1].n - a[1].n);
+  const fatias = planos.map(([p, v], i) => ({ nome: p, valor: v.vidas, cor: RAMPA5[Math.min(i + 1, 4)] }));
+  const aDefinir = m.porPlano['A definir'];
+  if (aDefinir && aDefinir.vidas) fatias.push({ nome: 'Plano a definir', valor: aDefinir.vidas, cor: COR_AUSENTE });
+  const receita = Object.entries(m.porPlano).filter(([, v]) => v.receita > 0)
+    .sort((a, b) => b[1].receita - a[1].receita)
+    .map(([p, v]) => ({ nome: p, valor: v.receita, exibicao: brl(v.receita),
+                        nota: v.n + (v.n === 1 ? ' cliente' : ' clientes'), cor: COR_BARRA }));
   return `
     <div class="g-painel">
       <div class="g-painel-head"><div class="section-title"><svg class="ic"><use href="#i-flag"/></svg> Gestão e bem-estar</div>
         <button class="btn-secondary g-exp" onclick="exportarGestaoClientes()">Exportar</button></div>
       <div class="hoje-stats">
-        ${cartao(m.vidas.toLocaleString('pt-BR'), 'Vidas cobertas', 'var(--primary)', m.comVidas < m.clientes.length ? (m.clientes.length - m.comVidas) + ' sem vidas informadas' : '')}
+        ${cartao(m.vidas.toLocaleString('pt-BR'), 'Vidas cobertas', 'var(--primary)',
+          m.comVidas < m.clientes.length ? (m.clientes.length - m.comVidas) + ' clientes sem vidas informadas' : '')}
         ${cartao(m.clientes.length, 'Clientes ativos', 'var(--text)')}
         ${cartao(m.novos.length, 'Novos no período', 'var(--text)')}
         ${cartao(m.comReceita.length ? brl(m.ticket) : '—', 'Ticket médio', 'var(--text)',
           m.comReceita.length ? 'sobre ' + m.comReceita.length + (m.comReceita.length > 1 ? ' clientes com valor' : ' cliente com valor') : 'nenhum valor registrado')}
       </div>
-      ${temReceita ? graficoBarras(linhas, { titulo: 'Receita contratada por plano' })
-                   : vazioChart('Nenhum cliente com valor fechado registrado. O valor entra no modal do cliente.')}
+      ${graficoRosca(fatias, {
+        titulo: 'Vidas cobertas por plano',
+        centro: m.vidas >= 1000 ? (m.vidas / 1000).toFixed(1).replace('.', ',') + 'k' : String(m.vidas),
+        centroRotulo: 'vidas',
+        vazio: 'Nenhuma vida informada ainda. As vidas ficam na coluna “Vidas” da aba FECOMERCIO.' })}
+      ${receita.length ? `<div class="g-sub">Receita contratada por plano</div>${graficoBarras(receita, { titulo: 'Receita contratada por plano' })}` : ''}
     </div>`;
 }
 
@@ -8420,7 +8622,7 @@ function fecFiltrados() {
   const fPl = document.getElementById('fecFiltroPlano')?.value || '';
   const fDo = document.getElementById('fecFiltroDono')?.value || '';
   const fMe = document.getElementById('fecFiltroMes')?.value || '';
-  return leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado'
+  const base = leads.filter(l => l.canal === 'FECOMERCIO' && l.status !== 'Desqualificado'
     && (!_soMeusLeads || souDono(l))
     && (!fMe || String(l.data_adicao || '').slice(0, 7) === fMe)
     && (!fDo || (fDo === '__pool' ? !l.dono : l.dono === fDo))
@@ -8430,6 +8632,20 @@ function fecFiltrados() {
     && (!bq || (l.empresa||'').toLowerCase().includes(bq) || (l.nome_contato||'').toLowerCase().includes(bq)
              || (l.cidade||'').toLowerCase().includes(bq) || (l.email||'').toLowerCase().includes(bq)
              || (l.notas||'').toLowerCase().includes(bq)));
+  return ordenarFec(base);
+}
+
+/** Ordem da carteira. Vai no fecFiltrados para a tabela, o kanban e o
+ *  relatório exportado sairem todos na mesma ordem que está na tela. */
+function ordenarFec(lista) {
+  const ordem = document.getElementById('fecOrdem')?.value || 'vidas_desc';
+  const v = l => Number(l.vidas) || 0;
+  const arr = lista.slice();
+  if (ordem === 'vidas_desc') arr.sort((a, b) => v(b) - v(a) || (a.empresa||'').localeCompare(b.empresa||'', 'pt-BR'));
+  else if (ordem === 'vidas_asc') arr.sort((a, b) => v(a) - v(b) || (a.empresa||'').localeCompare(b.empresa||'', 'pt-BR'));
+  else if (ordem === 'empresa') arr.sort((a, b) => (a.empresa||'').localeCompare(b.empresa||'', 'pt-BR'));
+  else arr.sort((a, b) => String(b.data_adicao||'').localeCompare(String(a.data_adicao||'')));
+  return arr;
 }
 
 function aplicarModoFec() {
@@ -8455,12 +8671,14 @@ function aplicarModoFec() {
 // ╚═══════════════════════════════════════════════════════════════════════╝
 
 // Cada item do rail aponta para uma view e para a seção que o contém.
+// Agrupamento por momento do trabalho: o que se olha todo dia primeiro,
+// prospecção depois, carteira em seguida e gestão no fim. Desqualificados
+// é arquivo: fica no fim da prospecção, não no topo da tela.
 const V2_MAPA = {
-  hoje:        'meudia',   desq:        'meudia',
-  pipeline:    'prospeccao', quentes:   'prospeccao',
-  fecomercio:  'carteira',  residenciais:'carteira', parceiros:'carteira',
-  ativos:      'entrega',
-  gestao:      'gestao',    b2g:'gestao', equipe:'gestao', financeiro:'gestao', repositorio:'gestao',
+  hoje:        'meudia',     quentes:     'meudia',
+  pipeline:    'prospeccao', b2g:         'prospeccao', desq: 'prospeccao',
+  fecomercio:  'carteira',   residenciais:'carteira',   parceiros:'carteira', ativos:'carteira',
+  gestao:      'gestao',     equipe:'gestao', financeiro:'gestao', repositorio:'gestao',
 };
 
 /** Marca o item e a seção onde a pessoa está. */
@@ -8484,7 +8702,11 @@ function v2Contagens() {
   const põe = (destino, origem, alerta) => {
     const el = document.getElementById(destino); if (!el) return;
     const o = document.getElementById(origem);
-    const n = o ? parseInt((o.textContent || '').replace(/\D/g, ''), 10) || 0 : 0;
+    // "28/204" significa contatados/total. Tirar todos os não-dígitos
+    // colava os dois em 28204 — foi o "28.204 parceiros" de 24/11/2026.
+    // O badge do rail mostra o TOTAL, que é o último número do texto.
+    const grupos = o ? String(o.textContent || '').match(/\d[\d.]*/g) : null;
+    const n = grupos ? parseInt(grupos[grupos.length - 1].replace(/\./g, ''), 10) || 0 : 0;
     el.textContent = n ? n.toLocaleString('pt-BR') : '';
     el.classList.toggle('al', !!alerta && n > 0);
   };
